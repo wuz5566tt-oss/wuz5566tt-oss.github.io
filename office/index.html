@@ -22,6 +22,7 @@ ul{list-style:none;padding:0}li{font-size:13px;padding:7px 0;border-bottom:1px s
 .lk a{display:block;font-size:13px;padding:7px 0;letter-spacing:.08em}.lk a:hover{color:#fff}
 .gen{font-size:11px;color:var(--mut);margin-top:14px}
 .tag{position:absolute;z-index:2;transform:translate(-50%,-100%);pointer-events:auto;cursor:pointer;white-space:nowrap;font-size:12px;background:rgba(10,10,10,.8);border:1px solid var(--line);padding:3px 8px;text-align:center}
+.tag.boss{border-color:var(--gold);background:linear-gradient(rgba(40,28,6,.92),rgba(14,10,4,.92));color:var(--gold2);font-family:'Noto Serif TC',serif;font-size:13px;box-shadow:0 0 12px rgba(212,175,55,.45)}.tag.boss i{color:#1a1206;background:var(--gold);margin-top:2px;font-weight:700;letter-spacing:.25em}
 .tag i{font-style:normal;display:block;font-size:10px;letter-spacing:.12em}
 .waiting i{animation:bl 1s steps(2) infinite}@keyframes bl{50%{opacity:.2}}
 #card{position:fixed;left:32px;bottom:32px;width:320px;background:rgba(12,11,8,.92);border:1px solid var(--gold);padding:20px;display:none}
@@ -58,11 +59,11 @@ R.toneMapping=T.ACESFilmicToneMapping;R.toneMappingExposure=1.15;R.shadowMap.ena
 const S=new T.Scene();S.background=new T.Color(0x0b1428);S.fog=new T.Fog(0x0b1428,45,95);
 const C=new T.PerspectiveCamera(mob?50:34,1,.1,300);
 const O=new OrbitControls(C,cv);O.enableDamping=true;O.enablePan=false;O.autoRotate=false;O.enableZoom=true;
-O.minDistance=mob?22:18;O.maxDistance=mob?70:60;O.minPolarAngle=.55;O.maxPolarAngle=1.35;O.minAzimuthAngle=-.35;O.maxAzimuthAngle=1.25;
-O.target.set(mob?0:3.2,mob?0:4.6,0);C.position.set(mob?10:12,mob?14:11.5,mob?44:35);
+O.minDistance=mob?26:20;O.maxDistance=mob?95:75;O.minPolarAngle=.55;O.maxPolarAngle=1.35;O.minAzimuthAngle=-.35;O.maxAzimuthAngle=1.25;
+O.target.set(mob?.5:3.4,mob?2.2:7.4,0);C.position.set(mob?14:13,mob?20:16,mob?70:44);
 S.add(new T.HemisphereLight(0x4a5a88,0x2a1a0a,1.3));
 const moon=new T.DirectionalLight(0x9fb4ff,.55);moon.position.set(18,30,22);moon.castShadow=true;moon.shadow.mapSize.set(2048,2048);
-Object.assign(moon.shadow.camera,{left:-16,right:16,top:16,bottom:-6,near:1,far:80});moon.shadow.bias=-.0005;moon.shadow.radius=4;S.add(moon);
+Object.assign(moon.shadow.camera,{left:-16,right:16,top:22,bottom:-8,near:1,far:80});moon.shadow.bias=-.0005;moon.shadow.radius=4;S.add(moon);
 const warm=new T.DirectionalLight(0xffb070,.45);warm.position.set(-10,12,14);S.add(warm);
 const M=(c,o={})=>new T.MeshStandardMaterial({color:c,roughness:.7,metalness:.1,...o});
 const B=(w,h,d,m,x,y,z,p=S)=>{const b=new T.Mesh(new T.BoxGeometry(w,h,d),m);b.position.set(x,y,z);p.add(b);return b};
@@ -97,7 +98,7 @@ levels.forEach((y,i)=>{
   for(let k=-1;k<=1;k++)B(4,.05,.15,new T.MeshBasicMaterial({color:0xffe2b0}),k*5.5,y+H-.05,.5);
  }
  // floor sign on slab front
- const sg=sprite(['1F  內容部 · CONTENT','2F  財經部 · MARKETS','RF  總經理辦公室 · EXECUTIVE'][i],7,.875,'#ffd08a',46,i==2?null:'rgba(10,12,20,.75)');sg.scale.set(1.3,1.3,1);sg.material.depthTest=false;sg.renderOrder=999;sg.position.set(i==2?-W/2+5.6:-W/2+5.0,y+(i==2?1.55:H-.95),i==2?D/2+.06:D/2-.3);S.add(sg);
+ const sg=sprite(['1F  內容部 · CONTENT','2F  財經部 · MARKETS','RF  總經理辦公室 · EXECUTIVE'][i],7,.875,'#ffd08a',46,'rgba(10,12,20,.8)');sg.scale.set(1.3,1.3,1);sg.material.depthTest=false;sg.renderOrder=999;sg.position.set(-W/2+5.0,y+(i==2?2.0:.55),D/2+.12);S.add(sg);
 });
 // roof slab cap (top of terrace edge) + glass railing
 B(W,.12,.06,mLed,0,2*H+1.05,D/2);B(W,1,.04,mGlass,0,2*H+.5,D/2-.02).userData.noShadow=1;B(.04,1,D,mGlass,W/2-.02,2*H+.5,0).userData.noShadow=1;
@@ -175,6 +176,74 @@ const rl=new T.PointLight(0xffb060,14,9,1.4);rl.position.set(-.75,RY+2.6,-1.5);S
 for(let k=0;k<7;k++)plant(-7.6+k*2.5,RY,-4.3,1.2+Math.random()*.4);plant(7.4,RY,3.8,1.4);plant(-7.6,RY,3.8,1.3);
 B(2.4,.35,.9,M(0x8a7a64),5.4,RY+.3,-1.8);B(2.4,.45,.2,M(0x8a7a64),5.4,RY+.6,-2.2);Cy(.5,.5,.4,mWood,5.4,RY+.2,-.4);
 rug(-1.2,RY,-1.2,5,3.6,2);
+// ===== PH 董事長室 · CHAIRMAN (cantilevered, largest floor)
+const PY=3*H,PW=W+2.4,PD=D+1.6,PHH=H+.6,PX=.6,PZ=.6;
+const mGold=M(0xd4af37,{metalness:.9,roughness:.25,emissive:0x3a2a08}),mGoldLed=new T.MeshBasicMaterial({color:0xffd27a}),
+ mLeather=M(0x3a1d12,{roughness:.45,metalness:.05}),mWal=M(0x3d2416,{roughness:.4}),mMarble=M(0xe8e2d6,{roughness:.2,metalness:.05});
+// support columns from RF to PH
+[[-W/2,-D/2],[W/2,-D/2],[-W/2,D/2],[W/2,D/2]].forEach(([x,z])=>B(.36,H+.1,.36,mSteel,x,RY+H/2,z));
+B(PW,SL+.1,PD,mSlab,PX,PY-SL/2,PZ);B(PW-.4,.04,PD-.4,M(0x221a14,{roughness:.25,metalness:.15}),PX,PY+.03,PZ);
+// marble inlay floor
+B(PW-3,.02,PD-3,mMarble,PX,PY+.05,PZ).receiveShadow=true;
+// gold edge strips (double)
+B(PW+.04,.08,.08,mGoldLed,PX,PY-.06,PZ+PD/2+.02);B(.08,.08,PD+.04,mGoldLed,PX+PW/2+.02,PY-.06,PZ);B(PW+.04,.05,.05,mGoldLed,PX,PY-SL-.02,PZ+PD/2+.02);
+// back + left walls (walnut paneling)
+B(PW,PHH,.2,mWal,PX,PY+PHH/2,PZ-PD/2+.1);B(.2,PHH,PD,mWal,PX-PW/2+.1,PY+PHH/2,PZ);
+for(let k=0;k<20;k++)B(.05,PHH-.3,.05,mGold,PX-PW/2+.8+k*1.05,PY+PHH/2,PZ-PD/2+.23);
+// floor-to-ceiling glass front + right with gold mullions
+B(PW,PHH,.04,mGlass,PX,PY+PHH/2,PZ+PD/2-.05).userData.noShadow=1;B(.04,PHH,PD,mGlass,PX+PW/2-.05,PY+PHH/2,PZ).userData.noShadow=1;
+for(let k=-5;k<=5;k++)B(.05,PHH,.05,mGold,PX+k*2,PY+PHH/2,PZ+PD/2-.05);for(let k=-2;k<=3;k++)B(.05,PHH,.05,mGold,PX+PW/2-.05,PY+PHH/2,PZ+k*2-1);
+// roof cap + crown LED
+B(PW+.3,.25,PD+.3,mSlab,PX,PY+PHH+.12,PZ);B(PW+.34,.06,.06,mGoldLed,PX,PY+PHH+.02,PZ+PD/2+.17);B(.06,.06,PD+.34,mGoldLed,PX+PW/2+.17,PY+PHH+.02,PZ);
+// cove lighting + warm spots
+for(let k=-2;k<=2;k++)B(3.4,.04,.12,mGoldLed,PX+k*4,PY+PHH-.04,PZ+.5);
+[[-5,0],[0,-2],[5,0],[-1,2.5]].forEach(([x,z])=>{const l=new T.PointLight(0xffc878,16,9,1.3);l.position.set(PX+x,PY+PHH-.5,PZ+z);S.add(l);
+ const c=new T.Mesh(new T.ConeGeometry(.12,.12,12,1,true),new T.MeshBasicMaterial({color:0xffe0a0,side:T.DoubleSide}));c.position.set(PX+x,PY+PHH-.08,PZ+z);S.add(c)});
+// rug
+B(7,.03,4.6,M(0x5a1f1a,{roughness:.9}),PX+.5,PY+.07,PZ+.4);B(7.2,.025,4.8,mGold,PX+.5,PY+.06,PZ+.4);
+// executive desk (L), facing front
+const ex=new T.Group();ex.position.set(PX+.4,PY,PZ-1.6);S.add(ex);
+B(3.6,.12,1.4,mWal,0,.8,0,ex);B(3.6,.04,1.42,mGold,0,.73,0,ex);B(.5,.74,1.3,mWal,-1.5,.37,0,ex);B(.5,.74,1.3,mWal,1.5,.37,0,ex);B(2.5,.5,.05,mWal,0,.5,.6,ex);
+[-.75,.75].forEach((x,i)=>{const tx=scrTex();const mm=new T.MeshStandardMaterial({color:0x111,emissive:0xffffff,emissiveMap:tx,emissiveIntensity:1.1,map:tx});
+ const g=new T.Group();g.position.set(x,0,-.4);g.rotation.y=i?-.18:.18;ex.add(g);B(1.1,.66,.05,mDark,0,1.32,0,g);const s=new T.Mesh(new T.PlaneGeometry(1.02,.58),mm);s.position.set(0,1.32,.03);g.add(s);B(.08,.4,.08,mDark,0,1.02,0,g)});
+Cy(.1,.12,.04,mGold,1.4,.84,-.3,ex);B(.03,.5,.03,mGold,1.4,1.1,-.3,ex);const exl=new T.Mesh(new T.ConeGeometry(.16,.2,16,1,true),new T.MeshStandardMaterial({color:0x222,emissive:0xffd080,emissiveIntensity:1.4,side:T.DoubleSide}));exl.position.set(1.35,1.35,-.25);ex.add(exl);
+B(.3,.05,.22,M(0x111),-.2,.88,.2,ex);B(.25,.04,.32,mGold,.9,.87,.15,ex);// nameplate block
+// high-back leather chair (behind desk = toward back wall)
+const hc=new T.Group();hc.position.set(0,0,-1.25);ex.add(hc);
+Cy(.04,.04,.45,mGold,0,.3,0,hc);for(let k=0;k<5;k++){const a=k*Math.PI*2/5;const l=B(.05,.05,.38,mGold,Math.sin(a)*.18,.06,Math.cos(a)*.18,hc);l.rotation.y=a}
+B(.7,.16,.66,mLeather,0,.56,0,hc);B(.72,1.25,.14,mLeather,0,1.2,-.32,hc);B(.12,.28,.6,mLeather,-.4,.75,0,hc);B(.12,.28,.6,mLeather,.4,.75,0,hc);
+for(let k=0;k<4;k++)B(.6,.02,.02,mGold,0,.75+k*.28,-.24,hc);
+// chairman figure seated, facing front (+z)
+const chm=new T.Group();chm.position.set(0,0,-1.18);ex.add(chm);
+const suit=M(0x121218,{roughness:.6}),skinC=M(0xe6c3a0);
+B(.46,.56,.3,suit,0,.9,0,chm);B(.12,.3,.02,M(0x7a1414),0,.98,.16,chm);B(.18,.08,.02,M(0xf5f0e6),0,1.16,.16,chm);
+const chd=new T.Mesh(new T.SphereGeometry(.18,16,12),skinC);chd.position.set(0,1.38,.02);chm.add(chd);
+const chr=new T.Mesh(new T.SphereGeometry(.19,16,12,0,Math.PI*2,0,1.4),M(0x2a2a2a));chr.position.set(0,1.41,-.01);chm.add(chr);
+B(.17,.14,.48,suit,-.12,.6,.2,chm);B(.17,.14,.48,suit,.12,.6,.2,chm);B(.14,.5,.14,suit,-.12,.33,.42,chm);B(.14,.5,.14,suit,.12,.33,.42,chm);
+B(.11,.11,.45,suit,-.29,.95,.2,chm);B(.11,.11,.45,suit,.29,.95,.2,chm);
+const crown=new T.Mesh(new T.OctahedronGeometry(.12),new T.MeshBasicMaterial({color:0xffd27a}));crown.position.set(0,1.85,0);chm.add(crown);
+const bossL=new T.PointLight(0xffd080,5,4,1.5);bossL.position.set(0,2.2,.6);ex.add(bossL);
+// bookshelves on back wall (left + right of desk)
+[[-5.2],[5.8]].forEach(([x])=>{const g=new T.Group();g.position.set(PX+x,PY,PZ-PD/2+.5);S.add(g);B(3.2,PHH-.5,.5,mWal,0,(PHH-.5)/2,0,g);
+ for(let r=0;r<5;r++){B(3,.04,.44,mGold,0,.3+r*.85,.02,g);for(let b=0;b<12;b++){if(Math.random()<.18)continue;const h=.45+Math.random()*.3;B(.16,h,.32,M([0x5a1f1a,0x1f3a2a,0x2a2440,0x6a5030,0xd8d0c0][(b+r)%5]),-1.35+b*.24,.33+r*.85+h/2,.05,g)}}
+ const sl=new T.PointLight(0xffc070,4,3.5,1.5);sl.position.set(0,PHH-1,.9);g.add(sl)});
+// artwork on back wall above center
+(()=>{const c=document.createElement('canvas');c.width=512;c.height=256;const g=c.getContext('2d');const gr=g.createLinearGradient(0,0,512,256);gr.addColorStop(0,'#1a1208');gr.addColorStop(1,'#3a2a10');g.fillStyle=gr;g.fillRect(0,0,512,256);
+ g.strokeStyle='#d4af37';g.lineWidth=5;for(let i=0;i<5;i++){g.beginPath();g.arc(140+i*60,300,120+i*30,Math.PI*1.1,Math.PI*1.9);g.stroke()}g.fillStyle='#f5e6a8';g.beginPath();g.arc(380,80,26,0,7);g.fill();
+ const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;B(3.1,1.6,.06,mGold,PX+.4,PY+3.1,PZ-PD/2+.24);const m=new T.Mesh(new T.PlaneGeometry(3,1.5),new T.MeshBasicMaterial({map:t}));m.position.set(PX+.4,PY+3.1,PZ-PD/2+.28);S.add(m)})();
+// sofa lounge (front-right) facing desk side
+const lg=new T.Group();lg.position.set(PX+6.4,PY,PZ+2.6);S.add(lg);const mSofa=M(0x2a2420,{roughness:.55});
+B(3,.42,1,mSofa,0,.3,.6,lg);B(3,.6,.25,mSofa,0,.75,1.0,lg);B(.25,.55,1,mSofa,-1.5,.5,.6,lg);B(.25,.55,1,mSofa,1.5,.5,.6,lg);
+B(1,.42,1,mSofa,-2.3,.3,-.6,lg);B(1,.6,.25,mSofa,-2.75,.75,-.6,lg).rotation.y=Math.PI/2;
+B(1.8,.06,.9,mMarble,0,.42,-.4,lg);B(1.6,.36,.06,mGold,0,.2,-.4,lg);Cy(.12,.1,.18,mGold,.4,.54,-.4,lg);
+B(1.6,.02,.02,mGold,0,.08,.08,lg);
+// plants
+plant(PX-PW/2+1,PY,PZ+PD/2-1,1.4);plant(PX+PW/2-.9,PY,PZ-PD/2+1.1,1.5);plant(PX+2.6,PY,PZ+PD/2-.9,1.1);plant(PX-2.6,PY,PZ-PD/2+1.2,1.2);
+// globe/bar cabinet left
+B(1.6,1.1,.6,mWal,PX-6.4,PY+.55,PZ+1.2);B(1.6,.04,.62,mGold,PX-6.4,PY+1.12,PZ+1.2);for(let k=0;k<3;k++)Cy(.05,.05,.3,M(0x8a5a20,{transparent:true,opacity:.8}),PX-6.9+k*.4,PY+1.29,PZ+1.2);
+const PHsign=sprite('PH  董事長室 · CHAIRMAN',7,.875,'#ffe6a0',46,'rgba(30,22,6,.82)');PHsign.scale.set(1.4,1.4,1);PHsign.material.depthTest=false;PHsign.renderOrder=999;PHsign.position.set(PX-PW/2+5.3,PY+PHH-.9,PZ+PD/2-.3);S.add(PHsign);
+// chairman HTML tag
+const chTag=document.createElement('div');chTag.className='tag boss';chTag.innerHTML=`董事長 LEO易凡<i>👑 BOSS</i>`;document.getElementById('tags').appendChild(chTag);
 // dept glows
 // bots
 const bots={},pick=[];
@@ -216,6 +285,7 @@ const v=new T.Vector3(),clk=new T.Clock(),YEL=new T.Color(0xffd23a),WARM=new T.C
   if(work){b.a1.position.y=.9+Math.sin(t*14)*.02;b.a2.position.y=.9+Math.cos(t*14)*.02}
   v.set(0,1.95,0);b.p.localToWorld(v);v.project(C);
   pos.push([b.tg,(v.x+1)/2*innerWidth,(1-v.y)/2*innerHeight,v.z<1])}
+ v.set(0,2.05,0);chm.localToWorld(v);v.project(C);pos.push([chTag,(v.x+1)/2*innerWidth,(1-v.y)/2*innerHeight,v.z<1]);crown.rotation.y=t;
  // de-overlap labels
  pos.sort((a,b)=>a[2]-b[2]);const placed=[];
  for(const p of pos){let [el,x,y,vis]=p;const w=el.offsetWidth||80,h=el.offsetHeight||30;
