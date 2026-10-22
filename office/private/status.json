@@ -1,0 +1,26 @@
+{
+ "generated": "2026-10-22T22:21:41+08:00",
+ "bots": [
+  {
+   "id": "audit",
+   "name": "資產 審核長 BOT",
+   "status": "idle",
+   "task": "待命",
+   "updated": "2026-10-22T21:40:00+08:00"
+  },
+  {
+   "id": "cfo",
+   "name": "財務長 BOT",
+   "status": "idle",
+   "task": "待命",
+   "updated": "2026-10-22T21:40:00+08:00"
+  },
+  {
+   "id": "fit",
+   "name": "減脂 健身 營養師",
+   "status": "idle",
+   "task": "待命",
+   "updated": "2026-10-22T21:40:00+08:00"
+  }
+ ]
+}
