@@ -468,7 +468,7 @@ function life(pos){const dt=Math.min(lclk.getDelta(),.1),t=lclk.elapsedTime;
 // garage camera toggle
 {const btn=document.createElement('a');btn.className='back';btn.id='gbtn';btn.href='#';btn.textContent='🚗 董事長車庫';btn.style.cssText='position:fixed;left:'+(mob?'16px':'32px')+';top:'+(mob?'78px':'100px')+';z-index:3;background:rgba(10,14,30,.8)';document.body.appendChild(btn);
  const home={t:O.target.clone(),c:C.position.clone(),min:O.minDistance,az:[O.minAzimuthAngle,O.maxAzimuthAngle]};let inG=false;
- const go=g=>{inG=g;btn.textContent=g?'🏢 回到大樓':'🚗 董事長車庫';if(g){O.minDistance=8;O.minAzimuthAngle=-1.2;O.maxAzimuthAngle=1.2;O.target.set(GX+(mob?0:3.2),1.4,GZ);C.position.set(GX+(mob?5:9),mob?6.5:7,GZ+(mob?17:21))}else{O.minDistance=home.min;[O.minAzimuthAngle,O.maxAzimuthAngle]=home.az;O.target.copy(home.t);C.position.copy(home.c)}};
+ const go=g=>{inG=g;btn.textContent=g?'🏢 回到大樓':'🚗 董事長車庫';if(g){O.minDistance=8;O.minAzimuthAngle=-1.2;O.maxAzimuthAngle=1.2;O.target.set(GX+(mob?0:3.2),mob?-1.2:1.4,GZ);C.position.set(GX+(mob?6:9),mob?7:7,GZ+(mob?25:21))}else{O.minDistance=home.min;[O.minAzimuthAngle,O.maxAzimuthAngle]=home.az;O.target.copy(home.t);C.position.copy(home.c)}};
  btn.onclick=e=>{e.preventDefault();go(!inG)};if(new URLSearchParams(location.search).get('view')==='garage')go(true)}
 
 function rs(){R.setSize(innerWidth,innerHeight,false);C.aspect=innerWidth/innerHeight;C.updateProjectionMatrix()}addEventListener('resize',rs);rs();
