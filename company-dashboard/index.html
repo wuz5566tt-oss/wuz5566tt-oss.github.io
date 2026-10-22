@@ -1,47 +1,80 @@
-<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>公司總控台 · HQ CONSOLE</title>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>公司總控台｜牛馬</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Noto+Serif+TC:wght@400;600&family=Inter:wght@300;400;500&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-:root{--g:#00ff9c;--r:#ff3b5c;--y:#ffd23f;--c:#3ff3ff;--b:#1d2a2a;--t:#9fb3b3}
-*{box-sizing:border-box}body{margin:0;background:#030505;color:var(--t);font:13px 'JetBrains Mono',monospace}
-.top{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--b);flex-wrap:wrap;gap:8px}
-.top b{color:var(--g);letter-spacing:3px;font-size:16px}.clk span{margin-left:14px}.clk em{color:var(--y);font-style:normal}
-.grid{display:grid;gap:8px;padding:8px;grid-template-columns:1fr 300px}
-.p{border:1px solid var(--b);background:#060a0a;padding:10px;min-width:0}
-.p h3{margin:0 0 8px;font-size:11px;letter-spacing:2px;color:var(--c)}
-.tabs{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
-.tabs button{background:#0a1212;border:1px solid var(--b);color:var(--t);font:inherit;padding:6px 12px;cursor:pointer}
-.tabs button.on{border-color:var(--g);color:var(--g);box-shadow:0 0 8px #00ff9c55}
-a.btn{color:#000;background:var(--g);padding:6px 10px;text-decoration:none;font-weight:700;margin-left:auto}
-iframe{width:100%;height:calc(100vh - 150px);min-height:600px;border:1px solid var(--b);background:#000}
-table{width:100%;border-collapse:collapse}td{padding:5px 2px;border-bottom:1px dashed var(--b)}td:last-child{text-align:right;color:var(--y)}
-.soon{font-size:9px;background:var(--y);color:#000;padding:1px 4px;border-radius:2px}
-.ok{color:var(--g)}.note{font-size:11px;line-height:1.7}
-@media(max-width:900px){.grid{grid-template-columns:1fr}}
+:root{--bg:#0a0a0a;--gold:#d4af37;--gold2:#f5e6a8;--mut:#a8997a;--line:rgba(212,175,55,.22);--glass:rgba(255,255,255,.025)}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:#e9e4d6;font-family:Inter,"Noto Sans TC",sans-serif;font-weight:300;-webkit-font-smoothing:antialiased}
+body{min-height:100vh;display:flex;flex-direction:column}
+.wrap{width:100%;max-width:1480px;margin:0 auto;padding:0 48px}
+header{border-bottom:1px solid var(--line)}
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:32px;padding:40px 0 28px}
+.eyebrow{font-family:"Cormorant Garamond",serif;letter-spacing:.42em;font-size:12px;color:var(--mut);text-transform:uppercase;margin-bottom:12px}
+h1{font-family:"Noto Serif TC",serif;font-weight:400;font-size:34px;letter-spacing:.12em;color:var(--gold2)}
+h1 em{font-style:normal;color:var(--gold)}
+.clocks{display:flex;gap:40px}
+.clk{text-align:right}
+.clk small{display:block;font-size:11px;letter-spacing:.3em;color:var(--mut);margin-bottom:6px}
+.clk b{font-family:"Cormorant Garamond",serif;font-weight:500;font-size:30px;color:var(--gold2);font-variant-numeric:lining-nums tabular-nums;letter-spacing:.04em}
+.clk span{display:block;font-size:11px;color:var(--mut);margin-top:2px;letter-spacing:.08em}
+.divider{width:1px;background:var(--line)}
+nav{display:flex;align-items:center;justify-content:space-between;gap:24px}
+.tabs{display:flex;gap:44px}
+.tab{background:none;border:0;cursor:pointer;color:var(--mut);font:inherit;font-size:15px;letter-spacing:.2em;padding:18px 0 16px;position:relative;transition:color .3s}
+.tab sub{display:block;font-family:"Cormorant Garamond",serif;font-size:11px;letter-spacing:.3em;margin-top:4px;opacity:.7;vertical-align:baseline;font-variant-numeric:lining-nums}
+.tab::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:var(--gold);transform:scaleX(0);transition:transform .45s cubic-bezier(.2,.7,.2,1)}
+.tab:hover{color:#e9e4d6}.tab.on{color:var(--gold2)}.tab.on::after{transform:scaleX(1)}
+.open{color:var(--gold);text-decoration:none;font-size:12px;letter-spacing:.25em;border:1px solid var(--line);padding:9px 18px;transition:.3s;white-space:nowrap}
+.open:hover{border-color:var(--gold);background:rgba(212,175,55,.06)}
+main{flex:1;padding:32px 0 24px}
+.grid{display:grid;grid-template-columns:1fr 300px;gap:32px}
+.frame{border:1px solid var(--line);background:var(--glass);position:relative;height:calc(100vh - 250px);min-height:620px}
+.frame iframe{width:100%;height:100%;border:0;display:block;background:var(--bg)}
+.frame::before,.frame::after{content:"";position:absolute;width:14px;height:14px;border-color:var(--gold);border-style:solid;pointer-events:none}
+.frame::before{top:-1px;left:-1px;border-width:1px 0 0 1px}.frame::after{bottom:-1px;right:-1px;border-width:0 1px 1px 0}
+aside .card{border:1px solid var(--line);background:linear-gradient(180deg,rgba(212,175,55,.05),rgba(255,255,255,.01));backdrop-filter:blur(8px);padding:28px 26px}
+aside h2{font-family:"Noto Serif TC",serif;font-weight:400;font-size:16px;letter-spacing:.24em;color:var(--gold2)}
+aside .en{font-family:"Cormorant Garamond",serif;font-size:11px;letter-spacing:.35em;color:var(--mut);margin:6px 0 22px;text-transform:uppercase}
+.row{display:flex;justify-content:space-between;align-items:baseline;padding:14px 0;border-top:1px solid rgba(212,175,55,.12);text-decoration:none;color:inherit}
+.row:hover .nm{color:var(--gold2)}
+.nm{font-size:13.5px;letter-spacing:.08em;transition:.3s}.nm small{display:block;color:var(--mut);font-size:11px;margin-top:3px}
+.tm{font-family:"Cormorant Garamond",serif;font-size:20px;color:var(--gold);font-variant-numeric:lining-nums tabular-nums}
+.note{font-size:11px;color:var(--mut);margin-top:18px;line-height:1.8;letter-spacing:.05em}
+footer{border-top:1px solid var(--line);padding:18px 0;font-size:11px;color:var(--mut);letter-spacing:.2em;text-align:center;font-family:"Cormorant Garamond",serif}
+@media(max-width:1100px){.grid{grid-template-columns:1fr}}
+@media(max-width:700px){.wrap{padding:0 18px}.eyebrow{letter-spacing:.25em;font-size:10px}.top{flex-direction:column;align-items:flex-start;padding:26px 0 18px;gap:18px}h1{font-size:24px}.clocks{gap:24px}.clk{text-align:left}.clk b{font-size:24px}
+nav{flex-wrap:wrap;gap:0}.tabs{gap:0;width:100%;justify-content:space-between}.tab{flex:1;font-size:14px;letter-spacing:.12em}.open{width:100%;text-align:center;margin:12px 0 4px}main{padding:18px 0}.frame{height:75vh;min-height:520px}}
 </style></head><body>
-<div class="top"><b>▣ 公司總控台 HQ CONSOLE</b><div class="clk"><span>台北 <em id="tpe">--</em></span><span>紐約 <em id="ny">--</em></span></div></div>
-<div class="grid">
-<div class="p"><div class="tabs" id="tabs"></div><iframe id="fr" loading="lazy"></iframe></div>
-<div>
-<div class="p"><h3>// 更新時程（台北時間）</h3><table>
-<tr><td>台股戰報</td><td>每交易日 18:00</td></tr>
-<tr><td>A股戰報</td><td>每交易日 18:00</td></tr>
-<tr><td>美股（納斯達克）戰報</td><td>每日 08:00</td></tr>
-<tr><td>台股盤前早報 <span class="soon">即將上線</span></td><td>08:30</td></tr>
-<tr><td>A股盤前提醒 <span class="soon">即將上線</span></td><td>09:00</td></tr>
-<tr><td>美股財報行事曆 <span class="soon">即將上線</span></td><td>每週日</td></tr></table></div>
-<div class="p" style="margin-top:8px"><h3>// THREADS 待回文案</h3><div class="note">
-小編的回文草稿目前<b class="ok">只交到老闆私訊</b>（每天 10:00 前 5 篇；每週一 09:00 週報＋7 篇發文草稿），所以這裡先放空位。<br>之後小編把草稿放到固定連結，就會直接顯示在這裡，可一鍵複製。</div></div>
-<div class="p" style="margin-top:8px"><h3>// 狀態</h3><div class="note" id="st"></div></div>
-</div></div>
+<header><div class="wrap">
+<div class="top"><div><div class="eyebrow">Niuma Capital · Command Center</div><h1>公司<em>總控台</em></h1></div>
+<div class="clocks"><div class="clk"><small>台北 TPE</small><b id="tpe">--:--</b><span id="tped"></span></div><div class="divider"></div><div class="clk"><small>紐約 NYC</small><b id="nyc">--:--</b><span id="nycd"></span></div></div></div>
+<nav><div class="tabs" id="tabs">
+<button class="tab on" data-u="https://wuz5566tt-oss.github.io/tw-daily-report/">台股戰報<sub>TAIEX</sub></button>
+<button class="tab" data-u="https://wuz5566tt-oss.github.io/ashare-daily-report/">A股戰報<sub>CSI300</sub></button>
+<button class="tab" data-u="https://wuz5566tt-oss.github.io/nasdaq-daily-report/">美股戰報<sub>IXIC</sub></button>
+</div><a class="open" id="open" target="_blank" rel="noopener" href="https://wuz5566tt-oss.github.io/tw-daily-report/">新分頁開啟 ↗</a></nav>
+</div></header>
+<main><div class="wrap grid">
+<div class="frame"><iframe id="f" src="https://wuz5566tt-oss.github.io/tw-daily-report/" title="戰報"></iframe></div>
+<aside><div class="card"><h2>更新時程</h2><div class="en">Schedule · Taipei Time</div>
+<a class="row" href="https://wuz5566tt-oss.github.io/tw-daily-report/morning/" target="_blank" rel="noopener"><div class="nm">台股盤前早報 ↗<small>交易日</small></div><div class="tm">08:30</div></a>
+<div class="row"><div class="nm">A股盤前提醒<small>交易日・私訊圖卡</small></div><div class="tm">09:00</div></div>
+<div class="row"><div class="nm">美股戰報<small>每日</small></div><div class="tm">08:00</div></div>
+<div class="row"><div class="nm">台股戰報<small>交易日收盤後</small></div><div class="tm">18:00</div></div>
+<div class="row"><div class="nm">A股戰報<small>交易日收盤後</small></div><div class="tm">18:00</div></div>
+<div class="row"><div class="nm">美股財報行事曆<small>每週日晚間</small></div><div class="tm">週日</div></div>
+<p class="note">各戰報皆為固定網址，每日覆蓋更新。</p></div></aside>
+</div></main>
+<footer><div class="wrap">NIUMA · PRIVATE DESK · 內部使用</div></footer>
 <script>
-const R=[["台股戰報 TWSE","https://wuz5566tt-oss.github.io/tw-daily-report/"],["A股戰報 SSE/SZSE","https://wuz5566tt-oss.github.io/ashare-daily-report/"],["美股戰報 NASDAQ","https://wuz5566tt-oss.github.io/nasdaq-daily-report/"]];
-const T=document.getElementById('tabs'),F=document.getElementById('fr');
-function show(i){F.src=R[i][1];[...T.querySelectorAll('button')].forEach((b,j)=>b.className=j==i?'on':'');T.querySelector('a').href=R[i][1];location.hash=i}
-R.forEach((r,i)=>{const b=document.createElement('button');b.textContent=r[0];b.onclick=()=>show(i);T.appendChild(b)});
-const a=document.createElement('a');a.className='btn';a.target='_blank';a.textContent='↗ 新分頁開啟';T.appendChild(a);
-show(+location.hash.slice(1)||0);
-document.getElementById('st').innerHTML=R.map(r=>'<span class="ok">●</span> '+r[0]+' 可嵌入').join('<br>');
-function tick(){const o={hour12:false,month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'};
-tpe.textContent=new Date().toLocaleString('zh-TW',{...o,timeZone:'Asia/Taipei'});ny.textContent=new Date().toLocaleString('zh-TW',{...o,timeZone:'America/New_York'})}
-tick();setInterval(tick,1000);
+const f=document.getElementById('f'),o=document.getElementById('open');
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));t.classList.add('on');f.src=t.dataset.u;o.href=t.dataset.u});
+const W=['日','一','二','三','四','五','六'],E=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function tk(){const d=new Date();
+[['tpe','Asia/Taipei'],['nyc','America/New_York']].forEach(([id,z])=>{document.getElementById(id).textContent=d.toLocaleTimeString('en-GB',{timeZone:z,hour:'2-digit',minute:'2-digit'});
+const p=new Intl.DateTimeFormat('en-CA',{timeZone:z,year:'numeric',month:'2-digit',day:'2-digit'}).format(d).replace(/-/g,'/');
+const i=E.indexOf(new Intl.DateTimeFormat('en-US',{timeZone:z,weekday:'short'}).format(d));
+document.getElementById(id+'d').textContent=p+'（'+W[i]+'）'})}
+tk();setInterval(tk,10000);
 </script></body></html>
