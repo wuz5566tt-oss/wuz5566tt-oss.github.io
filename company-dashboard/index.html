@@ -1,0 +1,47 @@
+<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>公司總控台 · HQ CONSOLE</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--g:#00ff9c;--r:#ff3b5c;--y:#ffd23f;--c:#3ff3ff;--b:#1d2a2a;--t:#9fb3b3}
+*{box-sizing:border-box}body{margin:0;background:#030505;color:var(--t);font:13px 'JetBrains Mono',monospace}
+.top{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--b);flex-wrap:wrap;gap:8px}
+.top b{color:var(--g);letter-spacing:3px;font-size:16px}.clk span{margin-left:14px}.clk em{color:var(--y);font-style:normal}
+.grid{display:grid;gap:8px;padding:8px;grid-template-columns:1fr 300px}
+.p{border:1px solid var(--b);background:#060a0a;padding:10px;min-width:0}
+.p h3{margin:0 0 8px;font-size:11px;letter-spacing:2px;color:var(--c)}
+.tabs{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.tabs button{background:#0a1212;border:1px solid var(--b);color:var(--t);font:inherit;padding:6px 12px;cursor:pointer}
+.tabs button.on{border-color:var(--g);color:var(--g);box-shadow:0 0 8px #00ff9c55}
+a.btn{color:#000;background:var(--g);padding:6px 10px;text-decoration:none;font-weight:700;margin-left:auto}
+iframe{width:100%;height:calc(100vh - 150px);min-height:600px;border:1px solid var(--b);background:#000}
+table{width:100%;border-collapse:collapse}td{padding:5px 2px;border-bottom:1px dashed var(--b)}td:last-child{text-align:right;color:var(--y)}
+.soon{font-size:9px;background:var(--y);color:#000;padding:1px 4px;border-radius:2px}
+.ok{color:var(--g)}.note{font-size:11px;line-height:1.7}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+</style></head><body>
+<div class="top"><b>▣ 公司總控台 HQ CONSOLE</b><div class="clk"><span>台北 <em id="tpe">--</em></span><span>紐約 <em id="ny">--</em></span></div></div>
+<div class="grid">
+<div class="p"><div class="tabs" id="tabs"></div><iframe id="fr" loading="lazy"></iframe></div>
+<div>
+<div class="p"><h3>// 更新時程（台北時間）</h3><table>
+<tr><td>台股戰報</td><td>每交易日 18:00</td></tr>
+<tr><td>A股戰報</td><td>每交易日 18:00</td></tr>
+<tr><td>美股（納斯達克）戰報</td><td>每日 08:00</td></tr>
+<tr><td>台股盤前早報 <span class="soon">即將上線</span></td><td>08:30</td></tr>
+<tr><td>A股盤前提醒 <span class="soon">即將上線</span></td><td>09:00</td></tr>
+<tr><td>美股財報行事曆 <span class="soon">即將上線</span></td><td>每週日</td></tr></table></div>
+<div class="p" style="margin-top:8px"><h3>// THREADS 待回文案</h3><div class="note">
+小編的回文草稿目前<b class="ok">只交到老闆私訊</b>（每天 10:00 前 5 篇；每週一 09:00 週報＋7 篇發文草稿），所以這裡先放空位。<br>之後小編把草稿放到固定連結，就會直接顯示在這裡，可一鍵複製。</div></div>
+<div class="p" style="margin-top:8px"><h3>// 狀態</h3><div class="note" id="st"></div></div>
+</div></div>
+<script>
+const R=[["台股戰報 TWSE","https://wuz5566tt-oss.github.io/tw-daily-report/"],["A股戰報 SSE/SZSE","https://wuz5566tt-oss.github.io/ashare-daily-report/"],["美股戰報 NASDAQ","https://wuz5566tt-oss.github.io/nasdaq-daily-report/"]];
+const T=document.getElementById('tabs'),F=document.getElementById('fr');
+function show(i){F.src=R[i][1];[...T.querySelectorAll('button')].forEach((b,j)=>b.className=j==i?'on':'');T.querySelector('a').href=R[i][1];location.hash=i}
+R.forEach((r,i)=>{const b=document.createElement('button');b.textContent=r[0];b.onclick=()=>show(i);T.appendChild(b)});
+const a=document.createElement('a');a.className='btn';a.target='_blank';a.textContent='↗ 新分頁開啟';T.appendChild(a);
+show(+location.hash.slice(1)||0);
+document.getElementById('st').innerHTML=R.map(r=>'<span class="ok">●</span> '+r[0]+' 可嵌入').join('<br>');
+function tick(){const o={hour12:false,month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'};
+tpe.textContent=new Date().toLocaleString('zh-TW',{...o,timeZone:'Asia/Taipei'});ny.textContent=new Date().toLocaleString('zh-TW',{...o,timeZone:'America/New_York'})}
+tick();setInterval(tick,1000);
+</script></body></html>
