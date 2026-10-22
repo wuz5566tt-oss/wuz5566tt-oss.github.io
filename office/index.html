@@ -267,7 +267,7 @@ const ageM=u=>{const t=Date.parse(u);return isNaN(t)?1e9:(Date.now()-t)/6e4};
 const rel=u=>{const m=ageM(u);if(m>=1e8)return '無回報';if(m<1)return '剛剛';if(m<60)return Math.floor(m)+' 分鐘前';if(m<1440)return Math.floor(m/60)+' 小時前';return Math.floor(m/1440)+' 天前'};
 const STALE=180;
 function label(id,k){const b=bots[id],st=ST[k],stale=ageM(b.d.updated)>STALE&&k!=='working';const tk=(b.d.task||'').slice(0,mob?8:16);
- b.tg.className='tag '+k+(stale?' stale':'');b.tg.innerHTML=`${mob?SHORT[id]:(b.d.name||SHORT[id])}<i style="color:${st[2]}">● ${st[0]}${k==='working'&&tk?'：'+tk:''}</i><i class="ago">${stale?'<b class="stb">⚠ 未回報</b> ':''}${b.d.updated?rel(b.d.updated):''}</i>`}
+ b.tg.className='tag '+k+(stale?' stale':'');b.tg.innerHTML=`${mob?SHORT[id]:(b.d.name||SHORT[id])}<i style="color:${st[2]}">● ${st[0]}${k==='working'&&tk?'：'+tk:''}</i>${mob&&!stale?'':`<i class="ago">${stale?'<b class="stb">⚠ 未回報</b> ':''}${b.d.updated?rel(b.d.updated):''}</i>`}`}
 function apply(j){const c={working:0,idle:0,waiting:0,error:0},L=document.getElementById('list');L.innerHTML='';
  (j.bots||[]).forEach(d=>{const b=bots[d.id];if(!b)return;b.d=d;{const P=PREV[d.id];if(P&&P.s==='working'&&d.status!=='working'&&ageM(d.updated)<30&&window.reqDeliv)reqDeliv(d.id);PREV[d.id]={s:d.status,u:d.updated}}if(window.setStale)setStale(d.id,ageM(d.updated)>STALE&&d.status!=='working');const k=ST[d.status]?d.status:'idle';c[k]++;const st=ST[k];label(d.id,k);
   const li=document.createElement('li');const stl=ageM(d.updated)>STALE&&k!=='working';if(stl)li.className='stale';li.innerHTML=`<span class="dot" style="background:${st[2]}"></span>${d.name}${stl?' <b class="stb">⚠ 未回報</b>':''}<em>${d.task||'—'} · 最後回報 ${rel(d.updated)}（${fmt(d.updated)}）</em>`;li.onclick=()=>show(d.id);L.appendChild(li)});
@@ -422,7 +422,7 @@ const pads={};[0,H,2*H,3*H].forEach(y=>{const g=new T.Group();g.position.set(PAD
 // ---- actors
 const PI=Math.PI,rr=(a,b)=>a+Math.random()*(b-a),A={};const tagsEl=document.getElementById('tags');
 const mDoc=new T.MeshBasicMaterial({color:0xffe08a,toneMapped:false}),mDocH=new T.MeshBasicMaterial({color:0xffc040,transparent:true,opacity:.35,blending:T.AdditiveBlending,depthWrite:false});
-function mkDoc(){const g=new T.Group();B(.34,.05,.26,mDoc,0,0,0,g);B(.5,.14,.42,mDocH,0,0,0,g);g.visible=false;return g}
+function mkDoc(){const g=new T.Group();g.isDoc=true;B(.34,.05,.26,mDoc,0,0,0,g);B(.5,.14,.42,mDocH,0,0,0,g);g.visible=false;return g}
 for(const id in bots){const b=bots[id],[y,sx,sz,ry]=SEAT[id];b.g.updateWorldMatrix(true,true);const wp=new T.Vector3();b.p.getWorldPosition(wp);S.attach(b.p);b.p.rotation.set(0,ry,0);
  const doc=mkDoc();doc.position.set(0,1.0,-.34);b.p.add(doc);
  const lab=document.createElement('div');lab.className='tag boss';lab.style.cssText='display:none;font-size:11px;pointer-events:none';tagsEl.appendChild(lab);
@@ -438,7 +438,7 @@ function plan(a){const f=FL[a.y],work=a.b.d.status==='working',q=a.q;if(a.stale&
   q.push(route(a,a.stand.x,a.stand.z),{t:'sit'},{t:'wait',d:work?rr(70,140):rr(6,14),sit:1})}else q.push(route(a,a.stand.x,a.stand.z),{t:'sit'})}
 function seatedFree(a){return !a.busy&&a.s>.99&&a.cur&&a.cur.t==='wait'&&a.cur.sit}
 const RFDESK=(()=>{const [y,x,z,ry]=SEAT.gm;return {x:x-Math.sin(ry)*1.05,z:z-Math.cos(ry)*1.05,ry:ry}})();
-const reqs=[];window.reqDeliv=id=>{if(id!=='gm'&&!reqs.includes(id))reqs.push(id)};
+const reqs=[];window.__office={reqs,A};window.reqDeliv=id=>{if(id!=='gm'&&!reqs.includes(id))reqs.push(id)};
 let lastDel=-40,glow=0;const deskDoc=mkDoc();deskDoc.position.set(PX+.9,PY+.92,PZ-1.35);S.add(deskDoc);
 function tryDeliver(t){const g=A.gm;if(!seatedFree(g))return false;const ids=Object.keys(A).filter(i=>i!=='gm'&&seatedFree(A[i]));if(!ids.length)return false;
  let id=reqs.find(i=>ids.includes(i));if(!id)return false;reqs.splice(reqs.indexOf(id),1);
