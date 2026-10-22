@@ -348,18 +348,26 @@ function wheel(p,x,z,r=.34,w=.26){const g=new T.Group();g.position.set(x,r,z);p.
  const rm=new T.Mesh(new T.CylinderGeometry(r*.68,r*.68,w+.02,10),mRim);rm.rotation.z=Math.PI/2;g.add(rm);return g}
 function shadowBlob(p,w,l){const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');const gr=g.createRadialGradient(32,32,4,32,32,32);gr.addColorStop(0,'rgba(0,0,0,.75)');gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.fillRect(0,0,64,64);
  const m=new T.Mesh(new T.PlaneGeometry(w,l),new T.MeshBasicMaterial({map:new T.CanvasTexture(c),transparent:true,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.y=.01;p.add(m)}
-function porsche911(){const g=new T.Group(),pt=phys(0xa8141a);shadowBlob(g,2.6,5.2);
- RB(1.74,.42,4.3,.19,pt,0,.5,0,g);                     // lower body
- SP(.36,.2,.88,pt,.68,.64,1.38,g);SP(.36,.2,.88,pt,-.68,.64,1.38,g);   // round front fenders
- const hood=RB(1.2,.12,1.5,.05,pt,0,.68,1.25,g);hood.rotation.x=.08;
- SP(.44,.24,1.05,pt,.66,.64,-1.3,g);SP(.44,.24,1.05,pt,-.66,.64,-1.3,g);  // wide rear haunches
- SP(.66,.42,1.55,mCGlass,0,.7,-.4,g);SP(.6,.45,1.3,pt,0,.71,-.36,g);   // fastback greenhouse + roof
- [-.6,.6].forEach(x=>{const h=new T.Mesh(new T.CylinderGeometry(.16,.16,.08,20),mHL);h.rotation.x=Math.PI/2;h.position.set(x,.68,2.2);g.add(h);
-  const r=new T.Mesh(new T.TorusGeometry(.17,.025,8,24),mRim);r.position.set(x,.68,2.22);g.add(r);B(.16,.12,.08,mBlk,x*.9,.44,2.15,g)});
- B(1.62,.06,.05,mTL,0,.74,-2.17,g);B(1.1,.05,.36,pt,0,.84,-1.95,g).rotation.x=-.18;   // light bar + ducktail
- B(.08,.07,.15,pt,.74,.86,.6,g);B(.08,.07,.15,pt,-.74,.86,.6,g);   // mirrors
- [[.83,1.35,.33],[-.83,1.35,.33],[.86,-1.33,.35],[-.86,-1.33,.35]].forEach(([x,z,r])=>wheel(g,x,z,r,x>0?.26:.26));return g}
-function gallardo(){const g=new T.Group(),pt=phys(0xf2b100);shadowBlob(g,2.7,5.3);
+function extG(g,pts,depth,m,bev=.03,seg=1,x=0){const s=new T.Shape();pts.forEach((p,i)=>i?(p.length===2?s.lineTo(...p):s.quadraticCurveTo(...p)):s.moveTo(...p));
+ const ge=new T.ExtrudeGeometry(s,{depth:depth-2*bev,bevelEnabled:bev>0,bevelThickness:bev,bevelSize:bev,bevelSegments:seg,curveSegments:10});ge.translate(0,0,-(depth-2*bev)/2);const me=new T.Mesh(ge,m);me.rotation.y=-Math.PI/2;me.position.x=x;g.add(me);return me}
+function rimWheel(p,x,z,r,w){const g=wheel(p,x,z,r,w);g.children[1].scale.set(.88,1,.88);g.children[1].material=new T.MeshStandardMaterial({color:0x2a2d33,metalness:.9,roughness:.35});
+ const mS=new T.MeshStandardMaterial({color:0xe2e5ea,metalness:1,roughness:.18});for(let k=0;k<5;k++){const sp=B(.03,r*1.12,.07,mS,Math.sign(x)*(w/2+.005),0,0,g);sp.rotation.x=k*Math.PI*2/5}
+ Cy(.06,.06,.03,mS,Math.sign(x)*(w/2+.01),0,0,g,12).rotation.z=Math.PI/2;return g}
+function porsche911(){const g=new T.Group(),pt=new T.MeshPhysicalMaterial({color:0xc3c7cc,metalness:.92,roughness:.3,clearcoat:1,clearcoatRoughness:.03,envMapIntensity:1.5});shadowBlob(g,2.7,5.2);
+ // main silhouette: short nose, hood, cowl, long sloping fastback to tail
+ extG(g,[[2.18,.26],[2.28,.44],[2.22,.62,1.95,.68],[.85,.84],[-1.0,.88],[-1.95,.82,-2.3,.72],[-2.33,.42],[-2.2,.26]],1.78,pt,.1,4);
+ // greenhouse: tinted glass (narrower), paint roof band + rear quarter
+ extG(g,[[.86,.82],[.12,1.2,-.1,1.24],[-.55,1.27,-1.25,1.12],[-2.0,.84]],1.4,mCGlass,.03);
+ extG(g,[[.1,1.2],[-.1,1.255,-.55,1.29],[-1.25,1.15,-1.75,.97],[-1.6,.96],[-1.2,1.1,-.55,1.235],[-.1,1.215,.1,1.17]],1.3,pt,.03);
+ extG(g,[[-.95,.86],[-.95,1.16],[-1.25,1.11,-2.02,.85]],1.46,pt,.02);
+ // flared haunches (rear wider than front) + front fender crowns
+ [-1,1].forEach(s=>{SP(.2,.3,1.05,pt,s*.8,.66,-1.28,g);SP(.13,.2,.8,pt,s*.76,.68,1.3,g);
+  const hl=SP(.15,.11,.05,mHL,s*.62,.73,1.97,g);hl.rotation.x=-.5;const rg=new T.Mesh(new T.TorusGeometry(1,.12,8,24),mRim);rg.scale.set(.15,.11,.15);rg.position.set(s*.62,.73,1.985);rg.rotation.x=-.5;g.add(rg);
+  B(.04,.03,.1,pt,s*.74,1.0,.7,g);B(.05,.06,.14,pt,s*.8,.98,.62,g);              // mirror
+  B(.02,.04,1.6,mBlk,s*.9,.34,0,g)});                                            // sills
+ B(1.66,.035,.03,mTL,0,.79,-2.315,g);B(1.4,.05,.03,mBlk,0,.36,2.27,g);B(.9,.08,.02,mBlk,0,.42,-2.32,g);
+ [[.84,1.32,.34,.24],[-.84,1.32,.34,.24],[.92,-1.3,.35,.3],[-.92,-1.3,.35,.3]].forEach(([x,z,r,w])=>rimWheel(g,x,z,r,w));return g}
+function gallardo(){const g=new T.Group(),pt=new T.MeshPhysicalMaterial({color:0xf3f3ef,metalness:.15,roughness:.28,clearcoat:1,clearcoatRoughness:.03,sheen:.6,sheenColor:new T.Color(0xd8e4ff),iridescence:.25,iridescenceIOR:1.4,envMapIntensity:1.3});shadowBlob(g,2.7,5.3);
  const ext=(pts,depth,m)=>{const s=new T.Shape();pts.forEach(([u,v],i)=>i?s.lineTo(u,v):s.moveTo(u,v));const ge=new T.ExtrudeGeometry(s,{depth,bevelEnabled:true,bevelThickness:.03,bevelSize:.03,bevelSegments:1});ge.translate(0,0,-depth/2);const me=new T.Mesh(ge,m);me.rotation.y=-Math.PI/2;g.add(me);return me};
  ext([[2.2,.22],[2.32,.36],[2.05,.52],[.9,.74],[-1.5,.82],[-2.2,.8],[-2.28,.5],[-2.15,.22]],1.86,pt);            // wedge body
  ext([[.92,.73],[.05,1.1],[-.7,1.12],[-1.55,.82]],1.42,mCGlass);                                                  // angular greenhouse
@@ -367,8 +375,8 @@ function gallardo(){const g=new T.Group(),pt=phys(0xf2b100);shadowBlob(g,2.7,5.3
  for(let k=0;k<4;k++)B(1.1,.03,.1,mBlk,0,.86,-1.25-k*.2,g);                                                       // engine louvres
  [-1,1].forEach(s=>{const h=B(.42,.05,.16,mHL,s*.62,.56,1.98,g);h.rotation.set(-.35,s*.35,0);
   B(.46,.06,.06,mTL,s*.6,.68,-2.27,g);B(.06,.22,.55,mBlk,s*.96,.62,-.62,g);B(.5,.16,.06,mBlk,s*.55,.34,2.24,g)});
- B(.5,.12,.06,mBlk,0,.3,2.26,g);
- [[.84,1.38,.33],[-.84,1.38,.33],[.86,-1.38,.34],[-.86,-1.38,.34]].forEach(([x,z,r])=>wheel(g,x,z,r,.28));return g}
+ B(.5,.12,.06,mBlk,0,.3,2.26,g);[-1,1].forEach(s=>B(.03,.1,2.2,mBlk,s*.97,.3,0,g));
+ [[.84,1.38,.33],[-.84,1.38,.33],[.86,-1.38,.34],[-.86,-1.38,.34]].forEach(([x,z,r])=>rimWheel(g,x,z,r,.28));return g}
 const tLabel=(txt,w,sub='')=>{const c=document.createElement('canvas');c.width=1024;c.height=sub?200:128;const g=c.getContext('2d');g.fillStyle='rgba(8,14,34,.9)';g.fillRect(0,0,1024,c.height);g.strokeStyle='#d4af37';g.lineWidth=5;g.strokeRect(4,4,1016,c.height-8);
  const gr=g.createLinearGradient(0,20,0,110);gr.addColorStop(0,'#fff3c0');gr.addColorStop(1,'#c9a032');g.fillStyle=gr;g.textAlign='center';g.textBaseline='middle';g.font='600 70px "Cormorant Garamond","Noto Serif TC",serif';g.fillText(txt,512,sub?72:66);
  if(sub){g.fillStyle='#c8ccd4';g.font='500 52px "Noto Sans TC",sans-serif';g.fillText(sub,512,148)}
@@ -469,7 +477,7 @@ function life(pos){const dt=Math.min(lclk.getDelta(),.1),t=lclk.elapsedTime;
 {const btn=document.createElement('a');btn.className='back';btn.id='gbtn';btn.href='#';btn.textContent='🚗 董事長車庫';btn.style.cssText='position:fixed;left:'+(mob?'16px':'32px')+';top:'+(mob?'78px':'100px')+';z-index:3;background:rgba(10,14,30,.8)';document.body.appendChild(btn);
  const home={t:O.target.clone(),c:C.position.clone(),min:O.minDistance,az:[O.minAzimuthAngle,O.maxAzimuthAngle]};let inG=false;
  const go=g=>{inG=g;btn.textContent=g?'🏢 回到大樓':'🚗 董事長車庫';if(g){O.minDistance=8;O.minAzimuthAngle=-1.2;O.maxAzimuthAngle=1.2;O.target.set(GX+(mob?0:3.2),mob?-1.2:1.4,GZ);C.position.set(GX+(mob?6:9),mob?7:7,GZ+(mob?25:21))}else{O.minDistance=home.min;[O.minAzimuthAngle,O.maxAzimuthAngle]=home.az;O.target.copy(home.t);C.position.copy(home.c)}};
- btn.onclick=e=>{e.preventDefault();go(!inG)};if(new URLSearchParams(location.search).get('view')==='garage')go(true)}
+ btn.onclick=e=>{e.preventDefault();go(!inG)};const vw=new URLSearchParams(location.search).get('view');if(vw==='garage'||vw==='911')go(true);if(vw==='911'){O.minDistance=3;O.target.set(GX-2.7,.9,GZ+.2);C.position.set(GX+1.2,2.6,GZ+6.2)}}
 
 function rs(){R.setSize(innerWidth,innerHeight,false);C.aspect=innerWidth/innerHeight;C.updateProjectionMatrix()}addEventListener('resize',rs);rs();
 const v=new T.Vector3(),clk=new T.Clock(),YEL=new T.Color(0xffd23a),WARM=new T.Color(0xffc070),BLU=new T.Color(0x7fd4ff),RED=new T.Color(0xe0443a);
