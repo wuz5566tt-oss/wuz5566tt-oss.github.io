@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-24T01:57:43+08:00",
+ "generated": "2026-10-24T01:58:00+08:00",
  "bots": [
   {
    "id": "cn",
@@ -32,9 +32,9 @@
   {
    "id": "us",
    "name": "美股 財經 BOT",
-   "status": "working",
-   "task": "QQQ/SCHD 輪動比值樣圖",
-   "updated": "2026-10-24T01:57:43+08:00"
+   "status": "idle",
+   "task": "QQQ/SCHD 樣圖完成待審",
+   "updated": "2026-10-24T01:58:00+08:00"
   },
   {
    "id": "web",
