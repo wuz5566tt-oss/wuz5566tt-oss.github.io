@@ -242,6 +242,6 @@ const stop=()=>fade(0,()=>{a.pause();el.className='off';sp.textContent='古典�
 a.addEventListener('ended',()=>{k=(k+1)%T.length;if(!k)o.sort(()=>Math.random()-.5);load();play()});
 el.addEventListener('click',e=>{e.stopPropagation();if(a.paused){on=true;localStorage.setItem('bgm2','on');play()}else{on=false;localStorage.setItem('bgm2','off');stop()}});
 if(!on)sp.textContent='古典輕音樂 · 已關閉';
-const EV=['pointerdown','pointerup','touchstart','touchend','click','keydown','wheel','mousedown'];const first=()=>{if(on&&a.paused&&!el.matches(':hover:active'))play();if(!a.paused)EV.forEach(v=>removeEventListener(v,first,true))};
+const EV=['pointerdown','pointerup','touchstart','touchend','click','keydown','wheel','mousedown'];const first=e=>{if(e&&e.target&&e.target.closest&&e.target.closest('#bgm'))return;if(on&&a.paused)play();if(!a.paused)EV.forEach(v=>removeEventListener(v,first,true))};
 EV.forEach(v=>addEventListener(v,first,{capture:true,passive:true}));addEventListener('focus',first);document.addEventListener('visibilitychange',()=>{if(!document.hidden)first()});a.addEventListener('playing',()=>EV.forEach(v=>removeEventListener(v,first,true)));if(on)play();})();</script>
 </body></html>
