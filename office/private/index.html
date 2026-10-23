@@ -230,18 +230,18 @@ const v=new T.Vector3(),clk=new T.Clock(),YEL=new T.Color(0xffd23a),WARM=new T.C
 </script><script>window.BGM_BASE="../assets/music/"</script>
 <style>#bgm{position:fixed;left:32px;top:150px;z-index:4;display:flex;align-items:center;gap:8px;max-width:300px;padding:8px 14px 8px 10px;border:1px solid #c9a032;border-radius:22px;background:linear-gradient(135deg,rgba(20,16,8,.88),rgba(40,32,14,.88));box-shadow:0 0 0 1px rgba(255,230,160,.15) inset,0 4px 18px rgba(0,0,0,.5);color:#f3e2b0;font:12px/1.3 system-ui,"PingFang TC","Noto Sans TC",sans-serif;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
 #bgm b{display:inline-flex;width:26px;height:26px;border-radius:50%;align-items:center;justify-content:center;background:radial-gradient(circle at 35% 30%,#fff3c4,#d9b24a 45%,#7a5a14);color:#1a1206;font-size:14px;flex:none}
-#bgm.on b{animation:bgmspin 6s linear infinite}#bgm span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#bgm.off{opacity:.75}
+#bgm.on b{animation:bgmspin 6s linear infinite}#bgm span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#bgm.off{opacity:.75}#bgm.wait{animation:bgmpulse 1.6s ease-in-out infinite}@keyframes bgmpulse{50%{box-shadow:0 0 0 1px rgba(255,230,160,.15) inset,0 0 18px rgba(232,196,90,.85)}}
 @keyframes bgmspin{to{transform:rotate(360deg)}}@media(max-width:760px){#bgm{left:16px;top:124px;max-width:58vw;font-size:11px}}</style>
 <div id="bgm" class="off" title="背景音樂 開/關"><b>🎵</b><span>古典輕音樂 · 點擊播放</span></div>
 <script>(()=>{const B=window.BGM_BASE||'assets/music/',T=[['satie-gymnopedie1.mp3','薩提《吉諾佩第一號》Gymnopédie No.1'],['debussy-clair-de-lune.mp3','德布西《月光》Clair de lune'],['chopin-nocturne-op9-2.mp3','蕭邦《夜曲 Op.9-2》Nocturne Op.9 No.2']];
-let o=T.map((_,i)=>i).sort(()=>Math.random()-.5),k=0,a=new Audio(),el=document.getElementById('bgm'),sp=el.querySelector('span'),on=localStorage.getItem('bgm')!=='off',fi;a.preload='none';
+let o=T.map((_,i)=>i).sort(()=>Math.random()-.5),k=0,a=new Audio(),el=document.getElementById('bgm'),sp=el.querySelector('span'),on=localStorage.getItem('bgm2')!=='off',fi;a.preload='none';
 const fade=(to,cb)=>{clearInterval(fi);fi=setInterval(()=>{const d=to-a.volume;if(Math.abs(d)<.02){a.volume=to;clearInterval(fi);cb&&cb()}else a.volume=Math.max(0,Math.min(1,a.volume+Math.sign(d)*.02))},80)};
 const load=()=>{const t=T[o[k]];a.src=B+t[0];sp.textContent=t[1]};
-const play=()=>{if(!a.src)load();a.volume=0;a.play().then(()=>{el.className='on';sp.textContent=T[o[k]][1];fade(.3)}).catch(()=>{el.className='off'})};
+const play=()=>{if(!a.src)load();a.volume=0;a.play().then(()=>{el.className='on';sp.textContent=T[o[k]][1];fade(.3)}).catch(()=>{if(on){el.className='wait';sp.textContent='🎵 點一下任何地方播放'}else el.className='off'})};
 const stop=()=>fade(0,()=>{a.pause();el.className='off';sp.textContent='古典輕音樂 · 已關閉'});
 a.addEventListener('ended',()=>{k=(k+1)%T.length;if(!k)o.sort(()=>Math.random()-.5);load();play()});
-el.addEventListener('click',e=>{e.stopPropagation();if(a.paused){on=true;localStorage.setItem('bgm','on');play()}else{on=false;localStorage.setItem('bgm','off');stop()}});
+el.addEventListener('click',e=>{e.stopPropagation();if(a.paused){on=true;localStorage.setItem('bgm2','on');play()}else{on=false;localStorage.setItem('bgm2','off');stop()}});
 if(!on)sp.textContent='古典輕音樂 · 已關閉';
-const first=()=>{['pointerdown','keydown','touchstart'].forEach(v=>removeEventListener(v,first,true));if(on&&a.paused)play()};
-['pointerdown','keydown','touchstart'].forEach(v=>addEventListener(v,first,true));if(on)play();})();</script>
+const EV=['pointerdown','pointerup','touchstart','touchend','click','keydown','wheel','mousedown'];const first=()=>{if(on&&a.paused&&!el.matches(':hover:active'))play();if(!a.paused)EV.forEach(v=>removeEventListener(v,first,true))};
+EV.forEach(v=>addEventListener(v,first,{capture:true,passive:true}));addEventListener('focus',first);document.addEventListener('visibilitychange',()=>{if(!document.hidden)first()});a.addEventListener('playing',()=>EV.forEach(v=>removeEventListener(v,first,true)));if(on)play();})();</script>
 </body></html>
