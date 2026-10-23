@@ -1,0 +1,7 @@
+STAR史塔CBD大樓 背景音樂來源 (all from Wikimedia Commons, re-encoded to 96kbps MP3)
+1. satie-gymnopedie1.mp3 — Erik Satie, Gymnopédie No.1. Performer/uploader: Teknopazzo (own work). License: CC0 1.0.
+   https://commons.wikimedia.org/wiki/File:Gymnopedie_No._1..ogg
+2. debussy-clair-de-lune.mp3 — Claude Debussy, Clair de lune (Suite bergamasque). Recording by Laurens Goedhart. License: Public domain (as marked on Commons).
+   https://commons.wikimedia.org/wiki/File:Clair_de_lune_(Claude_Debussy)_Suite_bergamasque.ogg
+3. chopin-nocturne-op9-2.mp3 — Frédéric Chopin, Nocturne in E-flat major Op.9 No.2. Al Goldstein collection (Pandora Music repository, ibiblio). License: Public domain.
+   https://commons.wikimedia.org/wiki/File:Frederic_Chopin_-_Nocturne_Eb_major_Opus_9,_number_2.ogg
