@@ -1,0 +1,112 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>台股盤前早報｜2026/10/29（四）</title><style>/* 牛馬 戰報共用樣式 report-kit v1 — 台股 / A股 / 美股 */
+:root{--rk-bg:#0a0a0a;--rk-card:#121008;--rk-line:#d4af3738;--rk-gold:#d4af37;--rk-gold2:#f5e6a8;--rk-gold3:#8a6d1d;
+--rk-text:#ece6d6;--rk-mut:#a8997a;--rk-up:#ff4d4f;--rk-dn:#22c55e;--rk-flat:#9ca3af;--rk-radius:14px;
+--rk-font:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;--rk-mono:"JetBrains Mono","SFMono-Regular",Consolas,monospace}
+*{box-sizing:border-box}
+body.rk{margin:0;background:var(--rk-bg);color:var(--rk-text);font-family:var(--rk-font);line-height:1.6;overflow-x:hidden}
+.rk-wrap{max-width:1280px;margin:auto;padding:0 18px 32px}
+.rk-gold{background:linear-gradient(90deg,var(--rk-gold3),var(--rk-gold),var(--rk-gold2),var(--rk-gold),var(--rk-gold3));background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:rk-sh 6s linear infinite}
+@keyframes rk-sh{to{background-position:200% center}}
+.rk-up{color:var(--rk-up)}.rk-dn{color:var(--rk-dn)}.rk-flat{color:var(--rk-flat)}.rk-mut{color:var(--rk-mut)}
+.rk-num{font-family:var(--rk-mono);font-variant-numeric:tabular-nums}
+/* header */
+.rk-header{text-align:center;padding:28px 0 14px;border-bottom:1px solid var(--rk-line)}
+.rk-header h1{margin:0;font-size:clamp(1.5rem,4vw,2.4rem);letter-spacing:.1em;font-weight:900}
+.rk-header .rk-meta{color:var(--rk-mut);font-size:.85rem;margin-top:6px}
+/* index bar */
+.rk-indexbar{position:sticky;top:0;z-index:20;display:flex;flex-wrap:wrap;gap:8px 22px;align-items:center;padding:10px 14px;margin:14px 0;background:#0d0b06ee;border:1px solid var(--rk-line);border-radius:10px;backdrop-filter:blur(6px);font-size:.9rem}
+.rk-idx{display:flex;gap:8px;align-items:baseline;white-space:nowrap}
+.rk-idx b{color:var(--rk-gold2);font-weight:600}
+.rk-tag{display:inline-block;font:700 .68rem/1 var(--rk-mono);letter-spacing:.08em;padding:3px 6px;border-radius:4px;vertical-align:middle}
+.rk-tag.real{background:#22c55e22;color:#4ade80;border:1px solid #22c55e66}
+.rk-tag.sim{background:#f59e0b22;color:#fbbf24;border:1px solid #f59e0b66}
+.rk-tag.est{background:#d4af3722;color:var(--rk-gold2);border:1px solid #d4af3766}
+/* grid + card */
+.rk-grid{display:grid;gap:14px;grid-template-columns:repeat(12,1fr)}
+.rk-w12{grid-column:span 12}.rk-w8{grid-column:span 8}.rk-w6{grid-column:span 6}.rk-w4{grid-column:span 4}
+.rk-card{position:relative;background:linear-gradient(160deg,#16130a,var(--rk-card) 45%,#0b0b0b);border:1px solid var(--rk-line);border-radius:var(--rk-radius);padding:16px;box-shadow:0 8px 28px #0009;transition:border-color .3s,box-shadow .3s;min-width:0}
+.rk-card:hover{border-color:var(--rk-gold);box-shadow:0 0 22px #d4af3740}
+.rk-title{margin:0 0 12px;font:600 .95rem/1.3 var(--rk-mono);color:var(--rk-gold);letter-spacing:.05em;display:flex;align-items:center;gap:8px}
+.rk-title:before{content:"// ";color:var(--rk-gold3)}
+.rk-title:after{content:"";flex:1;height:1px;background:linear-gradient(90deg,#d4af3766,transparent)}
+.rk-title .rk-tag{order:2}
+.rk-sub{color:var(--rk-mut);font-size:.8rem}
+/* table + ticker */
+.rk-table{width:100%;border-collapse:collapse;font-size:.88rem}
+.rk-table th,.rk-table td{padding:6px 8px;border-bottom:1px solid #2a2312;text-align:left}
+.rk-table th{color:var(--rk-mut);font-weight:500}.rk-table td.n{text-align:right;font-family:var(--rk-mono)}
+.rk-tk{white-space:nowrap}.rk-tk .code{color:var(--rk-mut);font:.78em var(--rk-mono);margin-left:4px}
+/* heatmap */
+.rk-heat{display:grid;gap:4px;grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}
+.rk-heat>div{padding:10px 8px;border-radius:6px;font-size:.82rem;text-align:center;color:#fff}
+/* sentiment gauge */
+.rk-gauge{height:10px;border-radius:5px;background:linear-gradient(90deg,var(--rk-dn),#eab308,var(--rk-up));position:relative;margin:18px 0 6px}
+.rk-gauge i{position:absolute;top:-6px;width:3px;height:22px;background:#fff;border-radius:2px;box-shadow:0 0 8px #fff}
+.rk-chart{width:100%;height:260px}
+.rk-watch{margin:0;padding-left:20px}.rk-watch li{margin:4px 0}
+.rk-foot{color:var(--rk-mut);font-size:.75rem;text-align:center;margin-top:24px;border-top:1px solid var(--rk-line);padding-top:12px}
+@media(max-width:900px){.rk-w8,.rk-w6,.rk-w4{grid-column:span 12}.rk-indexbar{position:static}}
+@media(max-width:520px){.rk-wrap{padding:0 10px 24px}.rk-card{padding:12px}.rk-table{font-size:.8rem}}
+
+.bar{transform-origin:center;animation:grow .9s ease-out both}@keyframes grow{from{opacity:0;transform:scaleX(0)}to{opacity:1;transform:scaleX(1)}}
+.rk-card{animation:fade .6s ease-out both}@keyframes fade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.big{font-size:2.1em;font-weight:700} .note{color:#a8997a;font-size:.85em;line-height:1.6} .kv{display:flex;gap:18px;flex-wrap:wrap} .kv>div{flex:1;min-width:140px}
+</style></head><body class="rk"><div class="rk-wrap">
+<header class="rk-header"><h1 class="rk-gold">台股盤前早報｜2026/10/29（四）</h1>
+<div class="rk-meta">資料截至 2026/10/29 08:00 台北時間｜來源：Yahoo Finance、TWSE、TAIFEX、Federal Reserve、CNBC、ChartMill、Yahoo股市／ToAlpha 法說會行事曆、經濟日報、BEA</div></header>
+<nav class="rk-indexbar"><span class="rk-idx"><b>IXIC</b><span class="rk-num rk-up">26,549.85 ▲0.27%</span><span class="rk-tag real">REAL</span></span><span class="rk-idx"><b>DJI</b><span class="rk-num rk-up">52,475.10 ▲0.19%</span><span class="rk-tag real">REAL</span></span><span class="rk-idx"><b>SPX</b><span class="rk-num rk-up">7,743.98 ▲0.28%</span><span class="rk-tag real">REAL</span></span><span class="rk-idx"><b>SOX</b><span class="rk-num rk-up">11,684.00 ▲1.75%</span><span class="rk-tag real">REAL</span></span><span class="rk-idx"><b>TSM</b><span class="rk-num rk-up">439.51 ▲0.60%</span><span class="rk-tag real">REAL</span></span><span class="rk-idx"><b>USD/TWD</b><span class="rk-num">32.382</span><span class="rk-tag real">REAL</span></span></nav>
+<main class="rk-grid">
+<section class="rk-card rk-w8"><h2 class="rk-title">隔夜美股 10/28 收盤 <span class="rk-tag real">REAL</span></h2>
+<svg viewBox="0 0 560 180" width="100%" role="img"><line x1="280.0" y1="0" x2="280.0" y2="180" stroke="#a8997a55"/><rect class="bar" x="280.0" y="8" width="24.8" height="20" fill="#ff4d4f" rx="3"/><text x="272.0" y="23" fill="#f5e6a8" font-size="13" text-anchor="end">那斯達克 IXIC</text><text x="310.8" y="23" fill="#ff4d4f" font-size="13" text-anchor="start">+0.27%</text><rect class="bar" x="280.0" y="42" width="17.0" height="20" fill="#ff4d4f" rx="3"/><text x="272.0" y="57" fill="#f5e6a8" font-size="13" text-anchor="end">道瓊 DJI</text><text x="303.0" y="57" fill="#ff4d4f" font-size="13" text-anchor="start">+0.19%</text><rect class="bar" x="280.0" y="76" width="25.2" height="20" fill="#ff4d4f" rx="3"/><text x="272.0" y="91" fill="#f5e6a8" font-size="13" text-anchor="end">標普500 SPX</text><text x="311.2" y="91" fill="#ff4d4f" font-size="13" text-anchor="start">+0.28%</text><rect class="bar" x="280.0" y="110" width="160.0" height="20" fill="#ff4d4f" rx="3"/><text x="272.0" y="125" fill="#f5e6a8" font-size="13" text-anchor="end">費城半導體 SOX</text><text x="446.0" y="125" fill="#ff4d4f" font-size="13" text-anchor="start">+1.75%</text><rect class="bar" x="280.0" y="144" width="55.1" height="20" fill="#ff4d4f" rx="3"/><text x="272.0" y="159" fill="#f5e6a8" font-size="13" text-anchor="end">台積電ADR TSM</text><text x="341.1" y="159" fill="#ff4d4f" font-size="13" text-anchor="start">+0.60%</text></svg>
+<table class="rk-table"><tr><th>商品</th><th>收盤</th><th>10/28 漲跌</th><th>vs 10/22 收</th></tr><tr><td class="rk-tk">那斯達克<span class="code">IXIC</span></td><td class="n">26,549.85</td><td class="n rk-up">+0.27%</td><td class="n rk-up">+2.08%</td></tr><tr><td class="rk-tk">道瓊<span class="code">DJI</span></td><td class="n">52,475.10</td><td class="n rk-up">+0.19%</td><td class="n rk-dn">-0.74%</td></tr><tr><td class="rk-tk">標普500<span class="code">SPX</span></td><td class="n">7,743.98</td><td class="n rk-up">+0.28%</td><td class="n rk-up">+1.05%</td></tr><tr><td class="rk-tk">費城半導體<span class="code">SOX</span></td><td class="n">11,684.00</td><td class="n rk-up">+1.75%</td><td class="n rk-up">+8.87%</td></tr><tr><td class="rk-tk">台積電ADR<span class="code">TSM</span></td><td class="n">439.51</td><td class="n rk-up">+0.60%</td><td class="n rk-up">+6.59%</td></tr></table>
+<p class="note">FOMC 以 10 比 2 維持利率 3.75%～4.00% 不變，兩位委員主張升息一碼；四大指數仍收紅，費半 +1.75% 最強。</p></section>
+<section class="rk-card rk-w4"><h2 class="rk-title">台積電ADR 溢價 <span class="rk-tag est">估算</span></h2>
+<div class="big rk-gold">+17.4%</div>
+<p>TSM <span class="code">TSM</span> 439.51 美元 × 32.382 ÷ 5 ≈ <b>2,846 元</b></p>
+<p>台積電 <span class="code">2330.TW</span> 10/28 收 2,425 元</p>
+<p class="note">1 ADR = 5 股。TSM 昨晚 +0.60%，溢價長期偏高，不能直接當成開盤缺口，看方向即可。</p></section>
+<section class="rk-card rk-w6"><h2 class="rk-title">台指期夜盤 <span class="rk-tag real">REAL</span></h2>
+<div class="kv"><div><div class="note">台指期 11月 夜盤（10/28 15:00～10/29 05:00）</div><div class="big rk-dn">47,121</div><div class="rk-dn">▼128（-0.27%）</div><div class="note">高 47,607／低 46,968｜量 31,298 口</div></div>
+<div><div class="note">加權指數 TAIEX 10/28 收</div><div class="big">47,035.58</div><div class="rk-up">+2.04%</div><div class="note">期貨夜盤較現貨高約 85 點</div></div></div>
+<p class="note">夜盤一度衝到 47,607，但 FOMC 與 Alphabet 財報後回落，收小跌；昨天現貨大漲 2.04% 後，今天先看能否守住 47,000。</p></section>
+<section class="rk-card rk-w6"><h2 class="rk-title">匯率與日韓 <span class="rk-tag real">REAL</span></h2>
+<table class="rk-table"><tr><th>商品</th><th>最新</th><th>變動</th></tr>
+<tr><td class="rk-tk">美元/新台幣<span class="code">USD/TWD</span></td><td class="n">32.382</td><td class="n rk-up">前日 32.425，新台幣升值</td></tr>
+<tr><td class="rk-tk">日經225<span class="code">N225</span> 10/28 收</td><td class="n">63,954.19</td><td class="n rk-up">+1.08%</td></tr>
+<tr><td class="rk-tk">日經期貨 CME<span class="code">NIY=F</span> 07:50</td><td class="n">64,425</td><td class="n rk-up">較現貨收盤 +0.74%</td></tr>
+<tr><td class="rk-tk">韓國KOSPI<span class="code">KS11</span> 10/28 收</td><td class="n">6,012.44</td><td class="n rk-up">+6.63%</td></tr>
+<tr><td class="rk-tk">韓國期貨盤前</td><td class="n">待補</td><td class="n">—</td></tr>
+<tr><td class="rk-tk">那斯達克期貨<span class="code">NQ=F</span> 07:50</td><td class="n">29,636.00</td><td class="n rk-dn">較 10/27 收 -0.59%</td></tr></table>
+<p class="note">KOSPI 數字為 Yahoo 報價；韓國期貨盤前報價抓不到，標待補。那斯達克期貨偏弱，主要是 Alphabet 盤後重挫。</p></section>
+<section class="rk-card rk-w6"><h2 class="rk-title">前一交易日 10/28 三大法人 <span class="rk-tag real">REAL</span></h2>
+<svg viewBox="0 0 560 146" width="100%"><line x1="280.0" y1="0" x2="280.0" y2="146" stroke="#a8997a55"/><rect class="bar" x="280.0" y="8" width="160.0" height="20" fill="#ff4d4f" rx="3"/><text x="272.0" y="23" fill="#f5e6a8" font-size="13" text-anchor="end">外資</text><text x="446.0" y="23" fill="#ff4d4f" font-size="13" text-anchor="start">+159.6 億</text><rect class="bar" x="280.0" y="42" width="143.6" height="20" fill="#ff4d4f" rx="3"/><text x="272.0" y="57" fill="#f5e6a8" font-size="13" text-anchor="end">投信</text><text x="429.6" y="57" fill="#ff4d4f" font-size="13" text-anchor="start">+143.2 億</text><rect class="bar" x="280.0" y="76" width="24.6" height="20" fill="#ff4d4f" rx="3"/><text x="272.0" y="91" fill="#f5e6a8" font-size="13" text-anchor="end">自營商(自行)</text><text x="310.6" y="91" fill="#ff4d4f" font-size="13" text-anchor="start">+24.5 億</text><rect class="bar" x="277.2" y="110" width="2.8" height="20" fill="#22c55e" rx="3"/><text x="288.0" y="125" fill="#f5e6a8" font-size="13" text-anchor="start">自營商(避險)</text><text x="271.2" y="125" fill="#22c55e" font-size="13" text-anchor="end">-2.8 億</text></svg><p>合計 <b class="rk-up">+324.4 億元</b>（集中市場買賣超金額）</p>
+<p class="note">外資買超 160 億、投信買超 143 億，土洋同步站買方。</p></section>
+<section class="rk-card rk-w6"><h2 class="rk-title">10/28 法人個股買賣超（張） <span class="rk-tag real">REAL</span></h2>
+<div class="kv"><div><table class="rk-table"><tr><th>外資買超</th><th>張</th></tr><tr><td class="rk-tk">主動中信台灣收益<span class="code">00406A.TW</span></td><td class="n rk-up">+71,941</td></tr><tr><td class="rk-tk">友達<span class="code">2409.TW</span></td><td class="n rk-up">+68,585</td></tr><tr><td class="rk-tk">主動統一升級50<span class="code">00403A.TW</span></td><td class="n rk-up">+37,395</td></tr><tr><td class="rk-tk">華邦電<span class="code">2344.TW</span></td><td class="n rk-up">+25,347</td></tr><tr><td class="rk-tk">群創<span class="code">3481.TW</span></td><td class="n rk-up">+21,908</td></tr></table></div>
+<div><table class="rk-table"><tr><th>外資賣超</th><th>張</th></tr><tr><td class="rk-tk">旺宏<span class="code">2337.TW</span></td><td class="n rk-dn">-29,995</td></tr><tr><td class="rk-tk">台玻<span class="code">1802.TW</span></td><td class="n rk-dn">-11,031</td></tr><tr><td class="rk-tk">寶成<span class="code">9904.TW</span></td><td class="n rk-dn">-10,994</td></tr><tr><td class="rk-tk">華航<span class="code">2610.TW</span></td><td class="n rk-dn">-9,482</td></tr><tr><td class="rk-tk">玉山金<span class="code">2884.TW</span></td><td class="n rk-dn">-8,507</td></tr></table></div></div>
+<table class="rk-table"><tr><th>投信買超</th><th>張</th></tr><tr><td class="rk-tk">日月光投控<span class="code">3711.TW</span></td><td class="n rk-up">+5,189</td></tr><tr><td class="rk-tk">復華台灣科技優息<span class="code">00929.TW</span></td><td class="n rk-up">+2,500</td></tr><tr><td class="rk-tk">元大台灣50<span class="code">0050.TW</span></td><td class="n rk-up">+2,310</td></tr><tr><td class="rk-tk">華新科<span class="code">2492.TW</span></td><td class="n rk-up">+2,242</td></tr><tr><td class="rk-tk">主動永豐科技趨勢<span class="code">00410A.TW</span></td><td class="n rk-up">+1,829</td></tr></table></section>
+<section class="rk-card rk-w6"><h2 class="rk-title">美股半導體同業 <span class="rk-tag real">REAL</span></h2>
+<svg viewBox="0 0 560 248" width="100%" role="img"><line x1="280.0" y1="0" x2="280.0" y2="248" stroke="#a8997a55"/><rect class="bar" x="248.0" y="8" width="32.0" height="20" fill="#22c55e" rx="3"/><text x="288.0" y="23" fill="#f5e6a8" font-size="13" text-anchor="start">輝達 NVDA</text><text x="242.0" y="23" fill="#22c55e" font-size="13" text-anchor="end">-1.17%</text><rect class="bar" x="280.0" y="42" width="88.5" height="20" fill="#ff4d4f" rx="3"/><text x="272.0" y="57" fill="#f5e6a8" font-size="13" text-anchor="end">超微 AMD</text><text x="374.5" y="57" fill="#ff4d4f" font-size="13" text-anchor="start">+3.24%</text><rect class="bar" x="280.0" y="76" width="75.5" height="20" fill="#ff4d4f" rx="3"/><text x="272.0" y="91" fill="#f5e6a8" font-size="13" text-anchor="end">博通 AVGO</text><text x="361.5" y="91" fill="#ff4d4f" font-size="13" text-anchor="start">+2.77%</text><rect class="bar" x="280.0" y="110" width="160.0" height="20" fill="#ff4d4f" rx="3"/><text x="272.0" y="125" fill="#f5e6a8" font-size="13" text-anchor="end">美光 MU</text><text x="446.0" y="125" fill="#ff4d4f" font-size="13" text-anchor="start">+5.86%</text><rect class="bar" x="280.0" y="144" width="52.1" height="20" fill="#ff4d4f" rx="3"/><text x="272.0" y="159" fill="#f5e6a8" font-size="13" text-anchor="end">英特爾 INTC</text><text x="338.1" y="159" fill="#ff4d4f" font-size="13" text-anchor="start">+1.91%</text><rect class="bar" x="191.6" y="178" width="88.4" height="20" fill="#22c55e" rx="3"/><text x="288.0" y="193" fill="#f5e6a8" font-size="13" text-anchor="start">聯電ADR UMC</text><text x="185.6" y="193" fill="#22c55e" font-size="13" text-anchor="end">-3.24%</text><rect class="bar" x="280.0" y="212" width="120.6" height="20" fill="#ff4d4f" rx="3"/><text x="272.0" y="227" fill="#f5e6a8" font-size="13" text-anchor="end">日月光ADR ASX</text><text x="406.6" y="227" fill="#ff4d4f" font-size="13" text-anchor="start">+4.42%</text></svg><p class="note">長條為 10/28 單日漲跌。盤後：微軟 MSFT 約 +3.8%、Alphabet GOOGL 約 -10.4%、科磊 KLAC 約 +3.3%（ChartMill）。</p>
+<table class="rk-table"><tr><th>個股</th><th>收盤</th><th>10/28</th><th>vs 10/22</th></tr><tr><td class="rk-tk">輝達<span class="code">NVDA</span></td><td class="n">215.38</td><td class="n rk-dn">-1.17%</td><td class="n rk-up">+1.49%</td></tr><tr><td class="rk-tk">超微<span class="code">AMD</span></td><td class="n">578.44</td><td class="n rk-up">+3.24%</td><td class="n rk-up">+13.88%</td></tr><tr><td class="rk-tk">博通<span class="code">AVGO</span></td><td class="n">351.81</td><td class="n rk-up">+2.77%</td><td class="n rk-up">+8.84%</td></tr><tr><td class="rk-tk">美光<span class="code">MU</span></td><td class="n">983.23</td><td class="n rk-up">+5.86%</td><td class="n rk-up">+14.80%</td></tr><tr><td class="rk-tk">英特爾<span class="code">INTC</span></td><td class="n">95.53</td><td class="n rk-up">+1.91%</td><td class="n rk-up">+11.74%</td></tr><tr><td class="rk-tk">聯電ADR<span class="code">UMC</span></td><td class="n">18.82</td><td class="n rk-dn">-3.24%</td><td class="n rk-up">+1.57%</td></tr><tr><td class="rk-tk">日月光ADR<span class="code">ASX</span></td><td class="n">43.92</td><td class="n rk-up">+4.42%</td><td class="n rk-up">+16.38%</td></tr></table></section>
+<section class="rk-card rk-w6"><h2 class="rk-title">今日重要事件 <span class="rk-tag real">REAL</span></h2>
+<table class="rk-table"><tr><th>時間（台北）</th><th>事件</th></tr>
+<tr><td>凌晨已公布</td><td>FOMC 維持利率 3.75%～4.00%，10:2（Cook、Hammack 主張升息一碼）；聲明稱通膨「仍偏高」</td></tr>
+<tr><td>凌晨已公布</td><td>微軟<span class="code">MSFT</span> 營收、EPS 雙優於預期，Azure 年增 48%；Alphabet<span class="code">GOOGL</span> EPS 不如預期、自由現金流 -90.7 億美元</td></tr>
+<tr><td>09:00</td><td>新加坡櫃買論壇：弘塑<span class="code">3131.TWO</span>、雙鴻<span class="code">3324.TWO</span>、力旺<span class="code">3529.TWO</span>、信驊<span class="code">5274.TWO</span>、家登<span class="code">3680.TWO</span></td></tr>
+<tr><td>14:00</td><td>法說會：友達<span class="code">2409.TW</span>、瑞儀<span class="code">6176.TW</span>、台燿<span class="code">6274.TWO</span>、台光電<span class="code">2383.TW</span></td></tr>
+<tr><td>14:30</td><td>法說會：致茂<span class="code">2360.TW</span>、盛群<span class="code">6202.TW</span>、南緯<span class="code">1467.TW</span>、首利<span class="code">1471.TW</span></td></tr>
+<tr><td>15:00</td><td>法說會：台達電<span class="code">2308.TW</span>、日月光投控<span class="code">3711.TW</span></td></tr>
+<tr><td>16:00</td><td>法說會：瑞昱<span class="code">2379.TW</span>、國巨<span class="code">2327.TW</span>、亞德客-KY<span class="code">1590.TW</span>、波力-KY<span class="code">8467.TW</span></td></tr>
+<tr><td>今日</td><td>除息：世界健身-KY<span class="code">2762.TW</span> 1.81 元、牧德<span class="code">3563.TWO</span> 1 元、遠雄<span class="code">5522.TW</span> 1 元；新股掛牌：和暢科技、特力屋</td></tr>
+<tr><td>20:30</td><td>美國 Q3 GDP 初值、9 月 PCE 物價、初領失業金（前值 19.4 萬）</td></tr></table>
+<p class="note">重大訊息：個股重大訊息未彙整，<b>待補</b>。代號市場別依公開行事曆標示。</p></section>
+<section class="rk-card rk-w12"><h2 class="rk-title">今日觀察重點 <span class="rk-tag est">研判</span></h2>
+<ol class="rk-watch">
+<li><b>大漲後的震盪</b>：昨天加權指數 +2.04% 收 47,036，夜盤小跌 0.27%。今天開平盤附近機率較高，觀察 47,000 能否守住。</li>
+<li><b>AI 半導體與封測</b>：費半 +1.75%、美光 MU +5.86%、超微 AMD +3.24%。台積電<span class="code">2330.TW</span>、日月光投控<span class="code">3711.TW</span>（今天 15:00 法說，ASX +4.42%）是主軸。</li>
+<li><b>雲端資本支出分歧</b>：微軟盤後漲、Alphabet 盤後跌約一成，但 Alphabet 維持全年資本支出 1,950～2,050 億美元，AI 伺服器鏈台達電<span class="code">2308.TW</span>、台光電<span class="code">2383.TW</span> 今天有法說可對照。</li>
+<li><b>法人動向</b>：10/28 外資 +160 億、投信 +143 億同步買超，新台幣 32.382；觀察外資是否連買。</li>
+<li><b>風險</b>：FOMC 有兩票主張升息、美債 10 年殖利率 5.04%；今晚 GDP 與 PCE 數據若偏熱，夜盤可能承壓。</li></ol></section>
+</main><footer class="rk-foot">非投資建議｜所有數字為公開資料實際數據；標「待補」者為目前抓不到的資料，不以舊資料替代。</footer>
+</div></body></html>
