@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-03T22:01:06+08:00",
+ "generated": "2026-11-03T22:41:35+08:00",
  "bots": [
   {
    "id": "cn",
@@ -32,9 +32,9 @@
   {
    "id": "us",
    "name": "美股 財經 BOT",
-   "status": "idle",
-   "task": "完成 AAPL、PLTR、VRTX 財報拆解圖卡 3 張",
-   "updated": "2026-11-03T07:36:52+08:00"
+   "status": "working",
+   "task": "盯盤：納指急跌 2% 監控",
+   "updated": "2026-11-03T22:41:35+08:00"
   },
   {
    "id": "web",
