@@ -270,7 +270,7 @@ const ageM=u=>{const t=Date.parse(u);return isNaN(t)?1e9:(Date.now()-t)/6e4};
 const rel=u=>{const m=ageM(u);if(m>=1e8)return '無回報';if(m<1)return '剛剛';if(m<60)return Math.floor(m)+' 分鐘前';if(m<1440)return Math.floor(m/60)+' 小時前';return Math.floor(m/1440)+' 天前'};
 const STALE=180;
 function label(id,k){const b=bots[id],st=ST[k],stale=ageM(b.d.updated)>STALE&&k!=='working';const tk=(b.d.task||'').slice(0,mob?8:16);
- b.tg.className='tag '+k+(stale?' stale':'');b.tg.innerHTML=`<span style="white-space:nowrap">${SHORT[id]} <b style="color:${st[2]}">●</b>${stale?'⚠':''}</span>`}
+ b.tg.className='tag '+k+(stale?' stale':'');b.tg.innerHTML=`<span style="white-space:nowrap">${SHORT[id]} <b style="color:${st[2]}">●</b>${stale?'<i class="ago"> 待命中</i>':''}</span>`}
 function apply(j){const c={working:0,idle:0,waiting:0,error:0},L=document.getElementById('list');L.innerHTML='';
  (j.bots||[]).forEach(d=>{const b=bots[d.id];if(!b)return;b.d=d;{const P=PREV[d.id];if(P&&P.s==='working'&&d.status!=='working'&&ageM(d.updated)<30&&window.reqDeliv)reqDeliv(d.id);PREV[d.id]={s:d.status,u:d.updated}}if(window.setStale)setStale(d.id,ageM(d.updated)>STALE&&d.status!=='working');const k=ST[d.status]?d.status:'idle';c[k]++;const st=ST[k];label(d.id,k);
   const li=document.createElement('li');const stl=ageM(d.updated)>STALE&&k!=='working';if(stl)li.className='stale';li.innerHTML=`<span class="dot" style="background:${st[2]}"></span>${d.name}${stl?' <b class="stb">⚠ 未回報</b>':''}<em>${d.task||'—'} · 最後回報 ${rel(d.updated)}（${fmt(d.updated)}）</em>`;li.onclick=()=>show(d.id);L.appendChild(li)});
