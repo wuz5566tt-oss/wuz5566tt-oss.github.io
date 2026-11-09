@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-09T10:01:23+08:00",
+ "generated": "2026-11-09T10:02:07+08:00",
  "bots": [
   {
    "id": "app",
@@ -81,9 +81,9 @@
   {
    "id": "threads",
    "name": "台灣 threads 平台 小編",
-   "status": "working",
-   "task": "週報與 7 篇發文草稿",
-   "updated": "2026-11-09T10:01:23+08:00"
+   "status": "error",
+   "task": "週報卡關：Threads 需登入",
+   "updated": "2026-11-09T10:02:07+08:00"
   },
   {
    "id": "tw",
