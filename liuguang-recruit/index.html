@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>鎏光敘物｜批發代理招募</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23070908'/%3E%3Cpath d='M16 6 L18.2 13.8 L26 16 L18.2 18.2 L16 26 L13.8 18.2 L6 16 L13.8 13.8 Z' fill='%23c9a96e'/%3E%3C/svg%3E" />
+  <meta name="description" content="鎏光敘物批發代理招募。首發款項鍊現已開放代理，材質真金真銀，每件附保卡。對外統一售價 NT$11,680，當月累計條數決定批發價，月底結算退還差額。" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600&family=Noto+Serif+TC:wght@200;300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #070908;
+      --bg-green: #0a100e;
+      --ink: #ece6d8;
+      --ink-soft: #c9c0ae;
+      --ink-mute: #8f8778;
+      --gold: #c9a96e;
+      --gold-bright: #e8d5a3;
+      --gold-deep: #8a6e3a;
+      --line: rgba(201, 169, 110, 0.30);
+      --line-soft: rgba(201, 169, 110, 0.14);
+      --serif: "Noto Serif TC", "Songti TC", "Noto Serif CJK TC", serif;
+      --latin: "Cormorant Garamond", "Noto Serif TC", serif;
+      --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+      .reveal { opacity: 1 !important; transform: none !important; }
+    }
+
+    body {
+      font-family: var(--serif);
+      font-weight: 300;
+      color: var(--ink);
+      background: var(--bg);
+      line-height: 1.85;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 58% 46% at 72% 28%, rgba(201, 169, 110, 0.10) 0%, rgba(201, 169, 110, 0.03) 36%, transparent 68%),
+        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(22, 42, 34, 0.80) 0%, rgba(10, 16, 14, 0.18) 50%, transparent 72%),
+        linear-gradient(180deg, #0b1410 0%, #070908 32%, #060807 100%);
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      opacity: 0.04;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; color: inherit; background: none; border: 0; }
+
+    .wrap { width: min(1180px, calc(100% - 56px)); margin-inline: auto; }
+    .wrap-narrow { width: min(760px, calc(100% - 56px)); margin-inline: auto; }
+    .gold-text {
+      background: linear-gradient(180deg, #f3e6c4 0%, #c9a96e 50%, #8a6e3a 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .nowrap { white-space: nowrap; }
+    .num, .price {
+      font-family: var(--latin);
+      font-variant-numeric: lining-nums tabular-nums;
+      font-feature-settings: "lnum" 1, "tnum" 1;
+    }
+
+    /* Logo slots: show wordmark until assets/logo.png loads */
+    .logo-slot {
+      display: inline-flex;
+      align-items: center;
+      gap: 0;
+      min-height: 28px;
+    }
+    .logo-slot .logo-img {
+      display: none;
+      height: 32px;
+      width: auto;
+      max-width: 200px;
+      object-fit: contain;
+    }
+    .logo-slot.has-logo .logo-img { display: block; }
+    .logo-slot.has-logo .logo-text { display: none; }
+    .logo-text {
+      font-weight: 300;
+      font-size: 17px;
+      letter-spacing: 0.38em;
+      margin-right: -0.38em;
+      color: var(--gold-bright);
+      line-height: 1;
+    }
+    .hero-brand .logo-text {
+      font-size: 13px;
+      letter-spacing: 0.46em;
+      margin-right: -0.46em;
+    }
+    .hero-brand .logo-img { height: 150px; max-width: 150px; }
+    .logo-slot .logo-img { mix-blend-mode: lighten; }
+    .nav .logo-slot .logo-img { height: 44px; }
+
+    /* Nav */
+    .nav-bar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(7, 9, 8, 0.92);
+      border-bottom: 1px solid var(--line-soft);
+    }
+    .nav {
+      width: min(1180px, calc(100% - 56px));
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 72px;
+      gap: 24px;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      list-style: none;
+      font-size: 13px;
+      letter-spacing: 0.12em;
+      color: var(--ink-soft);
+    }
+    .nav-links a { transition: color 0.2s ease; }
+    .nav-links a:hover,
+    .nav-links a:focus-visible { color: var(--gold-bright); }
+    .nav-cta {
+      padding: 7px 16px;
+      border: 1px solid var(--line);
+      color: var(--gold) !important;
+      letter-spacing: 0.16em;
+      transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+    }
+    .nav-cta:hover,
+    .nav-cta:focus-visible {
+      background: var(--gold);
+      color: #1a140c !important;
+      border-color: var(--gold);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 28px;
+      border: 1px solid var(--gold);
+      background: transparent;
+      color: var(--gold-bright);
+      font-size: 14px;
+      font-weight: 400;
+      letter-spacing: 0.22em;
+      cursor: pointer;
+      transition: background 0.25s ease, color 0.25s ease;
+    }
+    .btn:hover,
+    .btn:focus-visible {
+      background: var(--gold);
+      color: #1a140c;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-ghost {
+      border-color: var(--line);
+      color: var(--ink);
+    }
+    .btn-ghost:hover,
+    .btn-ghost:focus-visible {
+      border-color: var(--gold);
+      background: transparent;
+      color: var(--gold-bright);
+    }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+
+    /* Hero */
+    .hero {
+      position: relative;
+      min-height: calc(100svh - 72px);
+      display: grid;
+      grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+      align-items: center;
+      gap: 32px 48px;
+      padding: 36px 0 56px;
+    }
+    .hero-copy { max-width: 520px; }
+    .hero-brand { margin-bottom: 28px; }
+    .eyebrow {
+      font-size: 11px;
+      letter-spacing: 0.42em;
+      color: var(--gold);
+      margin-bottom: 18px;
+    }
+    .hero h1 {
+      font-weight: 200;
+      font-size: clamp(30px, 4.4vw, 52px);
+      line-height: 1.28;
+      letter-spacing: 0.10em;
+      margin-bottom: 24px;
+    }
+    .hero-lead {
+      font-size: 15px;
+      font-weight: 300;
+      color: var(--ink-soft);
+      letter-spacing: 0.04em;
+      line-height: 2;
+      text-wrap: pretty;
+      margin-bottom: 32px;
+    }
+    .hero-note {
+      margin-top: 22px;
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      color: var(--ink-mute);
+      text-wrap: pretty;
+    }
+    .hero-visual {
+      position: relative;
+      align-self: stretch;
+      min-height: 520px;
+      display: flex;
+      align-items: center;
+    }
+    .hero-visual figure {
+      position: relative;
+      width: 100%;
+      height: min(68vh, 640px);
+      min-height: 420px;
+    }
+    .hero-visual img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: 62% 58%;
+      -webkit-mask-image: radial-gradient(ellipse 78% 72% at 55% 55%, #000 42%, rgba(0,0,0,0.55) 68%, transparent 86%);
+              mask-image: radial-gradient(ellipse 78% 72% at 55% 55%, #000 42%, rgba(0,0,0,0.55) 68%, transparent 86%);
+    }
+    .hero-visual figcaption { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+    /* Ornament */
+    .ornament {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      color: var(--gold);
+    }
+    .ornament::before,
+    .ornament::after {
+      content: "";
+      width: 56px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold));
+    }
+    .ornament::after { background: linear-gradient(90deg, var(--gold), transparent); }
+
+    /* Sections */
+    section { padding: 104px 0; }
+    .sec-head { text-align: center; margin-bottom: 56px; }
+    .sec-kicker {
+      display: block;
+      font-size: 12px;
+      letter-spacing: 0.36em;
+      color: var(--gold);
+      margin-bottom: 12px;
+    }
+    .sec-head h2 {
+      font-weight: 300;
+      font-size: clamp(24px, 3vw, 34px);
+      letter-spacing: 0.16em;
+      line-height: 1.4;
+    }
+    .sec-head p {
+      margin: 16px auto 0;
+      max-width: 680px;
+      color: var(--ink-soft);
+      font-size: 15px;
+      letter-spacing: 0.04em;
+      text-wrap: pretty;
+    }
+
+    /* Products */
+    .products-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      align-items: stretch;
+    }
+    .product {
+      position: relative;
+      padding: 0;
+      border: 1px solid var(--line-soft);
+      background: linear-gradient(180deg, rgba(201, 169, 110, 0.04), transparent 55%);
+      display: flex;
+      flex-direction: column;
+    }
+    .product-visual {
+      height: 260px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .product-visual img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: 28% 26%;
+    }
+    .product-visual--soon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background:
+        radial-gradient(ellipse 60% 55% at 50% 42%, rgba(201, 169, 110, 0.10), transparent 68%),
+        #0c110f;
+    }
+    .product-body { padding: 28px 32px 32px; }
+    .product h3 {
+      font-weight: 400;
+      font-size: 20px;
+      letter-spacing: 0.16em;
+      margin-bottom: 12px;
+    }
+    .product p {
+      color: var(--ink-soft);
+      font-size: 15px;
+      letter-spacing: 0.03em;
+      text-wrap: pretty;
+    }
+    .product-tag {
+      display: inline-block;
+      margin-top: 20px;
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      color: var(--gold);
+    }
+
+    /* Why */
+    .why-list { border-top: 1px solid var(--line-soft); }
+    .why-item {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 24px;
+      align-items: start;
+      padding: 28px 0;
+      border-bottom: 1px solid var(--line-soft);
+    }
+    .why-no {
+      font-family: var(--latin);
+      font-weight: 300;
+      font-size: 26px;
+      letter-spacing: 0.08em;
+      color: var(--gold);
+      line-height: 1.2;
+      padding-top: 2px;
+    }
+    .why-item h3 {
+      font-weight: 400;
+      font-size: 17px;
+      letter-spacing: 0.14em;
+      margin-bottom: 6px;
+    }
+    .why-item p {
+      color: var(--ink-soft);
+      font-size: 15px;
+      letter-spacing: 0.03em;
+      text-wrap: pretty;
+    }
+
+    /* Tiers */
+    .tiers { border-top: 1px solid var(--line); }
+    .tier {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: baseline;
+      padding: 22px 4px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+    .tier:last-child { border-bottom-color: var(--line); }
+    .tier-qty {
+      font-size: 16px;
+      letter-spacing: 0.10em;
+    }
+    .tier-price {
+      font-family: var(--latin);
+      font-size: clamp(26px, 3vw, 34px);
+      font-weight: 400;
+      letter-spacing: 0.02em;
+      color: var(--gold-bright);
+      line-height: 1;
+      white-space: nowrap;
+    }
+    .tier-note {
+      margin-top: 22px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--ink-mute);
+      letter-spacing: 0.06em;
+      text-wrap: pretty;
+    }
+
+    /* Steps */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+    }
+    .step { padding-right: 32px; }
+    .step:not(:last-child) {
+      border-right: 1px solid var(--line-soft);
+      margin-right: 32px;
+    }
+    .step-no {
+      font-family: var(--latin);
+      font-size: 13px;
+      letter-spacing: 0.28em;
+      color: var(--gold);
+      margin-bottom: 14px;
+    }
+    .step h3 {
+      font-weight: 400;
+      font-size: 20px;
+      letter-spacing: 0.14em;
+      margin-bottom: 12px;
+    }
+    .step p {
+      color: var(--ink-soft);
+      font-size: 15px;
+      letter-spacing: 0.02em;
+      text-wrap: pretty;
+    }
+
+    /* Examples */
+    .examples {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+    .ex {
+      padding: 32px 18px 26px;
+      border: 1px solid var(--line-soft);
+      text-align: center;
+    }
+    .ex-qty {
+      font-size: 13px;
+      letter-spacing: 0.18em;
+      color: var(--ink-soft);
+      margin-bottom: 16px;
+    }
+    .ex-profit {
+      font-family: var(--latin);
+      font-weight: 400;
+      font-size: clamp(28px, 2.5vw, 36px);
+      letter-spacing: 0.02em;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .ex-unit {
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      color: var(--ink-mute);
+      margin-bottom: 20px;
+    }
+    .ex-line {
+      width: 28px;
+      height: 1px;
+      background: var(--line);
+      margin: 0 auto 16px;
+    }
+    .ex-month {
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      color: var(--ink-soft);
+    }
+    .ex-month strong {
+      display: block;
+      font-family: var(--latin);
+      font-weight: 400;
+      font-size: 20px;
+      color: var(--ink);
+      letter-spacing: 0.03em;
+      margin-top: 4px;
+    }
+    .disclaimer {
+      margin-top: 28px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--ink-mute);
+      letter-spacing: 0.05em;
+      line-height: 1.9;
+      text-wrap: pretty;
+    }
+
+    /* Rules */
+    .rules { list-style: none; border-top: 1px solid var(--line-soft); }
+    .rules li {
+      display: grid;
+      grid-template-columns: 16px 1fr;
+      gap: 16px;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--line-soft);
+      font-size: 16px;
+      letter-spacing: 0.05em;
+      align-items: start;
+    }
+    .rules li svg { margin-top: 10px; }
+
+    /* FAQ */
+    .faq { border-top: 1px solid var(--line-soft); }
+    .faq-item {
+      padding: 24px 0 22px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+    .faq-item dt {
+      font-size: 16px;
+      font-weight: 400;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+    .faq-item dd {
+      color: var(--ink-soft);
+      font-size: 15px;
+      letter-spacing: 0.03em;
+      max-width: 640px;
+      text-wrap: pretty;
+    }
+
+    /* Apply */
+    #apply { padding-top: 80px; padding-bottom: 120px; text-align: center; }
+    .apply-frame {
+      width: min(760px, calc(100% - 56px));
+      margin: 0 auto;
+      padding: 80px 40px;
+      border: 1px solid var(--line);
+      background: radial-gradient(ellipse 70% 80% at 50% 0%, rgba(201, 169, 110, 0.08), transparent 62%);
+    }
+    #apply h2 {
+      font-weight: 200;
+      font-size: clamp(26px, 3.4vw, 38px);
+      letter-spacing: 0.18em;
+      margin: 18px 0 16px;
+    }
+    #apply .apply-copy {
+      max-width: 460px;
+      margin: 0 auto 32px;
+      color: var(--ink-soft);
+      letter-spacing: 0.06em;
+      text-wrap: pretty;
+    }
+    #apply .btn-row { justify-content: center; }
+
+    footer {
+      padding: 0 0 56px;
+      text-align: center;
+    }
+    footer .ornament { margin-bottom: 24px; }
+    footer p {
+      font-size: 12px;
+      letter-spacing: 0.16em;
+      color: var(--ink-mute);
+    }
+
+    /* Reveal */
+    .reveal {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    .reveal.is-in {
+      animation: fadeUp 0.85s var(--ease-out) both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    @media (max-width: 900px) {
+      .wrap, .wrap-narrow, .nav, .apply-frame { width: calc(100% - 36px); }
+      .nav { min-height: 60px; padding: 0; }
+      .nav-links li:not(.nav-cta-item) { display: none; }
+      .logo-text { font-size: 15px; letter-spacing: 0.28em; margin-right: -0.28em; }
+      .hero {
+        grid-template-columns: 1fr;
+        min-height: 0;
+        gap: 28px;
+        padding: 28px 0 48px;
+      }
+      .hero-copy { max-width: none; }
+      .hero-brand:not(.has-logo) { display: none; }
+      .hero-brand .logo-img { height: 110px; max-width: 110px; }
+      .hero h1 { letter-spacing: 0.06em; }
+      .hero-visual, .hero-visual figure {
+        min-height: 0;
+        height: auto;
+      }
+      .hero-visual figure { height: 58vw; min-height: 260px; max-height: 420px; }
+      section { padding: 72px 0; }
+      .sec-head { margin-bottom: 40px; }
+      .products-grid,
+      .examples,
+      .steps { grid-template-columns: 1fr; gap: 14px; }
+      .step { padding: 0 0 22px; }
+      .step:not(:last-child) {
+        border-right: 0;
+        border-bottom: 1px solid var(--line-soft);
+        margin-right: 0;
+        padding-right: 0;
+        margin-bottom: 8px;
+      }
+      .why-item { grid-template-columns: 48px 1fr; gap: 12px; padding: 22px 0; }
+      .why-no { font-size: 22px; }
+      .apply-frame { padding: 52px 22px; }
+      #apply { padding: 64px 0 80px; }
+      .btn { width: 100%; }
+      .btn-row { flex-direction: column; }
+      .hero .btn-row, #apply .btn-row { width: min(320px, 100%); }
+      .hero .btn-row { margin: 0; }
+      #apply .btn-row { margin-inline: auto; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav-bar">
+    <nav class="nav" aria-label="頁面導覽">
+      <a class="logo-slot" data-logo-slot href="#top" id="top">
+        <span class="logo-text">鎏光敘物</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="#why">為何加入</a></li>
+        <li><a href="#tiers">級距</a></li>
+        <li><a href="#settlement">結算</a></li>
+        <li><a href="#examples">試算</a></li>
+        <li><a href="#rules">規則</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <div class="wrap">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <div class="hero-brand logo-slot" data-logo-slot>
+            <span class="logo-text">鎏光敘物</span>
+          </div>
+          <p class="eyebrow">批發代理招募</p>
+          <h1 id="hero-title" class="gold-text">潮流原創飾品<br>VIP代理</h1>
+          <p class="hero-lead">材質真金真銀，每件附保卡。對外統一售價 NT$11,680，不得削價競爭。拿貨時先按統一售價付款，月底統計當月條數，整月全部按達到的級距價退還差額。</p>
+          <div class="btn-row">
+            <a class="btn btn-ghost" href="#tiers">查看級距</a>
+          </div>
+          <p class="hero-note">本方案目前只適用首發款項鍊。十字款方案即將公布。單層代理，不抽下線。</p>
+        </div>
+        <div class="hero-visual">
+          <figure>
+            <img src="assets/hero.jpg" alt="鎏光敘物項鍊陳列於珠寶盒中" width="1800" height="1759" />
+            <figcaption>首發款項鍊實品</figcaption>
+          </figure>
+        </div>
+      </section>
+    </div>
+
+    <div class="ornament" aria-hidden="true">
+      <svg width="10" height="10" viewBox="0 0 10 10">
+        <path d="M5 0 L6.1 3.9 L10 5 L6.1 6.1 L5 10 L3.9 6.1 L0 5 L3.9 3.9 Z" fill="#c9a96e"/>
+      </svg>
+    </div>
+
+    <section id="pieces" aria-labelledby="pieces-title">
+      <div class="wrap">
+        <div class="sec-head reveal">
+          <span class="sec-kicker">商品</span>
+          <h2 id="pieces-title">兩款項鍊</h2>
+        </div>
+        <div class="products-grid reveal">
+          <article class="product">
+            <div class="product-visual">
+              <img src="assets/hero-detail.jpg" alt="首發款項鍊特寫" width="1200" height="1173" />
+            </div>
+            <div class="product-body">
+              <h3>首發款項鍊</h3>
+              <p>真金真銀，每件附保卡，標明金、銀含量。</p>
+              <span class="product-tag">現已開放代理</span>
+            </div>
+          </article>
+          <article class="product">
+            <div class="product-visual product-visual--soon" aria-hidden="true">
+              <svg width="42" height="56" viewBox="0 0 42 56" fill="none">
+                <path d="M21 8 V48" stroke="#c9a96e" stroke-width="1" stroke-linecap="round"/>
+                <path d="M11 22 H31" stroke="#c9a96e" stroke-width="1" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="product-body">
+              <h3>十字項鍊</h3>
+              <p>真金真銀，每件附保卡，標明金、銀含量。</p>
+              <span class="product-tag">十字款方案即將公布</span>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="why" aria-labelledby="why-title">
+      <div class="wrap-narrow">
+        <div class="sec-head reveal">
+          <span class="sec-kicker">制度</span>
+          <h2 id="why-title">為什麼加入</h2>
+        </div>
+        <div class="why-list reveal">
+          <article class="why-item">
+            <span class="why-no">01</span>
+            <div>
+              <h3>材質清楚可查</h3>
+              <p>真金真銀，每件附保卡，標明金、銀含量。</p>
+            </div>
+          </article>
+          <article class="why-item">
+            <span class="why-no">02</span>
+            <div>
+              <h3>對外統一售價</h3>
+              <p>對外統一售價 NT$11,680，不得削價競爭。零售最低 NT$10,000。</p>
+            </div>
+          </article>
+          <article class="why-item">
+            <span class="why-no">03</span>
+            <div>
+              <h3>條數決定批發價</h3>
+              <p>當月累計條數達到級距後，整月全部按該級距價計算。條數越高，批發價越低。</p>
+            </div>
+          </article>
+          <article class="why-item">
+            <span class="why-no">04</span>
+            <div>
+              <h3>先拿貨，後結算</h3>
+              <p>拿貨時先按 NT$11,680 付款。月底統計當月條數，再按達到的級距價退還差額。</p>
+            </div>
+          </article>
+          <article class="why-item">
+            <span class="why-no">05</span>
+            <div>
+              <h3>單層代理</h3>
+              <p>單層代理，不抽下線。</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="tiers" aria-labelledby="tiers-title">
+      <div class="wrap">
+        <div class="sec-head reveal">
+          <span class="sec-kicker">批發價</span>
+          <h2 id="tiers-title">當月累計批發級距</h2>
+          <p>適用首發款項鍊。未滿 3 條，批發價維持對外統一售價 NT$11,680。<span class="nowrap">十字款方案即將公布。</span></p>
+        </div>
+        <div class="tiers reveal">
+          <div class="tier">
+            <span class="tier-qty">未滿 3 條</span>
+            <span class="tier-price">NT$11,680</span>
+          </div>
+          <div class="tier">
+            <span class="tier-qty">3 條以上（含）</span>
+            <span class="tier-price">NT$9,500</span>
+          </div>
+          <div class="tier">
+            <span class="tier-qty">6 條以上（含）</span>
+            <span class="tier-price">NT$8,500</span>
+          </div>
+          <div class="tier">
+            <span class="tier-qty">9 條以上（含）</span>
+            <span class="tier-price">NT$7,500</span>
+          </div>
+          <div class="tier">
+            <span class="tier-qty">20 條以上（含）</span>
+            <span class="tier-price">NT$6,500</span>
+          </div>
+        </div>
+        <p class="tier-note">達到該級距後，批發價適用於當月全部條數。</p>
+      </div>
+    </section>
+
+    <section id="settlement" aria-labelledby="settlement-title">
+      <div class="wrap">
+        <div class="sec-head reveal">
+          <span class="sec-kicker">流程</span>
+          <h2 id="settlement-title">結算方式</h2>
+        </div>
+        <div class="steps reveal">
+          <article class="step">
+            <p class="step-no">一</p>
+            <h3>拿貨付款</h3>
+            <p>拿貨時先按對外統一售價 NT$11,680 付款。</p>
+          </article>
+          <article class="step">
+            <p class="step-no">二</p>
+            <h3>月底計數</h3>
+            <p>月底統計當月條數，對應所屬批發級距。退貨條數從當月數量扣除。</p>
+          </article>
+          <article class="step">
+            <p class="step-no">三</p>
+            <h3>退還差額</h3>
+            <p>整月全部按達到的級距價退還差額，於每月固定日結算退款。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="examples" aria-labelledby="examples-title">
+      <div class="wrap">
+        <div class="sec-head reveal">
+          <span class="sec-kicker">試算</span>
+          <h2 id="examples-title">試算範例</h2>
+          <p>以下以每條按對外統一售價 NT$11,680 售出為例。</p>
+        </div>
+        <div class="examples reveal">
+          <article class="ex">
+            <p class="ex-qty">當月 3 條</p>
+            <p class="ex-profit gold-text">2,180</p>
+            <p class="ex-unit">每條所賺</p>
+            <div class="ex-line"></div>
+            <p class="ex-month">當月合計<strong>NT$6,540</strong></p>
+          </article>
+          <article class="ex">
+            <p class="ex-qty">當月 6 條</p>
+            <p class="ex-profit gold-text">3,180</p>
+            <p class="ex-unit">每條所賺</p>
+            <div class="ex-line"></div>
+            <p class="ex-month">當月合計<strong>NT$19,080</strong></p>
+          </article>
+          <article class="ex">
+            <p class="ex-qty">當月 9 條</p>
+            <p class="ex-profit gold-text">4,180</p>
+            <p class="ex-unit">每條所賺</p>
+            <div class="ex-line"></div>
+            <p class="ex-month">當月合計<strong>NT$37,620</strong></p>
+          </article>
+          <article class="ex">
+            <p class="ex-qty">當月 20 條</p>
+            <p class="ex-profit gold-text">5,180</p>
+            <p class="ex-unit">每條所賺</p>
+            <div class="ex-line"></div>
+            <p class="ex-month">當月合計<strong>NT$103,600</strong></p>
+          </article>
+        </div>
+        <p class="disclaimer">以上為試算範例，並非保證收入。實際所得依實際售價而定。</p>
+      </div>
+    </section>
+
+    <section id="rules" aria-labelledby="rules-title">
+      <div class="wrap-narrow">
+        <div class="sec-head reveal">
+          <span class="sec-kicker">守則</span>
+          <h2 id="rules-title">代理規則</h2>
+        </div>
+        <ul class="rules reveal">
+          <li>
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1 L7.8 6.2 L13 7 L7.8 7.8 L7 13 L6.2 7.8 L1 7 L6.2 6.2 Z" fill="none" stroke="#c9a96e" stroke-width="0.8"/></svg>
+            <span>每張訂單綁定代理代碼。</span>
+          </li>
+          <li>
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1 L7.8 6.2 L13 7 L7.8 7.8 L7 13 L6.2 7.8 L1 7 L6.2 6.2 Z" fill="none" stroke="#c9a96e" stroke-width="0.8"/></svg>
+            <span>對外統一售價 NT$11,680，不得削價競爭；零售最低 NT$10,000。</span>
+          </li>
+          <li>
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1 L7.8 6.2 L13 7 L7.8 7.8 L7 13 L6.2 7.8 L1 7 L6.2 6.2 Z" fill="none" stroke="#c9a96e" stroke-width="0.8"/></svg>
+            <span>售價低於 NT$10,000，取消當月返差價；再犯則停權。</span>
+          </li>
+          <li>
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1 L7.8 6.2 L13 7 L7.8 7.8 L7 13 L6.2 7.8 L1 7 L6.2 6.2 Z" fill="none" stroke="#c9a96e" stroke-width="0.8"/></svg>
+            <span>退貨條數從當月數量扣除。</span>
+          </li>
+          <li>
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1 L7.8 6.2 L13 7 L7.8 7.8 L7 13 L6.2 7.8 L1 7 L6.2 6.2 Z" fill="none" stroke="#c9a96e" stroke-width="0.8"/></svg>
+            <span>每月固定日結算退款。</span>
+          </li>
+          <li>
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1 L7.8 6.2 L13 7 L7.8 7.8 L7 13 L6.2 7.8 L1 7 L6.2 6.2 Z" fill="none" stroke="#c9a96e" stroke-width="0.8"/></svg>
+            <span>單層代理，不抽下線。</span>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="faq" aria-labelledby="faq-title">
+      <div class="wrap-narrow">
+        <div class="sec-head reveal">
+          <span class="sec-kicker">說明</span>
+          <h2 id="faq-title">常見問題</h2>
+        </div>
+        <dl class="faq reveal">
+          <div class="faq-item">
+            <dt>目前哪些款式開放代理？</dt>
+            <dd>代理方案目前只適用首發款項鍊。十字款方案即將公布。</dd>
+          </div>
+          <div class="faq-item">
+            <dt>拿貨時要付多少？</dt>
+            <dd>拿貨時先按對外統一售價 NT$11,680 付款。月底統計當月條數，整月全部按達到的級距價退還差額。</dd>
+          </div>
+          <div class="faq-item">
+            <dt>當月未滿 3 條，怎麼計算？</dt>
+            <dd>未滿 3 條，批發價維持對外統一售價 NT$11,680。</dd>
+          </div>
+          <div class="faq-item">
+            <dt>級距價是只算超出的部分，還是全部都算？</dt>
+            <dd>達到該級距後，整月全部按達到的級距價計算，再據此退還差額。</dd>
+          </div>
+          <div class="faq-item">
+            <dt>可以賣低於統一售價嗎？</dt>
+            <dd>不得削價競爭。對外統一售價為 NT$11,680，零售最低 NT$10,000。售價低於 NT$10,000，取消當月返差價；再犯則停權。</dd>
+          </div>
+          <div class="faq-item">
+            <dt>會抽下線嗎？</dt>
+            <dd>不會。本方案為單層代理，不抽下線。</dd>
+          </div>
+          <div class="faq-item">
+            <dt>退貨會怎麼計算？</dt>
+            <dd>退貨條數從當月數量扣除，再依扣除後的條數對應級距。</dd>
+          </div>
+          <div class="faq-item">
+            <dt>何時結算退還差額？</dt>
+            <dd>每月固定日結算退款。</dd>
+          </div>
+          <div class="faq-item">
+            <dt>材質是什麼？有保卡嗎？</dt>
+            <dd>材質為真金真銀，每件附保卡，標明金、銀含量。</dd>
+          </div>
+          <div class="faq-item">
+            <dt>試算的數字是保證收入嗎？</dt>
+            <dd>不是。試算範例以每條按 NT$11,680 售出為例，並非保證收入。</dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <section id="apply" aria-labelledby="apply-title">
+      <div class="apply-frame reveal">
+        <div class="ornament" aria-hidden="true">
+          <svg width="10" height="10" viewBox="0 0 10 10">
+            <path d="M5 0 L6.1 3.9 L10 5 L6.1 6.1 L5 10 L3.9 6.1 L0 5 L3.9 3.9 Z" fill="#c9a96e"/>
+          </svg>
+        </div>
+        <h2 id="apply-title" class="gold-text">申請成為代理</h2>
+        <p class="apply-copy">目前僅首發款項鍊開放代理申請。十字款方案即將公布。</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="ornament" aria-hidden="true">
+      <svg width="10" height="10" viewBox="0 0 10 10">
+        <path d="M5 0 L6.1 3.9 L10 5 L6.1 6.1 L5 10 L3.9 6.1 L0 5 L3.9 3.9 Z" fill="#c9a96e"/>
+      </svg>
+    </div>
+    <p>鎏光敘物　·　批發代理說明</p>
+  </footer>
+
+  <script>
+    (function () {
+      var slots = document.querySelectorAll("[data-logo-slot]");
+      var probe = new Image();
+      probe.onload = function () {
+        slots.forEach(function (slot) {
+          if (slot.querySelector("img.logo-img")) return;
+          var img = document.createElement("img");
+          img.className = "logo-img";
+          img.alt = "鎏光敘物";
+          img.src = probe.src;
+          slot.insertBefore(img, slot.firstChild);
+          slot.classList.add("has-logo");
+        });
+      };
+      probe.src = "assets/logo.jpg";
+
+      var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var nodes = document.querySelectorAll(".reveal");
+      if (reduce || !("IntersectionObserver" in window)) {
+        nodes.forEach(function (el) { el.classList.add("is-in"); });
+        return;
+      }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-in");
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.14, rootMargin: "0px 0px -8% 0px" });
+      nodes.forEach(function (el) { io.observe(el); });
+    })();
+  </script>
+</body>
+</html>
