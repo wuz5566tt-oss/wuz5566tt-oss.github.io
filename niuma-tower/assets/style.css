@@ -423,3 +423,34 @@ body.cyber .start{background:linear-gradient(180deg,rgba(20,4,28,0) 30%,rgba(10,
 body.cyber .fi-sign{box-shadow:0 0 0 1px #ff4de6,0 0 14px rgba(255,80,220,.6);color:#ffe3ff}
 body.cyber .fi-body{background:linear-gradient(90deg,#140824,#2a1860 50%,#140824)}
 body.cyber .fi-sky{background:linear-gradient(180deg,#1a0840,#3a1868 40%,#12061c)}
+
+.shop-tabs{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;margin:10px 0 2px;padding:2px 0 8px;flex-wrap:nowrap;scrollbar-width:none;overscroll-behavior-x:contain}
+.shop-tabs::-webkit-scrollbar{display:none}
+.shop-tab{flex:0 0 auto;white-space:nowrap;padding:7px 13px;border:0;border-radius:999px;background:rgba(255,255,255,.06);color:var(--txt);box-shadow:inset 0 0 0 1px var(--line);font-weight:700;font-size:.82rem;letter-spacing:.06em}
+.shop-tab.on{background:linear-gradient(90deg,rgba(62,242,255,.22),rgba(255,200,90,.18));box-shadow:inset 0 0 0 1px var(--gold),0 0 14px rgba(255,200,90,.25);color:#ffe9b0}
+.shop-item-top{display:flex;align-items:center;gap:8px}
+.shop-item-top b{flex:1;line-height:1.3}
+.shop-swatch{width:12px;height:12px;border-radius:50%;flex-shrink:0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.25),0 0 6px rgba(0,0,0,.35)}
+.shop-badges{display:flex;flex-wrap:wrap;gap:4px}
+.shop-badge{font-style:normal;font-size:.68rem;letter-spacing:.08em;padding:2px 7px;border-radius:999px;font-weight:800}
+.shop-badge.free{background:rgba(47,211,138,.18);color:#7dffc4;box-shadow:inset 0 0 0 1px rgba(47,211,138,.45)}
+.shop-badge.kline{background:rgba(255,84,104,.16);color:#ff9aa6;box-shadow:inset 0 0 0 1px rgba(255,84,104,.4)}
+.shop-item.feat{background:linear-gradient(180deg,rgba(62,242,255,.07),rgba(255,255,255,.03))}
+.shop-item .price.free{color:#7dffc4}
+
+.shop-preview.yageo{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 9px;border-radius:10px;background:linear-gradient(90deg,#04180f,#0a3d28 55%,#062316);box-shadow:inset 0 0 0 1px rgba(47,211,138,.45),0 0 12px rgba(47,211,138,.2)}
+.shop-preview.yageo strong{color:#e9ffe9;font-size:.92rem;letter-spacing:.12em}
+.shop-preview.yageo em{font-style:normal;font-weight:800;font-size:.68rem;letter-spacing:.12em;padding:2px 7px;border-radius:999px;background:#2fd38a;color:#04180f}
+.shop-badge.yageo{background:rgba(47,211,138,.18);color:#7dffc4;box-shadow:inset 0 0 0 1px rgba(47,211,138,.45)}
+.shop-item.yageo{box-shadow:inset 0 0 0 1px rgba(47,211,138,.28)}
+.chip.gm-badge{background:linear-gradient(90deg,rgba(255,200,90,.2),rgba(217,164,65,.12));box-shadow:inset 0 0 0 1px var(--gold),0 0 14px rgba(255,200,90,.28);gap:6px;align-items:center}
+.chip.gm-badge b{color:#ffe9b0;letter-spacing:.08em}
+.chip.gm-badge small{color:#ffe3a0;opacity:.9}
+.chip.gm-badge #gmOut{margin-left:4px;padding:3px 8px;font-size:.68rem}
+#gmGate{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;background:rgba(4,10,22,.72);padding:24px}
+#gmGate .gm-card{width:min(92vw,360px);background:linear-gradient(180deg,rgba(14,26,52,.96),rgba(6,12,28,.98));border-radius:18px;padding:22px 20px;box-shadow:0 0 0 1px rgba(255,200,90,.35),0 24px 60px rgba(0,0,0,.55)}
+#gmGate .gm-card b{display:block;margin:4px 0 12px;font-size:1.2rem}
+#gmGate .gm-card form{display:flex;gap:8px}
+#gmGate .gm-card .passin{flex:1}
+#gmGate .gm-card .err{color:#ff9aa6;margin:8px 0 0}
+#gmGate .gm-card #gmCancel{margin-top:10px;width:100%}

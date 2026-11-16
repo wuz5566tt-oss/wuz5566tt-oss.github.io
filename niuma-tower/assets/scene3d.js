@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { STAR_LOGO_UI, TOWER_NAME, EVENT_NAME, isCyber } from './brand.js';
+import { itemById } from './shop-catalog.js';
 
 /* 史塔金融大樓：低面數程序生成場景（無外部模型） */
 const FONT = '"Noto Sans CJK TC","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif';
@@ -517,11 +518,26 @@ export async function create3D(canvas, hooks) {
   const shirt = std(0xf2f5fb, { roughness: .55, metalness: 0 }), pants = std(0x1d2640, { roughness: .6, metalness: 0 });
   const black = std(0x111111, { roughness: .3 }), hornM2 = std(0xf4e3c0, { roughness: .4 });
   const body = new THREE.Group(); avatar.add(body);
-  const legs = [-1, 1].map(s => { const p = new THREE.Group(); p.position.set(s * .17, .78, 0); body.add(p); box(.24, .7, .26, pants, 0, -.35, 0, p); box(.27, .12, .38, black, 0, -.72, .05, p); return p; });
+  const defaultPantsMat = pants, defaultShoeMat = black;
+  const legPants = [], legShoes = [], wearLegs = [];
+  const legs = [-1, 1].map(s => {
+    const p = new THREE.Group(); p.position.set(s * .17, .78, 0); body.add(p);
+    legPants.push(box(.24, .7, .26, pants, 0, -.35, 0, p));
+    legShoes.push(box(.27, .12, .38, black, 0, -.72, .05, p));
+    const w = new THREE.Group(); p.add(w); wearLegs.push(w);
+    return p;
+  });
   rbox(.74, .78, .46, .14, shirt, 0, 1.17, 0, body);
   const defaultTie = box(.12, .5, .04, goldGlow, 0, 1.2, .24, body);
   const defaultBadge = box(.14, .09, .03, cyanGlow, .22, 1.3, .24, body);
-  const arms = [-1, 1].map(s => { const p = new THREE.Group(); p.position.set(s * .47, 1.5, 0); body.add(p); box(.19, .62, .22, shirt, 0, -.3, 0, p); const hnd = new THREE.Mesh(keep(new THREE.SphereGeometry(.11, 8, 6)), skin); hnd.position.y = -.66; p.add(hnd); return p; });
+  const wearArms = [];
+  const arms = [-1, 1].map(s => {
+    const p = new THREE.Group(); p.position.set(s * .47, 1.5, 0); body.add(p);
+    box(.19, .62, .22, shirt, 0, -.3, 0, p);
+    const hnd = new THREE.Mesh(keep(new THREE.SphereGeometry(.11, 8, 6)), skin); hnd.position.y = -.66; p.add(hnd);
+    const w = new THREE.Group(); p.add(w); wearArms.push(w);
+    return p;
+  });
   box(.42, .3, .12, std(0x6b3f1c, { roughness: .5 }), 0, -.82, .05, arms[1]);
   const head = new THREE.Group(); head.position.y = 1.95; body.add(head);
   rbox(.78, .62, .66, .2, skin, 0, 0, 0, head); rbox(.56, .3, .24, .1, snoutM, 0, -.14, .32, head);
@@ -535,42 +551,323 @@ export async function create3D(canvas, hooks) {
     const ht = cyl(.01, .07, .3, 6, hornM2, s * .55, .48, 0, head); ht.rotation.z = s * -.35;
     defaultHorns.push(hb, ht);
   });
+  const wearHead = new THREE.Group(); head.add(wearHead);
   const wearRoot = new THREE.Group(); body.add(wearRoot);
-  const goldHornM = std(0xffd56a, { metalness: 1, roughness: .25, envMapIntensity: 1.1 });
+  const klineTexCache = {};
+  function klineTex(mode) {
+    if (klineTexCache[mode]) return klineTexCache[mode];
+    const t = canvasTex(256, 256, (g, w, h) => {
+      g.fillStyle = mode === 'gold' ? '#3a2a10' : mode === 'green' ? '#062316' : '#0b1220';
+      g.fillRect(0, 0, w, h);
+      const n = 10, bw = w / (n + 1);
+      for (let i = 0; i < n; i++) {
+        const up = mode === 'green' ? false : (i % 3 !== 1);
+        g.fillStyle = mode === 'green' ? '#2fd38a' : up ? '#ff5468' : '#2fd38a';
+        const x = bw * (i + .55);
+        const bodyH = 36 + (i * 19) % 90;
+        const mid = h * .52;
+        const y = up ? mid - bodyH : mid;
+        g.fillRect(x, y, bw * .55, bodyH);
+        g.fillRect(x + bw * .22, y - 18, 2, bodyH + 36);
+      }
+    });
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    klineTexCache[mode] = t; return t;
+  }
+  function lookMat(look, extra = {}) {
+    const pat = look && look.pattern;
+    const map = pat === 'kline' ? klineTex('mix') : pat === 'kline-gold' ? klineTex('gold') : pat === 'green' ? klineTex('green') : (pat === 'yageo' && look.type === 'pants') ? resistorTex() : null;
+    return std(look.color, { roughness: look.rough ?? .45, metalness: look.metal ?? .3, map, ...extra });
+  }
+  const yageoCache = {};
+  function yageoChestTex() {
+    if (yageoCache.chest) return yageoCache.chest;
+    const t = canvasTex(1024, 1024, (g, w, h) => {
+      g.fillStyle = '#04180f'; g.fillRect(0, 0, w, h);
+      const candle = (x, y, bh, bw) => { g.fillStyle = '#2fd38a'; g.fillRect(x, y, bw, bh); g.fillRect(x + bw * .4, y - 16, Math.max(2, bw * .15), bh + 32); };
+      for (let i = 0; i < 12; i++) {
+        const bh = 36 + (i * 41) % 120;
+        candle(28 + (i % 2) * 30, 40 + i * 78, bh, 16);
+        candle(w - 62 - (i % 2) * 30, 30 + i * 80, bh, 16);
+      }
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.shadowColor = '#2fd38a'; g.shadowBlur = 28;
+      g.fillStyle = '#f2fff4'; g.font = `900 250px ${FONT}`;
+      g.fillText('國巨', w / 2, h * 0.36);
+      g.fillStyle = '#c8ffd8'; g.font = `900 210px ${FONT}`;
+      g.fillText('2327', w / 2, h * 0.58);
+      g.shadowBlur = 0;
+      const tw = 300, th = 96, tx = w / 2 - tw / 2, ty = h * 0.73, r = 22;
+      g.fillStyle = '#2fd38a';
+      g.beginPath();
+      g.moveTo(tx + r, ty); g.arcTo(tx + tw, ty, tx + tw, ty + th, r);
+      g.arcTo(tx + tw, ty + th, tx, ty + th, r); g.arcTo(tx, ty + th, tx, ty, r);
+      g.arcTo(tx, ty, tx + tw, ty, r); g.closePath(); g.fill();
+      g.fillStyle = '#04180f'; g.font = `900 76px ${FONT}`;
+      g.fillText('跌停', w / 2, ty + th / 2 + 2);
+    });
+    yageoCache.chest = t; return t;
+  }
+  function resistorTex() {
+    if (yageoCache.res) return yageoCache.res;
+    const t = canvasTex(256, 256, (g, w, h) => {
+      g.fillStyle = '#0a3d28'; g.fillRect(0, 0, w, h);
+      const bands = ['#062316', '#7dffc4', '#0a3d28', '#2fd38a', '#0a3d28', '#b8ff9a', '#0a3d28', '#145c3a', '#7dffc4'];
+      let y = 12;
+      bands.forEach((c, i) => { const bh = i % 2 === 0 ? 26 : 16; g.fillStyle = c; g.fillRect(0, y, w, bh); y += bh + 6; });
+    });
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    yageoCache.res = t; return t;
+  }
+  function yageoWatchTex() {
+    if (yageoCache.watch) return yageoCache.watch;
+    const t = canvasTex(512, 512, (g, w, h) => {
+      g.fillStyle = '#04180f'; g.beginPath(); g.arc(w / 2, h / 2, w / 2 - 2, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = '#2fd38a'; g.lineWidth = 22; g.stroke();
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillStyle = '#f2fff4'; g.font = `900 150px ${FONT}`;
+      g.fillText('2327', w / 2, h * 0.44);
+      g.fillStyle = '#2fd38a'; g.font = `900 92px ${FONT}`;
+      g.fillText('-10%', w / 2, h * 0.68);
+    });
+    yageoCache.watch = t; return t;
+  }
+  function addResistor(parent, x, y, z, len, rad, axis = 'x') {
+    const g = new THREE.Group(); g.position.set(x, y, z);
+    if (axis === 'z') g.rotation.x = Math.PI / 2;
+    if (axis === 'x') g.rotation.z = Math.PI / 2;
+    parent.add(g);
+    const body = std(0x0a3d28, { roughness: .45 });
+    const caps = std(0x9ee6c4, { metalness: .7, roughness: .3 });
+    cyl(rad, rad, len, 10, body, 0, 0, 0, g);
+    cyl(rad * 1.18, rad * 1.18, rad * .85, 10, caps, 0, len / 2 - rad * .3, 0, g);
+    cyl(rad * 1.18, rad * 1.18, rad * .85, 10, caps, 0, -len / 2 + rad * .3, 0, g);
+    [0x7dffc4, 0x2fd38a, 0x145c3a, 0xb8ff9a].forEach((c, i) => {
+      cyl(rad * 1.14, rad * 1.14, rad * .42, 10, std(c, { roughness: .4 }), 0, -len * .2 + i * rad * .7, 0, g);
+    });
+    return g;
+  }
+  function addChipCap(parent, x, y, z, scale = 1) {
+    const body = std(0x1a6b44, { roughness: .5 });
+    const cap = std(0xb8ffd4, { metalness: .8, roughness: .25 });
+    box(.26 * scale, .11 * scale, .08 * scale, body, x, y, z, parent);
+    box(.05 * scale, .125 * scale, .09 * scale, cap, x - .135 * scale, y, z, parent);
+    box(.05 * scale, .125 * scale, .09 * scale, cap, x + .135 * scale, y, z, parent);
+  }
+  function addCandles(parent, x, y, z, scale, pattern, n = 5, along = 'x') {
+    if (!pattern || (pattern !== 'kline' && pattern !== 'kline-gold' && pattern !== 'green' && pattern !== 'yageo')) return;
+    const wickC = pattern === 'kline-gold' ? 0xffd56a : 0xeeeeee;
+    for (let i = 0; i < n; i++) {
+      const up = (pattern === 'green' || pattern === 'yageo') ? false : (i % 3 !== 1);
+      const c = (pattern === 'green' || pattern === 'yageo') ? 0x2fd38a : up ? 0xff5468 : 0x2fd38a;
+      const bh = (0.07 + (i % 3) * 0.03) * scale;
+      const off = (i - (n - 1) / 2) * 0.08 * scale;
+      const px = along === 'x' ? x + off : x;
+      const pz = along === 'z' ? z + off : z;
+      const py = y + (up ? bh * .25 : -bh * .15);
+      box(.028 * scale, bh, .028 * scale, std(c, { roughness: .35, metalness: .15 }), px, py, z, parent);
+      box(.008 * scale, bh + .05 * scale, .008 * scale, std(wickC, { metalness: .4 }), px, y, z + .01, parent);
+    }
+  }
+  function clearGroup(g) { while (g.children.length) g.remove(g.children[0]); }
   function applyOutfit(eq) {
     eq = eq || {};
-    while (wearRoot.children.length) wearRoot.remove(wearRoot.children[0]);
-    const col = { navy: 0x1a2744, black: 0x151515, gold: 0xd9a441, cyan: 0x1aa9c9, red: 0x8a2030 };
+    clearGroup(wearRoot); clearGroup(wearHead);
+    wearLegs.forEach(clearGroup); wearArms.forEach(clearGroup);
+    legPants.forEach(m => { m.material = defaultPantsMat; m.scale.set(.24, .7, .26); m.visible = true; });
+    legShoes.forEach(m => { m.material = defaultShoeMat; m.scale.set(.27, .12, .38); m.visible = true; });
     defaultTie.visible = !eq.tie; defaultBadge.visible = !eq.tie;
     defaultHorns.forEach(h => h.visible = !eq.horns);
-    if (eq.jacket) {
-      const m = std(eq.jacket === 'jacket-black' ? col.black : col.navy, { roughness: .45, metalness: .25 });
-      rbox(.86, .86, .56, .12, m, 0, 1.2, 0, wearRoot);
-      box(.16, .7, .06, std(0xe8eef6, { roughness: .6 }), 0, 1.18, .28, wearRoot);
+    const it = slot => itemById(eq[slot]);
+
+    const jacket = it('jacket');
+    if (jacket) {
+      const look = jacket.look || {}, m = lookMat(look);
+      const shape = look.shape || 'suit';
+      const yageo = look.pattern === 'yageo';
+      if (yageo) {
+        rbox(.88, .88, .56, .12, m, 0, 1.2, 0, wearRoot);
+        plane(.74, .66, yageoChestTex(), 0, 1.16, .305, wearRoot);
+        addCandles(wearRoot, -.34, 1.28, .36, .9, 'yageo', 4);
+        addCandles(wearRoot, .34, 1.28, .36, .9, 'yageo', 4);
+      } else if (shape === 'hoodie') {
+        rbox(.9, .9, .58, .14, m, 0, 1.18, 0, wearRoot);
+        box(.62, .22, .5, m, 0, 1.68, -.06, wearRoot);
+        box(.5, .28, .16, m, 0, 1.92, -.22, wearRoot);
+      } else if (shape === 'shirt') {
+        rbox(.78, .82, .5, .1, m, 0, 1.18, 0, wearRoot);
+        box(.14, .64, .05, std(look.color2 || 0xe8eef6, { roughness: .6 }), 0, 1.16, .26, wearRoot);
+      } else {
+        rbox(.86, .86, .56, .12, m, 0, 1.2, 0, wearRoot);
+        box(.16, .7, .06, std(look.color2 || 0xe8eef6, { roughness: .6, metalness: look.color2 ? (look.metal || .4) : 0 }), 0, 1.18, .28, wearRoot);
+      }
+      if (!yageo) addCandles(wearRoot, 0, 1.25, .36, 1.15, look.pattern, 6);
     }
-    if (eq.tie) {
-      const c = eq.tie === 'tie-cyan' ? col.cyan : eq.tie === 'tie-red' ? col.red : col.gold;
-      box(.11, .5, .04, std(c, { metalness: .4, roughness: .35 }), 0, 1.2, .32, wearRoot);
+
+    const tie = it('tie');
+    if (tie) {
+      const look = tie.look || {}, tm = lookMat(look);
+      if (look.shape === 'bow') { box(.28, .1, .06, tm, 0, 1.38, .32, wearRoot); box(.08, .08, .05, tm, 0, 1.38, .34, wearRoot); }
+      else box(.11, .5, .04, tm, 0, 1.2, .32, wearRoot);
     }
-    if (eq.hat) {
-      const hm = std(eq.hat === 'hat-cap' ? 0x1a2744 : 0x161616, { roughness: .4, metalness: .2 });
-      if (eq.hat === 'hat-cap') { box(.7, .16, .7, hm, 0, 2.42, 0, wearRoot); box(.5, .06, .36, hm, 0, 2.36, .42, wearRoot); }
-      else { cyl(.42, .4, .22, 16, hm, 0, 2.46, 0, wearRoot); const brim = cyl(.62, .62, .05, 20, hm, 0, 2.35, 0, wearRoot); }
+
+    const cape = it('cape');
+    if (cape) {
+      const cm = lookMat(cape.look || {}, { side: THREE.DoubleSide });
+      const mesh = box(.9, 1.15, .06, cm, 0, 1.15, -.32, wearRoot); mesh.rotation.x = .12; mesh.userData.cape = true;
     }
-    if (eq.glasses) {
-      const gm = std(eq.glasses === 'glasses-gold' ? col.gold : 0x111111, { metalness: .8, roughness: .25 });
-      const lens = std(0x111118, { metalness: .9, roughness: .15, opacity: .85, transparent: true });
-      box(.16, .02, .02, gm, 0, 2.04, .38, wearRoot);
-      [-1, 1].forEach(s => { const l = new THREE.Mesh(keep(new THREE.CircleGeometry(.1, 12)), lens); l.position.set(s * .16, 2.02, .4); wearRoot.add(l); });
+
+    const neck = it('necklace');
+    if (neck) {
+      const look = neck.look || {}, nm = lookMat(look);
+      if (look.shape === 'chip' || look.pattern === 'yageo') {
+        const ring = cyl(.2, .2, .035, 18, std(0x9ee6c4, { metalness: .7, roughness: .3 }), 0, 1.58, .04, wearRoot);
+        ring.rotation.x = Math.PI / 2;
+        addChipCap(wearRoot, 0, 1.52, .22, 1);
+      } else {
+        const thick = look.shape === 'thick';
+        const ring = cyl(thick ? .23 : .2, thick ? .23 : .2, thick ? .07 : .035, 18, nm, 0, 1.58, .04, wearRoot);
+        ring.rotation.x = Math.PI / 2;
+        if (look.shape === 'pendant') box(.08, .1, .04, lookMat({ ...look, color: look.color2 || look.color }), 0, 1.46, .22, wearRoot);
+      }
     }
-    if (eq.cape) {
-      const cm = std(eq.cape === 'cape-gold' ? col.gold : 0x1aa9c9, { roughness: .45, metalness: .35, side: THREE.DoubleSide });
-      const cape = box(.9, 1.15, .06, cm, 0, 1.15, -.32, wearRoot); cape.rotation.x = .12; cape.userData.cape = true;
+
+    const pantsIt = it('pants');
+    if (pantsIt) {
+      const look = pantsIt.look || {}, pm = lookMat(look);
+      legPants.forEach(m => { m.material = pm; });
+      wearLegs.forEach((w, i) => {
+        if (look.pattern === 'yageo') {
+          const bands = [0x7dffc4, 0x0a3d28, 0x2fd38a, 0x145c3a, 0xb8ff9a];
+          bands.forEach((c, k) => box(.27, .07, .29, std(c, { roughness: .4, metalness: k === 4 ? .35 : .15 }), 0, -.08 - k * .11, 0, w));
+        } else {
+          if (look.color2 && look.pattern === 'stripe') box(.03, .68, .28, std(look.color2, { roughness: .5 }), 0, -.35, .01, w);
+          if (look.color2 && look.pattern !== 'stripe' && look.pattern !== 'kline' && look.pattern !== 'kline-gold' && look.pattern !== 'green')
+            box(.02, .68, .28, std(look.color2, { roughness: .4, metalness: .5 }), .12, -.35, 0, w);
+          addCandles(w, 0, -.3, .16, .85, look.pattern, 4, 'x');
+        }
+      });
     }
-    if (eq.horns) {
-      [-1, 1].forEach(s => { const hb = cyl(.07, .1, .28, 6, goldHornM, s * .38, 2.25, 0, wearRoot); hb.rotation.z = s * -1.1; const ht = cyl(.01, .07, .3, 6, goldHornM, s * .55, 2.43, 0, wearRoot); ht.rotation.z = s * -.35; });
+
+    const shoesIt = it('shoes');
+    if (shoesIt) {
+      const look = shoesIt.look || {}, sm = lookMat(look);
+      const shape = look.shape || 'oxford';
+      legShoes.forEach((m, i) => {
+        m.material = sm;
+        if (shape === 'sneaker') m.scale.set(.3, .16, .42);
+        else if (shape === 'boot') m.scale.set(.29, .2, .4);
+        else if (shape === 'loafer') m.scale.set(.28, .12, .4);
+      });
+      wearLegs.forEach((w, i) => {
+        if (shape === 'boot') box(.28, .22, .3, sm, 0, -.58, .02, w);
+        if (look.color2 && shape !== 'sneaker') box(.27, .03, .4, std(look.color2, { roughness: .4, metalness: look.metal || .3 }), 0, -.79, .05, w);
+        if (shape === 'sneaker') box(.3, .04, .44, std(look.color2 || 0xf2f5fb, { roughness: .7 }), 0, -.8, .06, w);
+        if (look.pattern === 'yageo') {
+          [0x7dffc4, 0x2fd38a, 0xb8ff9a].forEach((c, k) => box(.29, .03, .4, std(c, { roughness: .4 }), 0, -.66 - k * .05, .05, w));
+        } else addCandles(w, 0, -.7, .28, .55, look.pattern, 3, 'x');
+      });
     }
+
+    const hat = it('hat');
+    if (hat) {
+      const look = hat.look || {}, hm = lookMat(look);
+      const sh = look.shape || 'bowler';
+      if (sh === 'cap') { box(.7, .16, .7, hm, 0, .47, 0, wearHead); box(.5, .06, .36, hm, 0, .41, .42, wearHead); }
+      else if (sh === 'beanie') { cyl(.4, .44, .32, 16, hm, 0, .5, 0, wearHead); }
+      else if (sh === 'beret') { cyl(.5, .5, .1, 18, hm, .06, .44, 0, wearHead); }
+      else if (sh === 'bucket') { cyl(.4, .5, .22, 16, hm, 0, .42, 0, wearHead); cyl(.52, .52, .05, 16, hm, 0, .32, 0, wearHead); }
+      else if (sh === 'newsboy') { cyl(.36, .4, .18, 16, hm, 0, .48, 0, wearHead); box(.7, .05, .7, hm, 0, .38, .06, wearHead); }
+      else if (sh === 'wide') { cyl(.36, .36, .18, 16, hm, 0, .48, 0, wearHead); cyl(.72, .72, .05, 20, hm, 0, .38, 0, wearHead); }
+      else if (sh === 'tophat') { cyl(.32, .32, .46, 16, hm, 0, .66, 0, wearHead); cyl(.55, .55, .06, 20, hm, 0, .4, 0, wearHead); }
+      else if (sh === 'crown') {
+        cyl(.36, .38, .16, 8, hm, 0, .48, 0, wearHead);
+        for (let i = 0; i < 6; i++) {
+          const a = i * Math.PI / 3;
+          box(.08, .22, .08, hm, Math.cos(a) * .34, .62, Math.sin(a) * .34, wearHead);
+        }
+      } else { cyl(.42, .4, .22, 16, hm, 0, .51, 0, wearHead); cyl(.62, .62, .05, 20, hm, 0, .4, 0, wearHead); }
+      if (look.color2 && sh !== 'crown' && look.pattern !== 'yageo') cyl(.46, .46, .03, 16, std(look.color2, { metalness: .8, roughness: .3 }), 0, .38, 0, wearHead);
+      if (look.pattern === 'yageo') addResistor(wearHead, 0, .56, .38, .55, .045, 'x');
+      else addCandles(wearHead, 0, .5, .4, .7, look.pattern, 4);
+    }
+
+    const glasses = it('glasses');
+    if (glasses) {
+      const look = glasses.look || {}, gm = lookMat(look, { metalness: look.metal ?? .8, roughness: .25 });
+      const lens = std(look.lens || 0x111118, { metalness: .9, roughness: .15, opacity: .85, transparent: true });
+      const sh = look.shape || 'square';
+      box(.16, .02, .02, gm, 0, .09, .38, wearHead);
+      if (look.pattern === 'yageo') {
+        [-1, 1].forEach(s => {
+          const l = new THREE.Mesh(keep(new THREE.CircleGeometry(.1, 12)), lens); l.position.set(s * .16, .07, .4); wearHead.add(l);
+          addResistor(wearHead, s * .28, .07, .12, .52, .028, 'z');
+        });
+      } else
+      [-1, 1].forEach(s => {
+        if (sh === 'round') {
+          const l = new THREE.Mesh(keep(new THREE.CircleGeometry(.11, 14)), lens); l.position.set(s * .16, .07, .4); wearHead.add(l);
+          const r = new THREE.Mesh(keep(new THREE.TorusGeometry(.11, .015, 6, 14)), gm); r.position.set(s * .16, .07, .4); wearHead.add(r);
+        } else if (sh === 'aviator') {
+          const l = new THREE.Mesh(keep(new THREE.CircleGeometry(.12, 10)), lens); l.scale.set(1, .85, 1); l.position.set(s * .17, .06, .4); wearHead.add(l);
+        } else if (sh === 'thin') {
+          const l = new THREE.Mesh(keep(new THREE.CircleGeometry(.1, 12)), lens); l.position.set(s * .16, .07, .4); wearHead.add(l);
+        } else if (sh === 'half') {
+          box(.2, .1, .02, lens, s * .16, .05, .4, wearHead);
+          box(.2, .015, .02, gm, s * .16, .1, .41, wearHead);
+        } else if (sh === 'sport') {
+          box(.22, .1, .04, lens, s * .16, .07, .4, wearHead);
+          box(.02, .1, .04, gm, s * .27, .07, .4, wearHead);
+        } else {
+          const l = new THREE.Mesh(keep(new THREE.CircleGeometry(.1, 12)), lens); l.position.set(s * .16, .07, .4); wearHead.add(l);
+        }
+      });
+      if (look.pattern !== 'yageo') addCandles(wearHead, 0, .07, .46, .45, look.pattern, 4);
+    }
+
+    const horns = it('horns');
+    if (horns) {
+      const hm = lookMat(horns.look || {}, { metalness: horns.look?.metal ?? 1, roughness: .25, envMapIntensity: 1.1 });
+      [-1, 1].forEach(s => { const hb = cyl(.07, .1, .28, 6, hm, s * .38, .3, 0, wearHead); hb.rotation.z = s * -1.1; const ht = cyl(.01, .07, .3, 6, hm, s * .55, .48, 0, wearHead); ht.rotation.z = s * -.35; });
+    }
+
+    const ear = it('earring');
+    if (ear) {
+      const em = lookMat(ear.look || {}, { metalness: ear.look?.metal ?? .9, roughness: .25 });
+      [-1, 1].forEach(s => { cyl(.03, .03, .08, 8, em, s * .5, -.08, .06, wearHead); const drop = new THREE.Mesh(keep(new THREE.SphereGeometry(.045, 8, 6)), em); drop.position.set(s * .5, -.16, .06); wearHead.add(drop); });
+    }
+
+    const watch = it('watch');
+    if (watch) {
+      const look = watch.look || {}, wm = lookMat(look);
+      box(.16, .06, .16, wm, 0, -.56, 0, wearArms[0]);
+      if (look.pattern === 'yageo') {
+        cyl(.1, .1, .05, 20, wm, 0, -.56, .11, wearArms[0]).rotation.x = Math.PI / 2;
+        const face = keep(new THREE.MeshBasicMaterial({ map: yageoWatchTex() }));
+        cyl(.085, .085, .02, 20, face, 0, -.56, .145, wearArms[0]).rotation.x = Math.PI / 2;
+      } else {
+        cyl(.07, .07, .04, 16, wm, 0, -.56, .1, wearArms[0]).rotation.x = Math.PI / 2;
+        const face = std(look.color2 || 0x111111, { roughness: .3, metalness: .4, map: look.pattern ? klineTex(look.pattern === 'kline-gold' ? 'gold' : look.pattern === 'green' ? 'green' : 'mix') : null });
+        cyl(.055, .055, .02, 16, face, 0, -.56, .13, wearArms[0]).rotation.x = Math.PI / 2;
+        addCandles(wearArms[0], 0, -.56, .16, .35, look.pattern, 3);
+      }
+    }
+
+    const ring = it('ring');
+    if (ring) {
+      const rm = lookMat(ring.look || {}, { metalness: ring.look?.metal ?? .95, roughness: .2 });
+      const rg = cyl(.04, .04, .02, 10, rm, .06, -.68, .06, wearArms[1]); rg.rotation.x = Math.PI / 2;
+      if (ring.look && ring.look.color2) { const gem = new THREE.Mesh(keep(new THREE.SphereGeometry(.02, 6, 4)), std(ring.look.color2, { metalness: .8, roughness: .2 })); gem.position.set(.06, -.68, .09); wearArms[1].add(gem); }
+    }
+
     if (hooks.outfitReady) hooks.outfitReady();
+  }
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.load('900 80px "Noto Sans CJK TC"').catch(() => {});
+    document.fonts.ready.then(() => {
+      yageoCache.chest = yageoCache.watch = null;
+      if (hooks.outfit) applyOutfit(hooks.outfit());
+    });
   }
   const shadowTex = canvasTex(128, 128, (g) => { const r = g.createRadialGradient(64, 64, 4, 64, 64, 60); r.addColorStop(0, 'rgba(0,0,0,.55)'); r.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = r; g.fillRect(0, 0, 128, 128); });
   const shadow = new THREE.Mesh(keep(new THREE.PlaneGeometry(1.4, 1.4)), keep(new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false }))); shadow.rotation.x = -Math.PI / 2; shadow.position.y = .05; avatar.add(shadow);

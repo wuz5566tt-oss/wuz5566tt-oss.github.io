@@ -1,6 +1,9 @@
 import { toggleMusic, blip, preferMusicOn, isMusicOn } from './audio.js';
 import { applyBrand, STAR_LOGO_UI, TOWER_NAME, EVENT_NAME, isCyber } from './brand.js';
 import { encodeBackup, decodeBackup, applySnapshot, hasProgress } from './backup.js';
+import { GM_HASH } from './gm.js';
+import { SHOP, TABS, itemById, itemsInTab, cssHex } from './shop-catalog.js';
+export { SHOP };
 
 /* ---------- 基本資料 ---------- */
 import { GATE_HASH, SEALED } from './insider-data.js';
@@ -116,29 +119,81 @@ ICON.shop = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-w
 ICON.backup = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5" stroke="#3ef2ff"/></svg>';
 Object.keys(FLOORS).forEach(f => ICON['lift_' + f] = ICON.elevator);
 
-export const SHOP = [
-  { id: 'jacket-navy', slot: 'jacket', name: '藏青西裝外套', price: 80 },
-  { id: 'jacket-black', slot: 'jacket', name: '黑色西裝外套', price: 80 },
-  { id: 'tie-gold', slot: 'tie', name: '金色領帶', price: 40 },
-  { id: 'tie-cyan', slot: 'tie', name: '青色領帶', price: 40 },
-  { id: 'tie-red', slot: 'tie', name: '紅色領帶', price: 40 },
-  { id: 'hat-cap', slot: 'hat', name: '便帽', price: 90 },
-  { id: 'hat-bowler', slot: 'hat', name: '紳士帽', price: 120 },
-  { id: 'glasses-black', slot: 'glasses', name: '墨鏡', price: 100 },
-  { id: 'glasses-gold', slot: 'glasses', name: '金框墨鏡', price: 140 },
-  { id: 'cape-cyan', slot: 'cape', name: '青色披風', price: 180 },
-  { id: 'cape-gold', slot: 'cape', name: '金色披風', price: 220 },
-  { id: 'horns-gold', slot: 'horns', name: '金色牛角', price: 280 },
-];
+
+/* ---------- GM 模式（?gm=1 + 通行證，進度與正式資料分開） ---------- */
+const GM_SESSION = 'niuma-gm-v1';
+let gm = null;
+try { gm = JSON.parse(sessionStorage.getItem(GM_SESSION) || 'null'); } catch { gm = null; }
+export const isGM = () => !!(gm && gm.on);
+function writeGm(data) {
+  gm = data;
+  try { if (data) sessionStorage.setItem(GM_SESSION, JSON.stringify(data)); else sessionStorage.removeItem(GM_SESSION); } catch {}
+}
+function shopView() {
+  if (isGM()) {
+    if (!gm.eq || typeof gm.eq !== 'object') gm.eq = {};
+    return { owned: SHOP.map(i => i.id), eq: gm.eq };
+  }
+  return shopState();
+}
+function blockGmProgress(msg = 'GM 模式不記錄打卡與進度，以免覆蓋正式資料') {
+  if (!isGM()) return false;
+  toast(msg);
+  return true;
+}
+
 const shopState = () => {
   if (!S.shop || typeof S.shop !== 'object') S.shop = { owned: [], eq: {} };
   if (!Array.isArray(S.shop.owned)) S.shop.owned = [];
   if (!S.shop.eq || typeof S.shop.eq !== 'object') S.shop.eq = {};
   return S.shop;
 };
-const equipped = () => shopState().eq;
+const equipped = () => shopView().eq;
 function wearAll() { world && world.setOutfit && world.setOutfit(equipped()); paintAvatars(); }
 function paintAvatars() { document.querySelectorAll('[data-avatar]').forEach(a => { a.innerHTML = avatarSVG(equipped()); }); }
+
+
+let shopTab = 'new';
+function setPieces() {
+  const st = shopState();
+  const cur = itemById(st.eq.set);
+  return cur && cur.pieces ? cur.pieces : null;
+}
+function matchSet(st) {
+  for (const it of SHOP) {
+    if (it.slot !== 'set' || !it.pieces) continue;
+    if (Object.entries(it.pieces).every(([slot, id]) => st.eq[slot] === id)) return it.id;
+  }
+  return null;
+}
+function grantPieces(st, it) {
+  if (!st.owned.includes(it.id)) st.owned.push(it.id);
+  if (it.pieces) Object.values(it.pieces).forEach(id => { if (!st.owned.includes(id)) st.owned.push(id); });
+}
+function equipItem(st, it) {
+  if (it.slot === 'set' && it.pieces) {
+    Object.entries(it.pieces).forEach(([slot, id]) => { st.eq[slot] = id; });
+    st.eq.set = it.id;
+    return;
+  }
+  st.eq[it.slot] = it.id;
+  const mid = matchSet(st);
+  if (mid) st.eq.set = mid; else delete st.eq.set;
+}
+function unequipItem(st, it) {
+  if (it.slot === 'set' && it.pieces) {
+    Object.entries(it.pieces).forEach(([slot, id]) => { if (st.eq[slot] === id) delete st.eq[slot]; });
+    delete st.eq.set;
+    return;
+  }
+  if (st.eq[it.slot] === it.id) delete st.eq[it.slot];
+  const mid = matchSet(st);
+  if (mid) st.eq.set = mid; else delete st.eq.set;
+}
+function isOn(st, it) {
+  if (it.slot === 'set') return st.eq.set === it.id || (it.pieces && Object.entries(it.pieces).every(([slot, id]) => st.eq[slot] === id));
+  return st.eq[it.slot] === it.id;
+}
 
 /* ---------- 狀態 ---------- */
 const pad = n => String(n).padStart(2, '0');
@@ -148,12 +203,12 @@ const yesterday = () => { const d = new Date(); d.setDate(d.getDate() - 1); retu
 const hash = s => { let h = 2166136261; for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return h >>> 0; };
 const fresh = () => ({ coins: 0, xp: 0, streak: 0, last: null, days: [], guesses: {}, fortune: null, reviews: {}, pref: {}, week: {}, claims: {}, vid: null, games: {}, shop: { owned: [], eq: {} }, bak: { seen: false, last: null, snooze: null, remindDays: 0 } });
 let S; try { S = Object.assign(fresh(), JSON.parse(localStorage.getItem(KEY) || '{}')); } catch { S = fresh(); }
-const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
+const save = () => { if (isGM()) return; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
 if (!S.vid) { S.vid = String(100000 + Math.floor(Math.random() * 900000)); save(); }
 const QS = new URLSearchParams(location.search);
 const realDays = () => new Set(S.days).size;
 const effDays = () => Math.max(realDays(), QS.has('days') ? (+QS.get('days') || 0) : 0); // 隱藏測試參數 ?days=7
-const floorOpen = f => FLOORS[f].pass ? !!insiderLinks : effDays() >= FLOORS[f].need;
+const floorOpen = f => isGM() ? true : (FLOORS[f].pass ? !!insiderLinks : effDays() >= FLOORS[f].need);
 const weekKey = () => { const d = new Date(); const t = new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7)); return dstr(t); };
 const weekPts = () => S.week[weekKey()] || 0;
 function boardRows() {
@@ -226,7 +281,7 @@ function buildDock() {
   refreshHud();
 }
 function refreshHud() {
-  $('#hudCoins').textContent = S.coins.toLocaleString('zh-TW');
+  $('#hudCoins').textContent = isGM() ? '∞' : S.coins.toLocaleString('zh-TW');
   $('#hudRank').textContent = RANKS[rankIndex()].name;
   $('#hudStreak').textContent = streakNow();
   const td = todos();
@@ -242,6 +297,7 @@ function refreshHud() {
   world && world.refresh && world.refresh({ floors: floorInfo(), board: boardRows(), rank: rankIndex() });
 }
 function addXP(n, coins = 0, el) {
+  if (isGM()) return;
   const before = rankIndex();
   S.xp += n; S.coins += coins; save();
   if (coins) coinBurst(el);
@@ -284,24 +340,61 @@ const ladderHTML = () => {
 
 
 function renderShop(el) {
-  const st = shopState();
+  const st = shopView();
+  const tab = TABS.some(t => t.id === shopTab) ? shopTab : 'new';
+  shopTab = tab;
+  const list = itemsInTab(tab);
+  const tabs = TABS.map(t => `<button type="button" class="shop-tab${t.id === tab ? ' on' : ''}" role="tab" aria-selected="${t.id === tab}" data-tab="${t.id}">${t.name}</button>`).join('');
+  const cards = list.map(it => {
+    const own = st.owned.includes(it.id) || (it.pieces && Object.values(it.pieces).every(id => st.owned.includes(id)));
+    const on = isOn(st, it);
+    const free = it.price === 0;
+    const act = on ? '脫下' : own ? '穿上' : (free ? '免費領取' : `購買・${it.price.toLocaleString('zh-TW')}`);
+    const price = own ? '已擁有' : (free ? (it.badge || '免費') : `${it.price.toLocaleString('zh-TW')} 薪水`);
+    const badges = [
+      it.badge ? `<em class="shop-badge free">${it.badge}</em>` : '',
+      it.series === 'kline' ? `<em class="shop-badge kline">K線系列</em>` : '',
+      it.series === 'yageo' ? `<em class="shop-badge yageo">國巨 2327</em>` : '',
+    ].join('');
+    const sw = cssHex(it.look && it.look.color);
+    const preview = it.series === 'yageo' ? `<div class="shop-preview yageo"><strong>國巨 2327</strong><em>跌停</em></div>` : '';
+    return `<div class="shop-item${on ? ' on' : ''}${it.featured ? ' feat' : ''}${it.series === 'yageo' ? ' yageo' : ''}" data-id="${it.id}">
+      ${preview}
+      <div class="shop-item-top"><i class="shop-swatch" style="background:${sw}"></i><b>${it.name}</b></div>
+      ${badges ? `<div class="shop-badges">${badges}</div>` : ''}
+      <span class="price${free && !own ? ' free' : ''}">${price}</span>
+      <button class="btn ${own ? (on ? 'ghost' : 'cyan') : 'primary'} sm" data-shop="${it.id}">${act}</button>
+    </div>`;
+  }).join('');
   el.innerHTML = `<div class="card"><div class="row between"><b>服裝店</b><span class="tag">僅供裝扮</span></div>
-    <p class="note" style="margin:8px 0 0">用薪水兌換裝扮，穿上或脫下都不會影響獎勵階梯或資格碼。</p>
-    <div class="row between" style="margin-top:8px"><span>你的薪水</span><b style="color:var(--gold)">${S.coins.toLocaleString('zh-TW')}</b></div></div>
-    <div class="shop-grid">${SHOP.map(it => {
-      const own = st.owned.includes(it.id), on = st.eq[it.slot] === it.id;
-      const act = on ? '脫下' : own ? '穿上' : `購買・${it.price}`;
-      return `<div class="shop-item${on ? ' on' : ''}" data-id="${it.id}"><b>${it.name}</b><span class="price">${own ? '已擁有' : it.price + ' 薪水'}</span><button class="btn ${own ? (on ? 'ghost' : 'cyan') : 'primary'} sm" data-shop="${it.id}">${act}</button></div>`;
-    }).join('')}</div>`;
+    <p class="note" style="margin:8px 0 0">用薪水兌換裝扮，穿上或脫下都不會影響獎勵階梯或資格碼。各分類分開看，價錢由低到高。</p>
+    <div class="row between" style="margin-top:8px"><span>你的薪水</span><b style="color:var(--gold)">${isGM() ? '∞' : S.coins.toLocaleString('zh-TW')}</b></div></div>
+    <div class="shop-tabs" role="tablist">${tabs}</div>
+    <div class="shop-grid">${cards || '<p class="note">這個分類暫時沒有商品。</p>'}</div>`;
+  el.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { shopTab = b.dataset.tab; renderShop(el); });
+  const onTab = el.querySelector('.shop-tab.on');
+  onTab && onTab.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'instant' });
   el.querySelectorAll('[data-shop]').forEach(b => b.onclick = ev => {
-    const it = SHOP.find(x => x.id === b.dataset.shop); if (!it) return;
-    const st = shopState();
-    if (!st.owned.includes(it.id)) {
-      if (S.coins < it.price) { toast('薪水不夠，再去打卡賺一點吧'); return; }
-      S.coins -= it.price; st.owned.push(it.id); st.eq[it.slot] = it.id; save(); blip(1046); toast(`已購買「${it.name}」`); coinBurst(ev.target); refreshHud(); wearAll(); renderShop(el); return;
+    const it = itemById(b.dataset.shop); if (!it) return;
+    if (isGM()) {
+      const st = shopView();
+      if (isOn(st, it)) { unequipItem(st, it); toast(`已脫下「${it.name}」`); }
+      else { equipItem(st, it); toast(`已穿上「${it.name}」`); }
+      writeGm(gm); wearAll(); renderShop(el); return;
     }
-    if (st.eq[it.slot] === it.id) { delete st.eq[it.slot]; toast(`已脫下「${it.name}」`); }
-    else { st.eq[it.slot] = it.id; toast(`已穿上「${it.name}」`); }
+    const st = shopState();
+    const own = st.owned.includes(it.id) || (it.pieces && Object.values(it.pieces).every(id => st.owned.includes(id)));
+    if (!own) {
+      if (it.price > 0 && S.coins < it.price) { toast('薪水不夠，再去打卡賺一點吧'); return; }
+      if (it.price > 0) S.coins -= it.price;
+      grantPieces(st, it);
+      equipItem(st, it); save(); blip(1046);
+      toast(it.price === 0 ? `已免費領取「${it.name}」` : `已購買「${it.name}」`);
+      if (it.price > 0) coinBurst(ev.target);
+      refreshHud(); wearAll(); renderShop(el); return;
+    }
+    if (isOn(st, it)) { unequipItem(st, it); toast(`已脫下「${it.name}」`); }
+    else { equipItem(st, it); toast(`已穿上「${it.name}」`); }
     save(); wearAll(); renderShop(el);
   });
 }
@@ -333,6 +426,7 @@ function renderBackup(el) {
   const codeEl = el.querySelector('#bakCode'), cp = el.querySelector('#cpBak'), msg = el.querySelector('#bakMsg');
   const say = (txt, ok) => { msg.textContent = txt; msg.className = 'bak-msg ' + (ok ? 'ok' : 'bad'); };
   el.querySelector('#mkBak').onclick = async () => {
+    if (blockGmProgress('GM 模式不能產生備份碼')) return;
     try {
       const code = await encodeBackup(S);
       codeEl.hidden = false; codeEl.value = code; cp.hidden = false; markBakDone(); say('備份碼已產生，請複製保存', true);
@@ -342,6 +436,7 @@ function renderBackup(el) {
   let pending = null;
   const ask = el.querySelector('#bakAsk');
   el.querySelector('#doBak').onclick = async () => {
+    if (blockGmProgress('GM 模式不能還原備份，以免覆蓋正式進度')) return;
     const raw = el.querySelector('#bakIn').value; ask.hidden = true; pending = null;
     const out = await decodeBackup(raw);
     if (!out.ok) { say(bakReason(out.reason), false); return; }
@@ -385,7 +480,7 @@ const RENDER = {
     }).join('');
     el.innerHTML = `
       <div class="card row between"><div><div class="note">連續打卡</div><div class="stat">${st}<small style="font-size:.9rem"> 天</small></div></div>
-      <div style="text-align:right"><div class="note">累積薪水</div><div class="stat">${S.coins.toLocaleString('zh-TW')}</div></div></div>
+      <div style="text-align:right"><div class="note">累積薪水</div><div class="stat">${isGM() ? '∞' : S.coins.toLocaleString('zh-TW')}</div></div></div>
       <div class="punch"><button class="btn primary big" id="punch" ${done ? 'disabled' : ''}>${done ? '今天已打卡' : '上班打卡'}</button><div class="stamp ${done ? 'show' : ''}" id="stamp">已上班</div></div>
       <p class="note" style="text-align:center;margin:4px 0 0">${done ? '明天記得回來，斷簽就要重新累積喔' : '每天打卡領薪水，連續七天有大禮'}</p>
       <h3 style="margin:16px 0 0;font-size:1rem">七日打卡獎勵 <span class="tag">即將公開</span></h3>
@@ -393,6 +488,7 @@ const RENDER = {
       <p class="note">薪水是站內虛擬點數，可在服裝店兌換裝扮；其他兌換內容即將公開。不能換現金。</p>`;
     const b = el.querySelector('#punch');
     b && (b.onclick = () => {
+      if (blockGmProgress()) return;
       const before = ['f2', 'f3'].filter(f => floorOpen(f));
       const y = S.last === yesterday(); S.streak = y ? S.streak + 1 : 1; S.last = today(); S.days = [...S.days.slice(-60), today()];
       const c = ((S.streak - 1) % 7) + 1;
@@ -478,12 +574,12 @@ const RENDER = {
   cta(el) { guideHTML(el, true); },
   guide(el) { guideHTML(el, false); },
   directory(el) {
-    el.innerHTML = `<p style="margin:0">每天打卡累積天數，就能解鎖新樓層。你目前累積 <b style="color:var(--gold)">${effDays()}</b> 天。</p>${floorListHTML(false)}
+    el.innerHTML = `<p style="margin:0">${isGM() ? 'GM 預覽・全部樓層已開放' : `每天打卡累積天數，就能解鎖新樓層。你目前累積 <b style="color:var(--gold)">${effDays()}</b> 天。`}</p>${floorListHTML(false)}
       <button class="btn cyan" id="toLift" style="width:100%;margin-top:6px">走去電梯</button>${ladderBoardHTML()}`;
     el.querySelector('#toLift').onclick = () => world && world.go('lift_' + floor);
   },
   lift(el, err) {
-    el.innerHTML = `<p style="margin:0">要去哪一樓？累積打卡 <b style="color:var(--gold)">${effDays()}</b> 天。</p>${floorListHTML(true)}
+    el.innerHTML = `<p style="margin:0">${isGM() ? 'GM 預覽・全部樓層已開放' : `要去哪一樓？累積打卡 <b style="color:var(--gold)">${effDays()}</b> 天。`}</p>${floorListHTML(true)}
       <form id="gateForm" class="card gate" autocomplete="off" ${err || el._showGate ? '' : 'hidden'}>
         <label class="note" for="pass">68 樓・請輸入自己人暗號</label>
         <div class="row" style="margin-top:6px"><input id="pass" class="passin ${err ? 'wrong' : ''}" type="password" autocapitalize="characters" spellcheck="false" placeholder="暗號"><button class="btn primary" type="submit">上樓</button></div>
@@ -492,7 +588,7 @@ const RENDER = {
       ${insiderLinks ? '<button class="btn ghost sm" id="lockout" style="width:100%">登出自己人（這台裝置）</button>' : ''}`;
     el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => {
       const f = b.dataset.go;
-      if (f === 'insider' && !insiderLinks) { el._showGate = true; RENDER.lift(el); el.querySelector('#pass').focus(); return; }
+      if (f === 'insider' && !insiderLinks && !isGM()) { el._showGate = true; RENDER.lift(el); el.querySelector('#pass').focus(); return; }
       ride(f);
     });
     const f = el.querySelector('#gateForm');
@@ -524,6 +620,7 @@ const RENDER = {
   },
   ireports(el) {
     const L = insiderLinks;
+    if (!L && isGM()) { el.innerHTML = `<div class="card"><b>GM 預覽・自己人戰報</b><p class="note" style="margin:8px 0 0">這一區已開放預覽。正式的 A 股戰報與總控台連結仍要自己人暗號才會解開，GM 模式不會解開或改寫連結。</p></div>`; return; }
     if (!L) { el.innerHTML = `<div class="card">需要重新輸入暗號。</div>`; return; }
     const a = (u, t, s) => `<a class="screen" href="${u}" target="_blank" rel="noopener"><div class="row between"><h3>${t}</h3><span class="tag cyan">打開</span></div><div class="note">${s}</div></a>`;
     el.innerHTML = `<p style="margin:0">自己人專屬：A股戰報與公司總控台。台股、美股戰報在一樓也看得到。</p><div class="screens" style="margin-top:12px">
@@ -543,6 +640,7 @@ const RENDER = {
     let mood = r.mood;
     el.querySelectorAll('[data-mood]').forEach(b => b.onclick = () => { mood = b.dataset.mood; el.querySelectorAll('[data-mood]').forEach(x => x.classList.toggle('sel', x === b)); });
     el.querySelector('#rvSave').onclick = e => {
+      if (blockGmProgress()) return;
       const first = !S.reviews[today()];
       S.reviews[today()] = { mood, good: el.querySelector('#rv1').value, bad: el.querySelector('#rv2').value, plan: el.querySelector('#rv3').value };
       if (first) addXP(5, 30, e.target); else save();
@@ -565,8 +663,8 @@ const LOCK_SM = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" str
 /* ---------- 我的資格（接引櫃台／4 樓） ---------- */
 const STATE_TXT = ['未達資格', '可以登記領取', '有效', '已到期', '可重新啟動'];
 function ladderBoardHTML() {
-  const d = realDays();
-  return `<div class="card rladder"><div class="row between"><b style="font-size:1.05rem">獎勵階梯</b><span class="tag">由下往上越來越強</span></div>
+  const d = isGM() ? 9999 : realDays();
+  return `<div class="card rladder"><div class="row between"><b style="font-size:1.05rem">獎勵階梯</b><span class="tag">${isGM() ? 'GM 預覽' : '由下往上越來越強'}</span></div>
     <ol>${LADDER.slice().reverse().map(r => { const ok = d >= r.need;
       return `<li class="${ok ? 'ok' : ''} ${r.best ? 'top' : ''} ${r.last ? 'last' : ''}"><span class="w">${r.where}</span><span class="n"><b><span class="ttl">${r.name}</span>${r.best ? '<em class="best">最高獎勵</em>' : ''}${r.last ? '<em class="lastb">最後一關</em>' : ''}</b><small>${r.rule}</small></span><span class="s">${ok ? '已解鎖' : `還差 ${r.need - d} 天`}</span></li>`; }).join('')}</ol>
     <p class="note">領取、續用與重新啟動的方式，見接引櫃台「我的資格」裡的「領取與續用規則」。</p></div>`;
@@ -582,7 +680,7 @@ function rulesCardHTML() {
 }
 const lineOABtn = (cls = 'btn primary sm') => `<a class="${cls}" href="${LINE_OA}" target="_blank" rel="noopener">加官方 LINE</a>`;
 function guideHTML(el, isCta) {
-  const ms = modelStates(S, today(), realDays()), l7 = last7(new Set(S.days), today());
+  const ms = modelStates(S, today(), isGM() ? 9999 : realDays()), l7 = last7(new Set(S.days), today());
   const master = ms.find(x => x.id === 'master');
   const masterSt = master.state === 0 ? `再打卡 ${master.short} 天可申請（累積 ${MASTER_DAYS} 天）` : master.state === 1 ? `累積 ${MASTER_DAYS} 天已達成，可以申請` : master.state === 2 ? `有效・到期日 ${master.exp.replace(/-/g, '/')}` : master.state === 4 ? '可重新啟動' : '已到期';
   const modelNote = m => m.state === 0 ? `再打卡 ${m.short} 天可領（累積 ${m.need} 天）`
@@ -612,13 +710,14 @@ function guideHTML(el, isCta) {
     ${isCta ? '' : '<p class="note" style="text-align:center">打開 IG 後，私訊輸入「成長」就會收到；申請掌門面試請走官方 LINE。</p>'}`;
   el.querySelector('#cp').onclick = async () => { try { await navigator.clipboard.writeText('成長'); toast('已複製「成長」'); } catch { toast('請手動輸入「成長」'); } };
   const ob = el.querySelector('#openBak'); ob && (ob.onclick = () => openPanel('backup'));
-  el.querySelectorAll('[data-claim]').forEach(b => b.onclick = () => { S.claims[b.dataset.claim] = today(); save(); toast(`已登記領取，${VALID_DAYS} 天內有效`); guideHTML(el, isCta); });
+  el.querySelectorAll('[data-claim]').forEach(b => b.onclick = () => { if (blockGmProgress('GM 模式不能登記領取')) return; S.claims[b.dataset.claim] = today(); save(); toast(`已登記領取，${VALID_DAYS} 天內有效`); guideHTML(el, isCta); });
   const q = el.querySelector('#qcode'), cpq = el.querySelector('#cpq'), genq = el.querySelector('#genq');
   const putCode = c => {
     q.textContent = c; cpq.disabled = false;
     cpq.onclick = async () => { try { await navigator.clipboard.writeText(c); toast('已複製資格碼'); } catch { toast('請長按資格碼複製'); } };
   };
   genq.onclick = () => {
+    if (isGM()) { q.textContent = 'GM 模式不能產生資格碼'; toast('GM 模式不能產生資格碼'); return; }
     q.textContent = '產生中…'; cpq.disabled = true;
     encodeQual({ vid: S.vid, total: realDays(), streak: streakNow(), rank: rankIndex(), issued: today(), models: ms }).then(putCode)
       .catch(() => { q.textContent = '這個瀏覽器無法產生資格碼'; });
@@ -744,23 +843,73 @@ async function ride(to) {
 }
 
 /* ---------- 牛馬小人（平面版） ---------- */
+function lookOf(slot, eq) { const it = itemById(eq[slot]); return it && it.look ? it.look : null; }
+function klineMarks(x, y, pattern, n = 5) {
+  if (!pattern || (pattern !== 'kline' && pattern !== 'kline-gold' && pattern !== 'green' && pattern !== 'yageo')) return '';
+  let s = '';
+  for (let i = 0; i < n; i++) {
+    const up = (pattern === 'green' || pattern === 'yageo') ? false : i % 3 !== 1;
+    const fill = (pattern === 'green' || pattern === 'yageo') ? '#2fd38a' : up ? '#ff5468' : '#2fd38a';
+    const h = 5 + (i % 3) * 3;
+    s += `<rect x="${x + i * 4}" y="${y - (up ? h : 2)}" width="3" height="${h}" fill="${fill}"/>`;
+  }
+  return s;
+}
 function avatarSVG(eq = {}) {
-  const jacket = eq.jacket === 'jacket-black' ? '#151515' : eq.jacket === 'jacket-navy' ? '#1a2744' : '#f2f5fb';
-  const tie = eq.tie === 'tie-cyan' ? '#1aa9c9' : eq.tie === 'tie-red' ? '#8a2030' : '#ffc85a';
-  const horn = eq.horns ? '#ffd56a' : '#f4e3c0';
-  const cape = eq.cape === 'cape-gold' ? '#d9a441' : eq.cape === 'cape-cyan' ? '#1aa9c9' : '';
-  const hat = eq.hat === 'hat-cap' ? `<rect x="18" y="2" width="54" height="12" rx="4" fill="#1a2744"/><rect x="28" y="8" width="34" height="6" rx="2" fill="#1a2744"/>` : eq.hat === 'hat-bowler' ? `<ellipse cx="45" cy="10" rx="28" ry="7" fill="#161616"/><rect x="24" y="0" width="42" height="12" rx="8" fill="#161616"/>` : '';
-  const glasses = eq.glasses ? `<rect x="26" y="22" width="14" height="8" rx="2" fill="#111" opacity=".75"/><rect x="50" y="22" width="14" height="8" rx="2" fill="#111" opacity=".75"/><path d="M40 26h10" stroke="${eq.glasses === 'glasses-gold' ? '#d9a441' : '#111'}" stroke-width="2"/>` : '';
+  const jL = lookOf('jacket', eq), tL = lookOf('tie', eq), hL = lookOf('hat', eq), gL = lookOf('glasses', eq);
+  const cL = lookOf('cape', eq), pL = lookOf('pants', eq), sL = lookOf('shoes', eq);
+  const nL = lookOf('necklace', eq), wL = lookOf('watch', eq), rL = lookOf('ring', eq), eL = lookOf('earring', eq), hoL = lookOf('horns', eq);
+  const jacket = jL ? cssHex(jL.color) : '#f2f5fb';
+  const tie = tL ? cssHex(tL.color) : '#ffc85a';
+  const horn = hoL ? cssHex(hoL.color) : '#f4e3c0';
+  const cape = cL ? cssHex(cL.color) : '';
+  const pants = pL ? cssHex(pL.color) : '#1d2640';
+  const shoes = sL ? cssHex(sL.color) : '#111';
+  const sleeve = jL ? jacket : '#e6ebf5';
+  let hat = '';
+  if (hL) {
+    const hc = cssHex(hL.color);
+    const sh = hL.shape;
+    if (sh === 'cap') hat = `<rect x="18" y="2" width="54" height="12" rx="4" fill="${hc}"/><rect x="28" y="8" width="34" height="6" rx="2" fill="${hc}"/>`;
+    else if (sh === 'beanie') hat = `<rect x="22" y="0" width="46" height="16" rx="8" fill="${hc}"/>`;
+    else if (sh === 'beret') hat = `<ellipse cx="48" cy="8" rx="28" ry="9" fill="${hc}"/>`;
+    else if (sh === 'bucket') hat = `<rect x="20" y="4" width="50" height="10" rx="3" fill="${hc}"/><rect x="14" y="12" width="62" height="5" rx="2" fill="${hc}"/>`;
+    else if (sh === 'newsboy') hat = `<ellipse cx="45" cy="10" rx="26" ry="6" fill="${hc}"/><rect x="26" y="1" width="38" height="10" rx="6" fill="${hc}"/>`;
+    else if (sh === 'wide' || sh === 'tophat') hat = `<ellipse cx="45" cy="${sh === 'tophat' ? 12 : 10}" rx="30" ry="6" fill="${hc}"/><rect x="28" y="${sh === 'tophat' ? -8 : 0}" width="34" height="${sh === 'tophat' ? 20 : 12}" rx="4" fill="${hc}"/>`;
+    else if (sh === 'crown') hat = `<path d="M20 14 L28 2 L36 12 L45 0 L54 12 L62 2 L70 14 Z" fill="${hc}"/>`;
+    else hat = `<ellipse cx="45" cy="10" rx="28" ry="7" fill="${hc}"/><rect x="24" y="0" width="42" height="12" rx="8" fill="${hc}"/>`;
+  }
+  const gStroke = gL ? cssHex(gL.color) : '#111';
+  const gLens = gL && gL.lens ? cssHex(gL.lens) : '#111';
+  const glasses = gL ? (gL.shape === 'round'
+    ? `<circle cx="33" cy="26" r="7" fill="${gLens}" opacity=".75"/><circle cx="57" cy="26" r="7" fill="${gLens}" opacity=".75"/><path d="M40 26h10" stroke="${gStroke}" stroke-width="2"/>`
+    : `<rect x="26" y="22" width="14" height="8" rx="${gL.shape === 'aviator' ? 6 : 2}" fill="${gLens}" opacity=".75"/><rect x="50" y="22" width="14" height="8" rx="${gL.shape === 'aviator' ? 6 : 2}" fill="${gLens}" opacity=".75"/><path d="M40 26h10" stroke="${gStroke}" stroke-width="2"/>`) : '';
+  const neck = nL ? (nL.shape === 'thick'
+    ? `<ellipse cx="45" cy="50" rx="12" ry="4" fill="none" stroke="${cssHex(nL.color)}" stroke-width="3"/>`
+    : `<ellipse cx="45" cy="50" rx="11" ry="3.5" fill="none" stroke="${cssHex(nL.color)}" stroke-width="1.6"/>${nL.shape === 'pendant' ? `<circle cx="45" cy="55" r="2.4" fill="${cssHex(nL.color2 || nL.color)}"/>` : ''}`) : '';
+  const watch = wL ? `<rect x="12" y="70" width="8" height="6" rx="1.5" fill="${cssHex(wL.color)}"/>` : '';
+  const ring = rL ? `<circle cx="70" cy="80" r="2" fill="${cssHex(rL.color)}"/>` : '';
+  const ear = eL ? `<circle cx="16" cy="28" r="2.2" fill="${cssHex(eL.color)}"/><circle cx="74" cy="28" r="2.2" fill="${cssHex(eL.color)}"/>` : '';
+  const patJ = jL && jL.pattern ? (jL.pattern === 'yageo'
+    ? `<text x="45" y="66" text-anchor="middle" font-size="10" font-weight="800" fill="#e9ffe9">國巨</text><text x="45" y="76" text-anchor="middle" font-size="9" font-weight="800" fill="#c8ffd8">2327</text><rect x="32" y="78" width="26" height="9" rx="3" fill="#2fd38a"/><text x="45" y="85" text-anchor="middle" font-size="6" font-weight="800" fill="#04180f">跌停</text>`
+    : klineMarks(34, 66, jL.pattern)) : '';
+  const patP = pL && pL.pattern ? klineMarks(32, 90, pL.pattern, 3) + klineMarks(49, 90, pL.pattern, 3) : '';
+  const patS = sL && sL.pattern ? klineMarks(29, 102, sL.pattern, 3) + klineMarks(48, 102, sL.pattern, 3) : '';
+  const patG = gL && gL.pattern ? klineMarks(28, 26, gL.pattern, 3) + klineMarks(52, 26, gL.pattern, 3) : '';
+  const patW = wL && wL.pattern ? klineMarks(12, 72, wL.pattern, 2) : '';
+  const tieShape = tL && tL.shape === 'bow' ? `<rect x="36" y="50" width="18" height="7" rx="2" fill="${tie}"/>` : `<path d="M45 50 l-5 6 5 22 5-22z" fill="${tie}"/>`;
   return `<div class="av-in"><svg viewBox="0 0 90 110"><ellipse cx="45" cy="106" rx="22" ry="4" fill="#000" opacity=".35"/>
 ${cape ? `<path d="M22 52 q23 40 46 0 v36 q-23 16 -46 0z" fill="${cape}" opacity=".9"/>` : ''}
-<rect x="31" y="78" width="11" height="26" rx="4" fill="#1d2640"/><rect x="48" y="78" width="11" height="26" rx="4" fill="#1d2640"/>
-<rect x="24" y="48" width="42" height="36" rx="10" fill="${jacket}"/><path d="M45 50 l-5 6 5 22 5-22z" fill="${tie}"/><rect x="52" y="60" width="9" height="6" rx="1.5" fill="#3ef2ff"/>
-<rect x="15" y="52" width="10" height="26" rx="5" fill="${eq.jacket ? jacket : '#e6ebf5'}"/><rect x="65" y="52" width="10" height="26" rx="5" fill="${eq.jacket ? jacket : '#e6ebf5'}"/>
+<rect x="31" y="78" width="11" height="22" rx="4" fill="${pants}"/><rect x="48" y="78" width="11" height="22" rx="4" fill="${pants}"/>
+<rect x="29" y="98" width="15" height="8" rx="2" fill="${shoes}"/><rect x="46" y="98" width="15" height="8" rx="2" fill="${shoes}"/>
+<rect x="24" y="48" width="42" height="36" rx="10" fill="${jacket}"/>${tieShape}<rect x="52" y="60" width="9" height="6" rx="1.5" fill="#3ef2ff"/>
+<rect x="15" y="52" width="10" height="26" rx="5" fill="${sleeve}"/><rect x="65" y="52" width="10" height="26" rx="5" fill="${sleeve}"/>
+${neck}${watch}${ring}
 <path d="M22 18 q-12 -4 -14 -14 q10 4 18 8z" fill="${horn}"/><path d="M68 18 q12 -4 14 -14 q-10 4 -18 8z" fill="${horn}"/>
-<ellipse cx="16" cy="28" rx="8" ry="4" fill="#8a5a33"/><ellipse cx="74" cy="28" rx="8" ry="4" fill="#8a5a33"/>
+<ellipse cx="16" cy="28" rx="8" ry="4" fill="#8a5a33"/><ellipse cx="74" cy="28" rx="8" ry="4" fill="#8a5a33"/>${ear}
 <rect x="20" y="10" width="50" height="40" rx="16" fill="#a8703f"/><rect x="28" y="32" width="34" height="18" rx="9" fill="#e9c49a"/>
 <circle cx="37" cy="41" r="2.4" fill="#5b3a1e"/><circle cx="53" cy="41" r="2.4" fill="#5b3a1e"/><circle cx="34" cy="25" r="3.6" fill="#111"/><circle cx="56" cy="25" r="3.6" fill="#111"/><circle cx="35" cy="24" r="1.2" fill="#fff"/><circle cx="57" cy="24" r="1.2" fill="#fff"/>
-${glasses}${hat}</svg></div>`;
+${glasses}${patG}${hat}${patJ}${patP}${patS}${patW}</svg></div>`;
 }
 export const AVATAR_SVG = avatarSVG();
 
@@ -927,6 +1076,80 @@ if (S.pref.music !== false) {
 } else syncMusicBtn(false);
 
 const startFlat = qs.has('flat') || (!qs.has('force3d') && (S.pref.flat === true || (S.pref.flat == null && weakDevice())));
-window.__niuma = { get world() { return world; }, get floor() { return floor; }, openPanel, closePanel, ride, get ready() { return ready; }, SHOP, encodeBackup, decodeBackup, applySnapshot, maybeRemind };
-ready = (async () => { await restoreInsider(); await switchTo(startFlat ? 'flat' : '3d', false); })();
+
+function syncGmUi() {
+  let badge = document.getElementById('gmBadge');
+  if (isGM()) {
+    document.body.classList.add('gm');
+    if (!badge) {
+      const host = document.querySelector('.hud-left') || document.getElementById('hud');
+      badge = document.createElement('div');
+      badge.id = 'gmBadge';
+      badge.className = 'chip gm-badge';
+      badge.innerHTML = '<b>GM 董事長</b><small>董事長 LEO易凡</small><button type="button" class="btn ghost sm" id="gmOut">GM 登出</button>';
+      host && host.appendChild(badge);
+      document.getElementById('gmOut').onclick = logoutGm;
+    }
+  } else {
+    document.body.classList.remove('gm');
+    badge && badge.remove();
+  }
+  refreshHud();
+  buildDock();
+  wearAll();
+  if (world && world.refresh) world.refresh({ floors: floorInfo(), board: boardRows(), rank: rankIndex() });
+}
+function logoutGm() {
+  const here = floor;
+  writeGm(null);
+  try { S = Object.assign(fresh(), JSON.parse(localStorage.getItem(KEY) || '{}')); } catch {}
+  syncGmUi();
+  toast('已離開 GM 模式');
+  if (here !== 'lobby' && !floorOpen(here)) {
+    if (world && world.ride) ride('lobby'); else { floor = 'lobby'; buildDock(); }
+  }
+}
+function showGmPrompt() {
+  if (document.getElementById('gmGate')) return;
+  const el = document.createElement('div');
+  el.id = 'gmGate';
+  el.innerHTML = `<div class="gm-card"><p class="kicker">內部通道</p><b>請輸入通行證</b>
+    <form id="gmForm" autocomplete="off">
+      <input id="gmPass" class="passin" type="password" spellcheck="false" placeholder="通行證">
+      <button class="btn primary" type="submit">進入</button>
+    </form>
+    <div class="err" id="gmErr" hidden>通行證不正確</div>
+    <button type="button" class="btn ghost sm" id="gmCancel">取消</button></div>`;
+  document.body.appendChild(el);
+  const form = el.querySelector('#gmForm');
+  const input = el.querySelector('#gmPass');
+  el.querySelector('#gmCancel').onclick = () => el.remove();
+  form.onsubmit = async ev => {
+    ev.preventDefault();
+    const v = (input.value || '').trim();
+    const btn = form.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    try {
+      if (await sha256hex(v) === GM_HASH) {
+        writeGm({ on: true, eq: (gm && gm.eq) || {} });
+        el.remove();
+        syncGmUi();
+        toast('GM 模式已開啟');
+      } else {
+        el.querySelector('#gmErr').hidden = false;
+        input.classList.add('wrong');
+        blip(330);
+      }
+    } finally { btn.disabled = false; }
+  };
+  setTimeout(() => input.focus(), 80);
+}
+function maybeGmGate() {
+  if (isGM()) syncGmUi();
+  const q = new URLSearchParams(location.search);
+  if (q.get('gm') === '1' && !isGM()) showGmPrompt();
+}
+
+window.__niuma = { get world() { return world; }, get floor() { return floor; }, openPanel, closePanel, ride, get ready() { return ready; }, SHOP, encodeBackup, decodeBackup, applySnapshot, maybeRemind, get isGM() { return isGM(); } };
+ready = (async () => { await restoreInsider(); await switchTo(startFlat ? 'flat' : '3d', false); maybeGmGate(); })();
 if (qs.has('lobby')) skip();
