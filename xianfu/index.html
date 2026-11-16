@@ -4,8 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#07080c" />
-  <meta name="description" content="Leo 仙府 · 大殿。門徒專屬引薦計劃與師門介紹。" />
-  <title>Leo 仙府</title>
+  <meta name="description" content="LEO 史塔 仙府 · 大殿。門徒專屬引薦計劃與師門介紹。" />
+  <meta property="og:title" content="LEO 史塔 仙府" />
+  <meta property="og:description" content="LEO 史塔 仙府 · 大殿。門徒專屬引薦計劃與師門介紹。" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="LEO 史塔 仙府" />
+  <meta name="twitter:description" content="LEO 史塔 仙府 · 大殿。門徒專屬引薦計劃與師門介紹。" />
+  <title>LEO 史塔 仙府</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%2307080c' stroke='%23c9a84c' stroke-width='1'/%3E%3Ctext x='16' y='21' text-anchor='middle' fill='%23e8d7a8' font-size='11' font-family='serif'%3EL%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -21,20 +27,29 @@
   <section id="entrance" aria-label="仙府洞口">
     <div class="scene-art">
       <picture>
-        <source media="(min-width: 800px)" type="image/webp" srcset="assets/img/entrance-16x9.webp" />
-        <source media="(min-width: 800px)" type="image/jpeg" srcset="assets/img/entrance-16x9.jpg" />
+        <source media="(min-width: 800px)" type="image/webp" srcset="assets/img/entrance-16x9.webp 1280w, assets/img/entrance-16x9-2x.webp 2560w" sizes="100vw" />
+        <source media="(min-width: 800px)" type="image/jpeg" srcset="assets/img/entrance-16x9.jpg 1280w, assets/img/entrance-16x9-2x.jpg 2560w" sizes="100vw" />
         <source type="image/webp" srcset="assets/img/entrance-9x16.webp" />
         <img src="assets/img/entrance-9x16.jpg" alt="雲霧中的仙府洞口與石門" />
       </picture>
     </div>
+    <div class="zoom-bloom" aria-hidden="true"></div>
+    <div class="light-rays desk-fx" aria-hidden="true"><span></span></div>
+    <div class="clouds desk-fx" aria-hidden="true">
+      <span class="far"></span><span class="mid"></span><span class="near"></span>
+    </div>
     <div class="gate-glow" aria-hidden="true"></div>
     <div class="mist" aria-hidden="true">
       <span class="a"></span><span class="b"></span><span class="c"></span>
+      <span class="d desk-fx"></span><span class="e desk-fx"></span>
     </div>
     <div class="water-shimmer" aria-hidden="true"></div>
     <div class="fireflies" aria-hidden="true">
       <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
       <i></i><i></i><i></i><i></i>
+      <i class="desk-fx"></i><i class="desk-fx"></i><i class="desk-fx"></i><i class="desk-fx"></i>
+      <i class="desk-fx"></i><i class="desk-fx"></i><i class="desk-fx"></i><i class="desk-fx"></i>
+      <i class="desk-fx"></i><i class="desk-fx"></i><i class="desk-fx"></i><i class="desk-fx"></i>
     </div>
     <div class="cranes" aria-hidden="true">
       <svg class="crane c1" viewBox="0 0 80 36" fill="currentColor">
@@ -46,6 +61,12 @@
       <svg class="crane c3" viewBox="0 0 80 36" fill="currentColor">
         <path d="M2 22c8-2 14-10 22-9 4 .4 6 3 10 3 8 0 12-8 20-11 3-1 8-1 12 1-6 2-9 6-8 10 6 1 12-2 20-1-8 4-16 6-24 5-6-.4-9 3-16 6-5 2-12 3-18 1 4-2 6-4 4-6-4 0-10 2-16 2 2-1 3-1 4-1z"/>
       </svg>
+      <svg class="crane c4 desk-fx" viewBox="0 0 80 36" fill="currentColor">
+        <path d="M2 22c8-2 14-10 22-9 4 .4 6 3 10 3 8 0 12-8 20-11 3-1 8-1 12 1-6 2-9 6-8 10 6 1 12-2 20-1-8 4-16 6-24 5-6-.4-9 3-16 6-5 2-12 3-18 1 4-2 6-4 4-6-4 0-10 2-16 2 2-1 3-1 4-1z"/>
+      </svg>
+      <svg class="crane c5 desk-fx" viewBox="0 0 80 36" fill="currentColor">
+        <path d="M2 22c8-2 14-10 22-9 4 .4 6 3 10 3 8 0 12-8 20-11 3-1 8-1 12 1-6 2-9 6-8 10 6 1 12-2 20-1-8 4-16 6-24 5-6-.4-9 3-16 6-5 2-12 3-18 1 4-2 6-4 4-6-4 0-10 2-16 2 2-1 3-1 4-1z"/>
+      </svg>
     </div>
     <div class="enter-ui">
       <svg class="seal" viewBox="0 0 76 76" fill="none" aria-hidden="true">
@@ -55,7 +76,7 @@
         <text x="38" y="43.5" text-anchor="middle" fill="currentColor" font-size="15" font-family="Boska, Melodrama, serif">Leo</text>
       </svg>
       <div class="ornament" aria-hidden="true"><span class="line"></span><span class="diamond"></span><span class="line"></span></div>
-      <h1><span class="latin">Leo</span>仙府</h1>
+      <h1><span class="latin">LEO</span>史塔 仙府</h1>
       <p class="sub">門徒專屬</p>
       <button class="enter-btn" id="enter-btn" type="button">入府</button>
       <div class="path-choice" id="path-choice" hidden>
@@ -91,7 +112,7 @@
 
   <section id="hall" aria-label="大殿" aria-hidden="true">
     <div class="hall-head">
-      <p>Leo 仙府 · 大殿</p>
+      <p>LEO 史塔 仙府 · 大殿</p>
       <div class="hall-actions">
         <button class="descend-btn" id="descend-btn" type="button">下山 · 外門</button>
         <button class="back-btn" id="back-btn" type="button">回至洞口</button>
@@ -100,16 +121,21 @@
     <div class="hall-world">
       <div class="bg">
         <picture>
-          <source media="(min-width: 800px)" type="image/webp" srcset="assets/img/hall-16x9.webp" />
-          <source media="(min-width: 800px)" type="image/jpeg" srcset="assets/img/hall-16x9.jpg" />
+          <source media="(min-width: 800px)" type="image/webp" srcset="assets/img/hall-16x9.webp 1280w, assets/img/hall-16x9-2x.webp 2560w" sizes="100vw" />
+          <source media="(min-width: 800px)" type="image/jpeg" srcset="assets/img/hall-16x9.jpg 1280w, assets/img/hall-16x9-2x.jpg 2560w" sizes="100vw" />
           <source type="image/webp" srcset="assets/img/hall-9x16.webp" />
           <img src="assets/img/hall-9x16.jpg" alt="金碧大殿與空置主座" />
         </picture>
       </div>
+      <div class="hall-rays desk-fx" aria-hidden="true"><span></span></div>
+      <div class="hall-mist desk-fx" aria-hidden="true"><span class="a"></span><span class="b"></span></div>
       <span class="fx-lantern" style="left:27%;top:18%;width:9%;height:16%;animation-delay:-.4s" aria-hidden="true"></span>
       <span class="fx-lantern" style="left:68%;top:16%;width:9%;height:16%;animation-delay:-1.2s" aria-hidden="true"></span>
       <span class="fx-lantern" style="left:46%;top:12%;width:7%;height:12%;animation-delay:-.8s" aria-hidden="true"></span>
+      <span class="fx-lantern desk-fx" style="left:38%;top:22%;width:6%;height:11%;animation-delay:-2s" aria-hidden="true"></span>
+      <span class="fx-lantern desk-fx" style="left:58%;top:20%;width:6%;height:11%;animation-delay:-2.6s" aria-hidden="true"></span>
       <span class="fx-smoke" aria-hidden="true"></span>
+      <span class="fx-smoke desk-fx smoke-b" aria-hidden="true"></span>
 
       <div class="hall-stage" id="hall-stage">
         <button class="npc library" type="button" data-id="library" data-panel="canon" data-focus="library" aria-label="藏經閣">
@@ -321,8 +347,8 @@
   <div id="swoop" aria-hidden="true">
     <div class="swoop-world">
       <picture>
-        <source media="(min-width: 800px)" type="image/webp" srcset="assets/img/entrance-16x9.webp" />
-        <source media="(min-width: 800px)" type="image/jpeg" srcset="assets/img/entrance-16x9.jpg" />
+        <source media="(min-width: 800px)" type="image/webp" srcset="assets/img/entrance-16x9.webp 1280w, assets/img/entrance-16x9-2x.webp 2560w" sizes="100vw" />
+        <source media="(min-width: 800px)" type="image/jpeg" srcset="assets/img/entrance-16x9.jpg 1280w, assets/img/entrance-16x9-2x.jpg 2560w" sizes="100vw" />
         <source type="image/webp" srcset="assets/img/entrance-9x16.webp" />
         <img src="assets/img/entrance-9x16.jpg" alt="" />
       </picture>
@@ -345,7 +371,7 @@
     </svg>
     <span>音境</span>
   </button>
-  <audio id="ambient" src="assets/audio/xianjing.ogg" loop preload="none" playsinline></audio>
+  <audio id="ambient" src="assets/audio/gufeng.ogg" loop preload="none" playsinline></audio>
 
   <script src="assets/main.js"></script>
 </body>

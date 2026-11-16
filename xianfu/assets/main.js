@@ -59,7 +59,7 @@ var INNER_GATE_HASH = "45ae1891d4c816022a780b6f8ec92efe5770f63149f2436299075a5d6
   }
 
   function resetEnterClasses() {
-    entrance.classList.remove("is-zoom", "is-gone");
+    entrance.classList.remove("is-zoom", "is-midzoom", "is-gone");
     hall.classList.remove("in");
     if (wipe) wipe.classList.remove("flash", "fog", "mid", "out");
     if (swoopEl) swoopEl.classList.remove("on", "is-dive", "mid");
@@ -260,7 +260,7 @@ var INNER_GATE_HASH = "45ae1891d4c816022a780b6f8ec92efe5770f63149f2436299075a5d6
     clearTimers();
     hall.classList.remove("in");
     wipe.classList.remove("flash", "fog", "mid", "out"); wipe.style.opacity="";
-    entrance.classList.remove("is-zoom", "is-gone");
+    entrance.classList.remove("is-zoom", "is-midzoom", "is-gone");
     hideChoice();
     hideGate();
     if (swoopEl) swoopEl.classList.remove("on", "is-dive", "mid");
@@ -284,7 +284,7 @@ var INNER_GATE_HASH = "45ae1891d4c816022a780b6f8ec92efe5770f63149f2436299075a5d6
     }
 
     hall.classList.remove("in");
-    entrance.classList.remove("is-gone", "is-zoom");
+    entrance.classList.remove("is-gone", "is-zoom", "is-midzoom");
     if (swoopEl) {
       swoopEl.classList.remove("is-dive", "mid");
       swoopEl.classList.add("on");
@@ -456,28 +456,31 @@ var INNER_GATE_HASH = "45ae1891d4c816022a780b6f8ec92efe5770f63149f2436299075a5d6
     function seed() {
       dots = [];
       flies = [];
-      var n = window.innerWidth < 600 ? 40 : 78;
+      var area = window.innerWidth * window.innerHeight;
+      var desk = window.innerWidth >= 800;
+      var n = Math.round(Math.min(220, Math.max(40, area / 12000)));
+      var sizeBoost = desk ? 1.25 : 1;
       for (var i = 0; i < n; i++) {
         dots.push({
           x: Math.random() * window.innerWidth,
           y: Math.random() * window.innerHeight,
-          r: Math.random() * 1.6 + 0.3,
+          r: (Math.random() * 1.6 + 0.3) * sizeBoost,
           a: Math.random() * 0.4 + 0.1,
-          vx: (Math.random() - 0.5) * 0.18,
-          vy: (Math.random() - 0.5) * 0.22 - 0.06,
+          vx: (Math.random() - 0.5) * (desk ? 0.28 : 0.18),
+          vy: (Math.random() - 0.5) * (desk ? 0.32 : 0.22) - 0.06,
           tw: Math.random() * Math.PI * 2,
           ts: 0.008 + Math.random() * 0.014
         });
       }
-      var fn = window.innerWidth < 600 ? 12 : 18;
+      var fn = Math.round(Math.min(52, Math.max(12, area / 42000)));
       for (var j = 0; j < fn; j++) {
         flies.push({
           x: Math.random() * window.innerWidth,
           y: Math.random() * window.innerHeight * 0.85,
-          r: Math.random() * 1.8 + 1.1,
+          r: (Math.random() * 1.8 + 1.1) * sizeBoost,
           a: Math.random() * 0.5 + 0.35,
-          vx: (Math.random() - 0.5) * 0.25,
-          vy: (Math.random() - 0.5) * 0.2,
+          vx: (Math.random() - 0.5) * (desk ? 0.4 : 0.25),
+          vy: (Math.random() - 0.5) * (desk ? 0.32 : 0.2),
           tw: Math.random() * Math.PI * 2,
           ts: 0.02 + Math.random() * 0.03
         });
@@ -513,7 +516,7 @@ var INNER_GATE_HASH = "45ae1891d4c816022a780b6f8ec92efe5770f63149f2436299075a5d6
           ctx.beginPath();
           ctx.fillStyle = "rgba(255, 236, 170," + fa + ")";
           ctx.shadowColor = "rgba(243, 230, 196," + (fa * 0.9) + ")";
-          ctx.shadowBlur = 10;
+          ctx.shadowBlur = window.innerWidth >= 800 ? 16 : 10;
           ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
           ctx.fill();
           ctx.shadowBlur = 0;
@@ -545,6 +548,36 @@ var INNER_GATE_HASH = "45ae1891d4c816022a780b6f8ec92efe5770f63149f2436299075a5d6
     setScene("entrance");
   }
 
+  function freezeEnterZoom() {
+    clearTimers();
+    entering = false;
+    resetEnterClasses();
+    hideChoice();
+    hideGate();
+    entrance.classList.add("is-midzoom");
+    if (wipe) wipe.classList.remove("flash", "fog", "mid", "out");
+    setScene("entrance");
+  }
+
+  /* desktop depth: lerp pointer into CSS vars, transform only */
+  if (!reduce && window.matchMedia &&
+      window.matchMedia("(min-width:800px) and (pointer:fine)").matches) {
+    var parx = 0, pary = 0, tx = 0, ty = 0;
+    function tickParallax() {
+      parx += (tx - parx) * 0.06;
+      pary += (ty - pary) * 0.06;
+      document.body.style.setProperty("--parx", parx.toFixed(4));
+      document.body.style.setProperty("--pary", pary.toFixed(4));
+      requestAnimationFrame(tickParallax);
+    }
+    window.addEventListener("pointermove", function (e) {
+      var w = window.innerWidth || 1, h = window.innerHeight || 1;
+      tx = (e.clientX / w - 0.5) * 2;
+      ty = (e.clientY / h - 0.5) * 2;
+    }, { passive: true });
+    requestAnimationFrame(tickParallax);
+  }
+
   window.__xianfu = {
     enter: enterHall,
     leave: leaveHall,
@@ -552,6 +585,7 @@ var INNER_GATE_HASH = "45ae1891d4c816022a780b6f8ec92efe5770f63149f2436299075a5d6
     close: closeModal,
     show: showNpc,
     freezeMid: freezeMid,
+    freezeEnterZoom: freezeEnterZoom,
     showChoice: showChoice,
     showGate: showGate,
     showGateWrong: function () { showGate({ wrong: true, keepValue: true, sample: "XXXX" }); },
