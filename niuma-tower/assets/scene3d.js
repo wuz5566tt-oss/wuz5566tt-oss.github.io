@@ -450,7 +450,7 @@ export async function create3D(canvas, hooks) {
   function drawLeader(info) {
     const g = leadTex._g, w = 1024, h = 640; g.clearRect(0, 0, w, h); g.fillStyle = '#140a06'; g.fillRect(0, 0, w, h);
     g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillStyle = '#ffcf8a'; g.font = `900 60px ${FONT}`; g.fillText('本週猜盤排行榜', 48, 64);
-    g.textAlign = 'right'; g.font = `600 28px ${FONT}`; g.fillStyle = 'rgba(255,207,138,.7)'; g.fillText('含示範名單', w - 48, 64); g.textAlign = 'left';
+    g.textAlign = 'right'; g.font = `600 28px ${FONT}`; g.fillStyle = 'rgba(255,207,138,.7)'; g.fillText('即將公開', w - 48, 64); g.textAlign = 'left';
     (info && info.board || []).slice(0, 6).forEach((r, i) => {
       const y = 150 + i * 80; g.fillStyle = r.me ? 'rgba(255,154,60,.25)' : 'rgba(255,255,255,.04)'; g.fillRect(40, y - 34, w - 80, 68);
       g.fillStyle = '#ffd68a'; g.font = `900 40px ${FONT}`; g.fillText(r.rank + '', 64, y);
@@ -479,10 +479,10 @@ export async function create3D(canvas, hooks) {
     [-1, 1].forEach(k => { const b = cyl(.08, .08, .08, 10, glow(k < 0 ? C.up : C.down, 2), sx * -.72, 1.1, k * .3, g); b.rotation.z = Math.PI / 2; });
     return g;
   }
-  arcade('kline', 'C', '看K線猜下一根', '#8cff5a', '隨機產生・示範'); wallSign('看K線猜下一根', '小遊戲', 'C', F3, false, 4.9);
+  arcade('kline', 'C', '看K線猜下一根', '#8cff5a', '練習盤・隨機產生'); wallSign('看K線猜下一根', '小遊戲', 'C', F3, false, 4.9);
   arcade('fakeout', 'D', '躲假突破', '#ffc85a', '反應小遊戲'); wallSign('躲假突破', '反應小遊戲', 'D', F3, true, 4.9);
   { const g = zoneGroup('tips', 'G', F3); box(5.6, 3, .14, armor, 0, 2.9, .06, g);
-    const t = textTex(['心法小提醒', '每玩完一局送一句・內容待老闆提供'], { w: 1400, h: 760, size: 150, color: '#bfffa0', border: '#8cff5a', glowC: '#8cff5a', sub: '#ffd68a' }); plane(5.4, 2.9, t, 0, 2.9, .15, g); }
+    const t = textTex(['心法小提醒', '每玩完一局送一句董事長的心法'], { w: 1400, h: 760, size: 150, color: '#bfffa0', border: '#8cff5a', glowC: '#8cff5a', sub: '#ffd68a' }); plane(5.4, 2.9, t, 0, 2.9, .15, g); }
   [[-4, -4], [4, -4], [-4, -11], [4, -11]].forEach(([x, z]) => { const c = new THREE.Mesh(keep(new THREE.ConeGeometry(.25, .6, 8)), glow(0xffa63c, 1.2)); c.position.set(x, .3, z); F3.add(c); });
   [-1, 1].forEach(s => { const hb = new THREE.Group(); hb.position.set(s * 6.6, 0, -3.2); F3.add(hb); [-.8, .8].forEach(z => box(.08, 1, .08, armor2, 0, .5, z, hb)); box(.08, .08, 1.7, glow(0x8cff5a, 1.6), 0, 1, 0, hb); });
   { const bag = cyl(.4, .4, 1.4, 10, std(0x3a1414, { roughness: .6 }), -7.4, 2.2, -12.4, F3); cyl(.03, .03, 2, 4, armor, -7.4, 4.6, -12.4, F3); }
@@ -509,7 +509,7 @@ export async function create3D(canvas, hooks) {
     const t = canvasTex(1024, 640, (c, w, h) => {
       c.fillStyle = '#0d0a05'; c.fillRect(0, 0, w, h); c.strokeStyle = '#ffc85a'; c.lineWidth = 10; c.strokeRect(10, 10, w - 20, h - 20);
       c.fillStyle = '#ffd68a'; c.font = `900 96px ${FONT}`; c.textAlign = 'center'; c.shadowColor = '#ffc85a'; c.shadowBlur = 20; c.fillText('英雄榜', w / 2, 120); c.shadowBlur = 0;
-      for (let i = 0; i < 6; i++) { const x = 90 + (i % 3) * 300, y = 180 + Math.floor(i / 3) * 210; c.strokeStyle = 'rgba(255,200,90,.6)'; c.lineWidth = 3; c.strokeRect(x, y, 240, 180); c.fillStyle = 'rgba(255,214,138,.75)'; c.font = `700 34px ${FONT}`; c.fillText('待老闆提供', x + 120, y + 100); }
+      for (let i = 0; i < 6; i++) { const x = 90 + (i % 3) * 300, y = 180 + Math.floor(i / 3) * 210; c.strokeStyle = 'rgba(255,200,90,.6)'; c.lineWidth = 3; c.strokeRect(x, y, 240, 180); c.fillStyle = 'rgba(255,214,138,.75)'; c.font = `700 34px ${FONT}`; c.fillText('即將公開', x + 120, y + 100); }
     });
     plane(3.6, 2.25, t, -.04, 2.6, 0, g, -Math.PI / 2);
     box(.4, .08, 3, goldGlow, -.25, 1.25, 0, g);
@@ -560,7 +560,7 @@ export async function create3D(canvas, hooks) {
     wallSign('掌門辦公室', '董事長 LEO易凡', 'A', I, true); }
   { const g = zoneGroup('hall', 'B', I);
     rbox(1.3, 1, 3, .1, darkPanel, 0, .5, 0, g); box(1.34, .05, 3.04, cyanGlow, 0, 1.02, 0, g);
-    const board = textTex(['公告欄', '待老闆提供'], { w: 768, h: 520, size: 110, color: '#9ff4ff', border: '#3ef2ff', glowC: '#3ef2ff', sub: '#ffd68a' });
+    const board = textTex(['公告欄', '即將公開'], { w: 768, h: 520, size: 110, color: '#9ff4ff', border: '#3ef2ff', glowC: '#3ef2ff', sub: '#ffd68a' });
     plane(2.4, 1.6, board, .25, 2.7, 0, g, -Math.PI / 2);
     wallSign('執事堂', '公告與排程', 'B', I, false, 4.9); }
   { const g = zoneGroup('library', 'C', I);
@@ -568,7 +568,7 @@ export async function create3D(canvas, hooks) {
     wallSign('藏經閣講義', '三卷九章', 'C', I, true, 4.9); }
   { const g = zoneGroup('course', 'D', I);
     rbox(.7, 1.2, .6, .08, wood, 0, .6, 0, g); box(.74, .04, .64, goldGlow, 0, 1.22, 0, g);
-    const scr = textTex(['傳功課程', '第一課・待老闆提供'], { w: 1024, h: 560, size: 120, color: '#9ff4ff', border: '#3ef2ff', glowC: '#3ef2ff', sub: '#ffd68a' });
+    const scr = textTex(['傳功課程', '即將公開'], { w: 1024, h: 560, size: 120, color: '#9ff4ff', border: '#3ef2ff', glowC: '#3ef2ff', sub: '#ffd68a' });
     plane(3, 1.65, scr, 2.25, 3, 0, g, -Math.PI / 2);
     [0, 1, 2].forEach(i => rbox(.5, .45, .5, .08, armor2, -1.4, .22, -1 + i, g));
     wallSign('傳功課程', '影片課程', 'D', I, false, 5.3); }
@@ -579,7 +579,7 @@ export async function create3D(canvas, hooks) {
     wallSign('下班複盤', '寫下今天的心得', 'E', I, true, 4.4); }
   { const g = zoneGroup('arena', 'F', I);
     const mat = new THREE.Mesh(keep(new THREE.CircleGeometry(1.6, 8)), std(0x3a1414, { roughness: .6 })); mat.rotation.x = -Math.PI / 2; mat.position.set(-1.8, .04, 0); g.add(mat);
-    const t = textTex(['演武場', '實盤複盤・待老闆提供'], { w: 1024, h: 600, size: 120 });
+    const t = textTex(['演武場', '即將公開'], { w: 1024, h: 600, size: 120 });
     plane(3.4, 2, t, -.04, 2.7, 0, g, -Math.PI / 2); }
   // 三市戰報室（自己人）：會動的示意螢幕，連結只在面板裡
   const liveScreens = [];

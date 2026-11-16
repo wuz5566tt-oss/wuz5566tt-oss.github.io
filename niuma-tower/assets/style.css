@@ -228,7 +228,7 @@ body[data-floor=insider] .chip.floor b{color:var(--gold)}
 @keyframes wrong{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
 .err{color:var(--up);font-size:.82rem;min-height:1.2em;margin-top:6px}
 .ph-portrait{width:84px;height:84px;border-radius:50%;margin:4px auto 8px;background:repeating-linear-gradient(45deg,#3a2b10 0 7px,#261c0b 7px 14px);box-shadow:inset 0 0 0 2px var(--gold),0 0 20px rgba(255,200,90,.3);display:grid;place-items:center}
-.ph-portrait:after{content:"照片待老闆提供";font-size:.6rem;color:var(--gold);text-align:center;width:60px}
+.ph-portrait:after{content:"即將公開";font-size:.6rem;color:var(--gold);text-align:center;width:60px}
 .ride{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:radial-gradient(circle,rgba(8,16,36,.82),rgba(2,5,12,.96));opacity:0;transition:opacity .35s var(--ease-out)}
 .ride.show{opacity:1}
 .ride-box{text-align:center;padding:26px 38px;border-radius:22px;background:linear-gradient(180deg,#121b33,#070c1a);box-shadow:inset 0 0 0 2px rgba(255,200,90,.55),0 0 60px rgba(255,200,90,.18)}
@@ -354,7 +354,7 @@ body[data-floor=insider] .chip.floor b{color:var(--gold)}
 @keyframes mote{0%{transform:translateY(0);opacity:0}15%{opacity:.85}85%{opacity:.6}100%{transform:translateY(-95vh);opacity:0}}
 @media (prefers-reduced-motion:reduce){.fl-motes,.ride::before,.ride::after,.fl-backwall::after{animation:none!important;display:none}}
 
-/* 5 樓範例圖占位、官方 LINE、掌門面試卡片 */
+/* 5 樓範例圖、官方 LINE、掌門面試卡片 */
 .ex-ph{margin-top:10px;min-height:148px;border-radius:14px;display:grid;place-items:center;background:repeating-linear-gradient(45deg,rgba(120,170,255,.14) 0 10px,rgba(10,16,36,.55) 10px 20px);box-shadow:inset 0 0 0 1px rgba(120,170,255,.45),0 0 24px rgba(120,170,255,.12);color:var(--mute);font-size:.85rem;font-weight:700}
 .ex-ph span{padding:8px 14px;border-radius:8px;background:rgba(8,12,28,.7);letter-spacing:.04em}
 .card.lineoa{box-shadow:inset 0 0 0 1px rgba(62,242,255,.45)}
@@ -370,3 +370,6 @@ body[data-floor=insider] .chip.floor b{color:var(--gold)}
 .card.rules li{font-size:.86rem;line-height:1.55;color:var(--ink)}
 .qcode .row{margin-top:2px}
 .qcode .btn[disabled]{opacity:.45;pointer-events:none}
+
+.card.coming{text-align:center;padding:22px 16px}
+.card.coming b{display:block;font-size:1.05rem}

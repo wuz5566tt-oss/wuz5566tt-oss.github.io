@@ -1,4 +1,4 @@
-import { toggleMusic, blip } from './audio.js';
+import { toggleMusic, blip, preferMusicOn, isMusicOn } from './audio.js';
 
 /* ---------- 基本資料 ---------- */
 import { GATE_HASH, SEALED } from './insider-data.js';
@@ -67,15 +67,37 @@ export const ZONES = [
   { id: 'ireports', floor: 'insider', slot: 'G', name: '三市戰報室', kicker: 'A股戰報與總控台' },
   ...Object.keys(FLOORS).map(f => ({ id: 'lift_' + f, type: 'lift', floor: f, slot: 'H', name: '電梯', kicker: '各樓層' })),
 ];
-const QUOTES = [ // 示範內容，待老闆提供
-  '先求活下來，再求賺多少。', '計畫你的交易，交易你的計畫。', '停損是保險，不是失敗。',
-  '看不懂的行情，不做也是一種功力。', '情緒上頭時，先離開螢幕三分鐘。', '紀律比預測更重要。',
-  '複盤的人，明天會更清楚。', '別讓一筆交易決定你一整天的心情。', '少即是多，等待是工作的一部分。',
-  '把每天的小事做好，就是最大的優勢。',
+const QUOTES = [
+  '真正好用的東西，往往簡單到讓人不想承認',
+  '多週期共振，才是真正敢下重注的時刻',
+  '最痛苦的不是虧錢，是明知錯了還不願停手',
+  '交易的盡頭不是技術，是概率',
+  '方法之上，只有正期望加風控撐得住時間',
+  '你不是不會方法，是你承受不了波動',
+  '在山頂買入那不叫長期投資，那叫套牢',
+  '止損不只是操作，止損是保命用的',
+  '買在乏人問津，賣在人聲鼎沸',
+  '市場不是慈善家',
+  '市場最可怕的不是看錯方向，而是回不來',
+  '虧一半之後，你要賺一倍才回得到原點',
+  '你會緊張，是因為你正在面對不確定性',
+  '穩定獲利的人，都是硬生生熬出來的',
+  '卡住你的不是沒想通，是懂了卻做不到',
+  '大周期是老闆，小周期只是打工的',
+  '能賺多少，看你心裡扛不扛得住',
+  '沒必要賺到最後一口',
+  '市場做到最後，活著本身就是一種實力',
+  '真正有用的東西，都很無聊',
+  '每天就是等、看、忍，大部分人受不了',
+  '最危險的時候，是所有人都忘記風險的時候',
+  '只要你急著賺錢，你一定會放大風險',
+  '交易到最後，拼的是這個人撐不撐得住',
+  '知足，不亂追不屬於自己的行情',
+  '認命，接受市場本來就不完美',
+  '策略不等於執行，重點是做到',
+  '大道至簡，盈虧同源',
 ];
 const MARKETS = [{ id: 'tw', name: '台股' }, { id: 'us', name: '美股' }];
-const TIPS = ['先確認，再行動。', '看不懂就先不動。', '錯了就認，小錯不變大錯。', '別追已經跑掉的車。', '一次只練一件事。']; // 示範內容，待老闆提供
-const DEMO_BOARD = [['示範・早起牛馬', 120], ['示範・紀律牛馬', 90], ['示範・佛系牛馬', 60], ['示範・衝動牛馬', 30], ['示範・新來牛馬', 10]];
 const MOODS = ['平靜', '開心', '焦慮', '後悔', '充實'];
 
 ICON.directory = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h8M8 19h4" stroke="#3ef2ff"/></svg>';
@@ -104,8 +126,7 @@ const floorOpen = f => FLOORS[f].pass ? !!insiderLinks : effDays() >= FLOORS[f].
 const weekKey = () => { const d = new Date(); const t = new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7)); return dstr(t); };
 const weekPts = () => S.week[weekKey()] || 0;
 function boardRows() {
-  const rows = DEMO_BOARD.map(([name, pts]) => ({ name, pts, me: false })).concat([{ name: '你', pts: weekPts(), me: true }]);
-  rows.sort((a, b) => b.pts - a.pts || (a.me ? -1 : 1)); return rows.map((r, i) => ({ ...r, rank: i + 1 }));
+  return [{ name: '你', pts: weekPts(), me: true, rank: 1 }];
 }
 function floorInfo() {
   return FLOOR_ORDER.map(f => { const F = FLOORS[f], open = floorOpen(f);
@@ -219,14 +240,14 @@ $('#panelClose').onclick = closePanel;
   panel.addEventListener('touchend', e => { if (y0 !== null && e.changedTouches[0].clientY - y0 > 60) closePanel(); y0 = null; }); })();
 
 const LOCK = '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#ffc85a" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/><circle cx="12" cy="16" r="1.4" fill="#ffc85a"/></svg>';
-const placeholderList = (items) => items.map((t, i) => `<div class="card row between"><span>${t}</span><span class="tag">待老闆提供</span></div>`).join('');
+const comingCard = (title, note = '陸續更新中') => `<div class="card coming"><b>${title}</b><p class="note" style="margin:6px 0 0">${note}</p></div>`;
 const ladderHTML = () => {
   const ri = rankIndex(), next = RANKS[ri + 1];
   const pct = next ? Math.round(((S.xp - RANKS[ri].xp) / (next.xp - RANKS[ri].xp)) * 100) : 100;
   return `<div class="card"><div class="row between"><span>目前職級</span><b style="color:var(--cyan);font-size:1.2rem">${RANKS[ri].name}</b></div>
     <div class="row between note" style="margin:8px 0 6px"><span>經驗值 ${S.xp}</span><span>${next ? `距離「${next.name}」還差 ${next.xp - S.xp}` : '已經登頂！'}</span></div><div class="bar"><i style="width:${pct}%"></i></div></div>
     <ol class="ladder">${RANKS.map((r, i) => `<li class="${i < ri ? 'got' : ''} ${i === ri ? 'cur' : ''}"><span>第 ${i + 1} 階・${r.name}</span><span>${r.xp} 經驗</span></li>`).join('')}</ol>
-    <p class="note">升職方式：上班打卡 +10 起（連續越久越多）、晨會猜盤 +3、猜中再 +5、抽心法籤 +2、寫下班複盤 +5。各職級福利 <span class="tag">待老闆提供</span></p>`;
+    <p class="note">升職方式：上班打卡 +10 起（連續越久越多）、晨會猜盤 +3、抽心法籤 +2、寫下班複盤 +5。猜中加分與各職級福利即將公開。</p>`;
 };
 
 const RENDER = {
@@ -235,16 +256,16 @@ const RENDER = {
     const cycle = done ? ((st - 1) % 7) + 1 : (st % 7) + 1;
     const days = Array.from({ length: 7 }, (_, i) => {
       const n = i + 1, isDone = done ? n <= cycle : n < cycle, isToday = n === cycle;
-      return `<div class="day ${isDone ? 'done' : ''} ${isToday ? 'today' : ''} ${n === 7 ? 'big' : ''}"><b>第${n}天</b><div class="gift"></div>${n === 7 ? '神秘大禮' : '+' + (100 + n * 20)}<br><span style="font-size:.6rem">待老闆提供</span></div>`;
+      return `<div class="day ${isDone ? 'done' : ''} ${isToday ? 'today' : ''} ${n === 7 ? 'big' : ''}"><b>第${n}天</b><div class="gift"></div><span style="font-size:.7rem">即將公開</span></div>`;
     }).join('');
     el.innerHTML = `
       <div class="card row between"><div><div class="note">連續打卡</div><div class="stat">${st}<small style="font-size:.9rem"> 天</small></div></div>
       <div style="text-align:right"><div class="note">累積薪水</div><div class="stat">${S.coins.toLocaleString('zh-TW')}</div></div></div>
       <div class="punch"><button class="btn primary big" id="punch" ${done ? 'disabled' : ''}>${done ? '今天已打卡' : '上班打卡'}</button><div class="stamp ${done ? 'show' : ''}" id="stamp">已上班</div></div>
       <p class="note" style="text-align:center;margin:4px 0 0">${done ? '明天記得回來，斷簽就要重新累積喔' : '每天打卡領薪水，連續七天有大禮'}</p>
-      <h3 style="margin:16px 0 0;font-size:1rem">七日打卡獎勵 <span class="tag">獎勵內容待老闆提供</span></h3>
+      <h3 style="margin:16px 0 0;font-size:1rem">七日打卡獎勵 <span class="tag">即將公開</span></h3>
       <div class="track">${days}</div>
-      <p class="note">薪水是站內虛擬點數，用來升職與兌換活動獎勵（兌換內容待老闆提供），不能換現金。</p>`;
+      <p class="note">薪水是站內虛擬點數，用來升職與兌換活動獎勵（兌換內容即將公開），不能換現金。</p>`;
     const b = el.querySelector('#punch');
     b && (b.onclick = () => {
       const before = ['f2', 'f3'].filter(f => floorOpen(f));
@@ -264,7 +285,7 @@ const RENDER = {
     el.innerHTML = `<div class="machine" id="mach"><div class="cab"><div class="win">${[12, 28, 44, 60, 76].map(l => `<i style="left:${l}%;animation-delay:${l * 3}ms"></i>`).join('')}</div><div class="slot"></div></div>
       <div class="slip ${has ? 'show' : ''}" id="slip">${has ? slipHTML(S.fortune.idx) : ''}</div></div>
       <div style="text-align:center;margin-top:8px"><button class="btn primary" id="draw" ${has ? 'disabled' : ''}>${has ? '今天已抽過，明天再來' : '搖一搖，抽今日心法'}</button></div>
-      <p class="note" style="text-align:center"><span class="tag">示範內容，待老闆提供</span><br>目前籤詩是暫放的示範句子，正式版會換成董事長 LEO易凡 的心法。</p>`;
+      <p class="note" style="text-align:center">每日一籤，共 ${QUOTES.length} 籤，出自董事長 LEO易凡 的心法。</p>`;
     const b = el.querySelector('#draw');
     b && (b.onclick = () => {
       b.disabled = true; const m = el.querySelector('#mach'); m.classList.add('shake'); blip(660);
@@ -278,34 +299,25 @@ const RENDER = {
     });
   },
   heroes(el) {
-    el.innerHTML = `<p style="margin:0">這裡會放學員的真實成果與故事。</p>
-      <div class="heroes" style="margin-top:12px">${Array.from({ length: 6 }, (_, i) => `<div class="hero"><div class="ph"></div><b>第 ${i + 1} 位英雄</b><div class="note">待老闆提供</div></div>`).join('')}</div>
-      <p class="note"><span class="tag">待老闆提供</span> 需要：學員暱稱或頭像（經同意）、一句心得、成果截圖。不放未經證實的數字。</p>`;
+    el.innerHTML = comingCard('英雄榜即將公開', '陸續更新中。只放經本人同意的學員故事，不放未經證實的數字。');
   },
   guess(el) {
     const g = S.guesses[today()] || (S.guesses[today()] = {});
     const rows = MARKETS.map(m => {
-      const v = g[m.id], res = (hash(today() + m.id) % 2) ? 'up' : 'down', rv = g[m.id + '_r'];
+      const v = g[m.id];
       return `<div class="card mkt"><h3>${m.name}</h3>
         <button class="btn up ${v === 'up' ? 'sel' : ''}" data-m="${m.id}" data-v="up" ${v ? 'disabled' : ''}>看漲</button>
         <button class="btn down ${v === 'down' ? 'sel' : ''}" data-m="${m.id}" data-v="down" ${v ? 'disabled' : ''}>看跌</button>
-        <div class="reveal">${!v ? '選一邊，收盤後回來看結果' : rv ? `<span class="tag">示範</span> 揭曉：${res === 'up' ? '收漲' : '收跌'}・你猜${v === 'up' ? '漲' : '跌'} → ${res === v ? '<b class="ok">猜中！積分 +10</b>' : '<b class="no">這次沒中，明天再來</b>'}` : `已選「${v === 'up' ? '看漲' : '看跌'}」 <button class="btn ghost sm" data-r="${m.id}">揭曉結果（示範）</button>`}</div></div>`;
+        <div class="reveal">${!v ? '選一邊，先留下今天的看法。收盤揭曉即將接入。' : `已選「${v === 'up' ? '看漲' : '看跌'}」，收盤揭曉即將接入。`}</div></div>`;
     }).join('');
-    el.innerHTML = `<p style="margin:0">晨會開始！猜猜今天台股、美股收盤是漲還是跌。只猜方向，不給點位，純粹練盤感。猜中一次 +10 積分，排上本週排行榜。</p>${rows}
+    el.innerHTML = `<p style="margin:0">晨會開始！猜猜今天台股、美股收盤是漲還是跌。只猜方向，不給點位，純粹練盤感。</p>${rows}
       <div class="card row between"><span>你本週積分</span><b class="stat" style="font-size:1.4rem">${weekPts()}</b></div>
-      <p class="note"><span class="tag">示範</span> 目前的揭曉結果是示範用的假資料，不是真實行情。正式版要接上每日收盤資料。</p>`;
+      <p class="note">收盤揭曉即將接入。積分會在揭曉後再計算。</p>`;
     el.querySelectorAll('[data-v]').forEach(b => b.onclick = () => { g[b.dataset.m] = b.dataset.v; save(); addXP(3, 0); blip(880); RENDER.guess(el); });
-    el.querySelectorAll('[data-r]').forEach(b => b.onclick = () => {
-      const m = b.dataset.r; g[m + '_r'] = 1; const res = (hash(today() + m) % 2) ? 'up' : 'down';
-      if (res === g[m]) { S.week[weekKey()] = weekPts() + 10; addXP(5, 20, b); } else save();
-      refreshHud(); RENDER.guess(el);
-    });
   },
   leader(el) {
-    const rows = boardRows(), me = rows.find(r => r.me);
-    el.innerHTML = `<div class="card row between"><span>你的本週名次</span><b class="stat" style="font-size:1.5rem">第 ${me.rank} 名</b></div>
-      <ol class="board">${rows.map(r => `<li class="${r.me ? 'me' : ''}"><b>${r.rank}</b><span>${r.name}</span><em>${r.pts} 分</em></li>`).join('')}</ol>
-      <p class="note"><span class="tag">示範</span> 除了「你」，其他名單都是示範資料。目前只存在這台裝置，正式版要有後台才能和其他人真實排名。每週一重新計算。</p>`;
+    el.innerHTML = `<div class="card row between"><span>你本週猜盤積分</span><b class="stat" style="font-size:1.5rem">${weekPts()} 分</b></div>
+      <p class="note">目前先記錄你自己的積分。完整排行榜即將公開。</p>`;
   },
   target(el) {
     const m = modelStates(S, today(), realDays()).find(x => x.id === 'target');
@@ -315,17 +327,17 @@ const RENDER = {
       <p class="note" style="margin:8px 0 0">領取方式：累積打卡 ${TARGET_DAYS} 天後，按「產生資格碼」，再私訊給社群裡的助理小編審核。從登記那天起有效 ${VALID_DAYS} 天；續用與重新啟動見「領取與續用規則」。</p>
       <p class="note" style="margin:8px 0 0">以上僅供參考，不構成投資建議。</p>
       <div class="row between" style="margin-top:10px"><span>你的狀態</span><b>${st}</b></div></div>
-      <div class="card"><b>範例圖（待老闆補充）</b>
-        <div class="ex-ph"><span>範例圖會放在這裡</span></div>
-        <p class="note">實際畫面由老闆之後再慢慢補上。</p></div>
+      <div class="card"><b>範例圖</b>
+        <div class="ex-ph"><span>即將公開</span></div>
+        <p class="note">陸續更新中。</p></div>
       <button class="btn primary" id="toCta5" style="width:100%">去登記・私訊『成長』</button>`;
     el.querySelector('#toCta5').onclick = () => world ? world.go('cta5') : openPanel('cta5');
   },
   kline(el) { klineGame(el); },
   fakeout(el) { fakeoutGame(el); },
   tips(el) {
-    el.innerHTML = `<p style="margin:0">每玩完一局訓練場小遊戲，就會送你一句心法小提醒。</p>${TIPS.map((t, i) => `<div class="card row between"><span>${i + 1}．${t}</span><span class="tag">示範</span></div>`).join('')}
-      <p class="note">目前是示範句子，正式內容待老闆提供。</p>`;
+    el.innerHTML = `<p style="margin:0">每玩完一局訓練場小遊戲，就會送你一句董事長 LEO易凡 的心法。</p>
+      <p class="note">心法共 ${QUOTES.length} 句，在遊戲結束時抽出。</p>`;
   },
   reports(el) { // 4 樓：台股、美股公開；A股在 68 樓
     const sp = seed => { let y = 20, d = ''; for (let i = 0; i <= 20; i++) { y = Math.max(4, Math.min(36, y + ((hash(seed + i) % 9) - 4))); d += `${i ? 'L' : 'M'}${i * 10},${y}`; } return `<svg class="spark" viewBox="0 0 200 40" preserveAspectRatio="none"><path d="${d}" fill="none" stroke="#3ef2ff" stroke-width="2"/></svg>`; };
@@ -368,21 +380,20 @@ const RENDER = {
   /* ----- 68 樓・自己人專區 ----- */
   boss(el) {
     el.innerHTML = `<div class="card" style="text-align:center"><div class="ph-portrait"></div><b style="font-size:1.1rem">董事長 LEO易凡</b><div class="note">掌門辦公室</div></div>
-      <h3 style="margin:14px 0 4px;font-size:1rem">本週掌門的話</h3>${placeholderList(['每週給自己人的一段話', '掌門影片或語音'])}`;
+      <h3 style="margin:14px 0 4px;font-size:1rem">本週掌門的話</h3>${comingCard('即將公開')}`;
   },
   hall(el) {
     el.innerHTML = `<p style="margin:0">執事堂負責公告、排程與自己人守則。</p>
-      <h3 style="margin:12px 0 4px;font-size:1rem">最新公告</h3>${placeholderList(['本週公告', '直播與課程時間表'])}
-      <h3 style="margin:12px 0 4px;font-size:1rem">自己人守則</h3>${placeholderList(['群組規範'])}`;
+      ${comingCard('公告與守則即將公開')}`;
   },
   library(el) {
-    el.innerHTML = `<p style="margin:0">三卷九章講義，照順序讀。</p>${['卷一', '卷二', '卷三'].map((v, i) => `<div class="card"><b>${v}</b>${[1, 2, 3].map(c => `<div class="row between" style="margin-top:6px"><span>第 ${i * 3 + c} 章</span><span class="tag">待老闆提供</span></div>`).join('')}</div>`).join('')}`;
+    el.innerHTML = `<p style="margin:0">三卷九章講義，照順序讀。</p>${comingCard('講義即將公開')}`;
   },
   course(el) {
-    el.innerHTML = `<p style="margin:0">傳功課程：由淺入深的影片課。</p>${placeholderList(['第一課', '第二課', '第三課', '第四課'])}`;
+    el.innerHTML = `<p style="margin:0">傳功課程：由淺入深的影片課。</p>${comingCard('課程即將公開')}`;
   },
   arena(el) {
-    el.innerHTML = `<p style="margin:0">演武場：實盤複盤片段，只看當時的判斷與結果，不帶單、不喊單。</p>${placeholderList(['實盤複盤片段一（時間點與結果）', '實盤複盤片段二（時間點與結果）', '實盤複盤片段三（時間點與結果）'])}`;
+    el.innerHTML = `<p style="margin:0">演武場：實盤複盤片段，只看當時的判斷與結果，不帶單、不喊單。</p>${comingCard('即將公開')}`;
   },
   ireports(el) {
     const L = insiderLinks;
@@ -412,7 +423,7 @@ const RENDER = {
     };
   },
 };
-function slipHTML(i) { return `<div class="no">第 ${pad(i + 1)} 籤・今日心法</div><p>${QUOTES[i]}</p><small>示範內容，待老闆提供</small>`; }
+function slipHTML(i) { return `<div class="no">第 ${i + 1}／${QUOTES.length} 籤・今日心法</div><p>${QUOTES[i]}</p><small>— 董事長 LEO易凡</small>`; }
 
 /* ---------- 樓層清單 ---------- */
 function floorListHTML(buttons) {
@@ -484,7 +495,7 @@ function guideHTML(el, isCta) {
 }
 
 /* ---------- 訓練場小遊戲 ---------- */
-function tipCard() { const t = TIPS[Math.floor(Math.random() * TIPS.length)]; return `<div class="tipcard"><small>心法小提醒</small><p>${t}</p><span class="tag">示範內容，待老闆提供</span></div>`; }
+function tipCard() { const t = QUOTES[Math.floor(Math.random() * QUOTES.length)]; return `<div class="tipcard"><small>心法小提醒</small><p>${t}</p><small>— 董事長 LEO易凡</small></div>`; }
 function rngCandles(n, seed) {
   let s = seed, p = 100; const r = () => (s = (s * 16807) % 2147483647) / 2147483647, out = [];
   for (let i = 0; i < n; i++) { const o = p, c = o + (r() - .5) * 6 + Math.sin(i / 3 + seed) * 1.2; out.push({ o, c, h: Math.max(o, c) + r() * 2.2, l: Math.min(o, c) - r() * 2.2 }); p = c; }
@@ -507,7 +518,7 @@ function drawCandles(cv, cs, opts = {}) {
 }
 function klineGame(el) {
   const ROUNDS = 5; let round = 0, score = 0, seed = 1 + Math.floor(Math.random() * 1e6), cs = rngCandles(26, seed), shown = 18;
-  el.innerHTML = `<div class="row between"><span class="tag">示範・隨機產生，不是真實行情</span><b id="kscore">第 1／${ROUNDS} 題・答對 0</b></div>
+  el.innerHTML = `<div class="row between"><span class="tag">練習盤・隨機產生，不是真實行情</span><b id="kscore">第 1／${ROUNDS} 題・答對 0</b></div>
     <canvas class="kcv" id="kcv"></canvas>
     <p style="margin:6px 0;text-align:center">下一根 K 線會收紅還是收綠？</p>
     <div class="row" style="gap:8px"><button class="btn up" style="flex:1" data-k="up">收紅（漲）</button><button class="btn down" style="flex:1" data-k="down">收綠（跌）</button></div>
@@ -531,7 +542,7 @@ function klineGame(el) {
 function fakeoutGame(el) {
   const ROUNDS = 8, LINE = 104; let round = 0, dodged = 0, fooled = 0, wrong = 0, rts = [], timer = 0, phase = 'ready', tFlash = 0, isFake = false;
   let cs = rngCandles(10, 7).map(c => ({ o: 98 + (c.o - 100) * .3, c: 98 + (c.c - 100) * .3, h: 98 + (c.h - 100) * .3, l: 98 + (c.l - 100) * .3 }));
-  el.innerHTML = `<div class="row between"><span class="tag">示範・隨機產生</span><b id="fscore">躲過 0・被騙 0</b></div>
+  el.innerHTML = `<div class="row between"><span class="tag">練習盤・隨機產生</span><b id="fscore">躲過 0・被騙 0</b></div>
     <canvas class="kcv" id="fcv"></canvas><div id="fmsg" class="fmsg">K 線衝過壓力線後，如果又跌回來就是「假突破」，看到馬上按「躲！」<br>真突破就不要按。</div>
     <button class="btn primary big" id="fbtn" style="width:100%">開始</button><div id="fres"></div>`;
   const cv = el.querySelector('#fcv'), btn = el.querySelector('#fbtn'), msg = el.querySelector('#fmsg');
@@ -727,7 +738,20 @@ $('#btnMode').onclick = async () => {
   ready = switchTo(toFlat ? 'flat' : '3d', true);
   toast(toFlat ? '已切換為省電平面版' : '已切換為立體版');
 };
-$('#btnMusic').onclick = () => { const on = toggleMusic(); $('#btnMusic').classList.toggle('on', on); $('#musicLabel').textContent = on ? '音樂開' : '音樂'; };
+function syncMusicBtn(playing) {
+  $('#btnMusic').classList.toggle('on', !!playing);
+  $('#musicLabel').textContent = playing ? '音樂開' : '音樂';
+}
+$('#btnMusic').onclick = () => {
+  const on = toggleMusic();
+  S.pref.music = on;
+  save();
+  syncMusicBtn(on);
+};
+if (S.pref.music !== false) {
+  syncMusicBtn(true);
+  preferMusicOn(() => syncMusicBtn(true));
+} else syncMusicBtn(false);
 
 const startFlat = qs.has('flat') || (!qs.has('force3d') && (S.pref.flat === true || (S.pref.flat == null && weakDevice())));
 window.__niuma = { get world() { return world; }, get floor() { return floor; }, openPanel, closePanel, ride, get ready() { return ready; } };
