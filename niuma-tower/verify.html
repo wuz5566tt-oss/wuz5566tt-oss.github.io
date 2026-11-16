@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <title>資格碼驗證</title>
-<link rel="icon" href="data:,">
+<link rel="icon" type="image/webp" href="./assets/img/star-neon-192.webp">
 <link rel="stylesheet" href="./assets/style.css">
 <style>
 html,body{overflow:auto}
@@ -23,7 +23,7 @@ tr.restart-row td{background:rgba(150,90,255,.1)}
 </head>
 <body>
 <main class="vwrap">
-  <p class="kicker">史塔科技大樓・內部</p>
+  <p class="kicker"><img data-star-logo alt="史塔" class="hud-logo" style="width:28px;height:28px;vertical-align:middle;margin-right:6px">史塔金融大樓・內部</p>
   <h1>資格碼驗證</h1>
   <p class="note">把訪客私訊貼來的資格碼貼在下面，就能看到他的打卡紀錄與各項資格到期日。</p>
   <form id="gate" class="card gate" autocomplete="off">
@@ -41,6 +41,7 @@ tr.restart-row td{background:rgba(150,90,255,.1)}
   </section>
   <p class="note" style="margin-top:24px">說明：資格碼有數位簽章，數字被改過會顯示「被改過」。簽章金鑰放在網頁程式裡，只能擋一般人隨手改數字，懂技術的人仍可能偽造；重要獎勵請再人工核對。</p>
 </main>
+<script type="module">import { applyBrand } from "./assets/brand.js"; applyBrand();</script>
 <script type="module" src="./assets/verify.js"></script>
 </body>
 </html>

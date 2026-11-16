@@ -4,13 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
 <meta name="theme-color" content="#050a18">
-<title>牛馬交易上班日｜史塔科技大樓</title>
-<link rel="icon" href="data:,">
+<title>牛馬交易上班日｜史塔金融大樓</title>
+<link rel="icon" type="image/webp" href="./assets/img/star-neon-192.webp">
+<link rel="apple-touch-icon" href="./assets/img/star-neon-192.webp">
 <link rel="stylesheet" href="./assets/style.css">
 <script type="importmap">{"imports":{"three":"./assets/vendor/three.module.js","three/addons/":"./assets/vendor/jsm/"}}</script>
 </head>
 <body>
-<canvas id="gl" aria-label="史塔科技大樓立體場景"></canvas>
+<canvas id="gl" aria-label="史塔金融大樓立體場景"></canvas>
 
 <!-- 平面版 -->
 <section id="flat" hidden aria-label="省電平面版大廳">
@@ -19,7 +20,7 @@
     <div class="fi-tower">
       <div class="fi-crown"></div>
       <div class="fi-body"><i></i><i></i><i></i></div>
-      <div class="fi-sign">史塔科技大樓</div>
+      <div class="fi-sign">史塔金融大樓</div>
       <div class="fi-door"><b class="l"></b><b class="r"></b></div>
     </div>
     <div class="fi-avatar" data-avatar></div>
@@ -27,7 +28,7 @@
   <div class="flat-lobby" id="flatLobby">
     <div class="fl-floor"></div>
     <div class="fl-motes" aria-hidden="true"><i style="left:33%;animation-delay:-6.5s;animation-duration:9.8s"></i><i style="left:80%;animation-delay:-5.2s;animation-duration:12.5s"></i><i style="left:80%;animation-delay:-0.1s;animation-duration:14.0s"></i><i style="left:36%;animation-delay:-6.1s;animation-duration:10.2s"></i><i style="left:94%;animation-delay:-5.2s;animation-duration:14.0s"></i><i style="left:63%;animation-delay:-4.4s;animation-duration:14.2s"></i><i style="left:32%;animation-delay:-7.0s;animation-duration:14.2s"></i><i style="left:69%;animation-delay:-4.3s;animation-duration:9.1s"></i><i style="left:11%;animation-delay:-1.8s;animation-duration:14.7s"></i><i style="left:8%;animation-delay:-3.3s;animation-duration:9.2s"></i><i style="left:37%;animation-delay:-5.2s;animation-duration:13.3s"></i><i style="left:52%;animation-delay:-7.9s;animation-duration:14.5s"></i></div>
-    <div class="fl-backwall"><span id="flatWallName">史塔科技大樓・交易大廳</span></div>
+    <div class="fl-backwall"><span id="flatWallName">史塔金融大樓・交易大廳</span></div>
     <div class="fl-zones" id="flatZones"></div>
     <div class="fl-avatar" id="flatAvatar" data-avatar></div>
   </div>
@@ -39,7 +40,8 @@
 <!-- 開場 -->
 <section id="start" class="start" aria-label="開場">
   <div class="start-card">
-    <p class="kicker">史塔科技大樓</p>
+    <img class="start-logo" data-star-logo alt="史塔">
+    <p class="kicker">史塔金融大樓</p>
     <h1>牛馬交易<br>上班日</h1>
     <p class="sub">打卡領薪水・晨會猜盤勢・抽心法籤<br>每天上班，一起升職</p>
     <button class="btn primary big" id="btnStart">開始上班</button>
@@ -54,12 +56,14 @@
 <!-- 上方資訊 -->
 <header id="hud" class="hud" hidden>
   <div class="hud-left">
-    <div class="chip floor"><b id="hudFloor">1 樓・交易大廳</b></div>
+    <div class="chip floor"><img class="hud-logo" data-star-logo alt="史塔"><b id="hudFloor">1 樓・交易大廳</b></div>
     <div class="chip coin" title="薪水"><span class="coin-ico"></span><b id="hudCoins">0</b><small>薪水</small></div>
     <div class="chip rank"><small>職級</small><b id="hudRank">實習牛馬</b></div>
     <div class="chip streak"><small>連續打卡</small><b id="hudStreak">0</b><small>天</small></div>
   </div>
   <div class="hud-right">
+    <button class="iconbtn" id="btnShop" aria-label="服裝店"><em>服裝</em></button>
+    <button class="iconbtn" id="btnBak" aria-label="備份進度"><em>備份</em></button>
     <button class="iconbtn" id="btnMusic" aria-label="背景音樂"><span>♪</span><em id="musicLabel">音樂</em></button>
     <button class="iconbtn" id="btnMode" aria-label="切換省電平面版"><em id="modeLabel">省電平面版</em></button>
   </div>
@@ -81,6 +85,23 @@
 <div id="ride" class="ride" hidden aria-live="polite">
   <div class="ride-box"><div class="ride-arrow" id="rideArrow">▲</div><div class="ride-num"><b id="rideNum">1</b><small>樓</small></div><div class="ride-name" id="rideName"></div></div>
 </div>
+<div id="joy" hidden>
+  <div class="joy-base" aria-label="移動搖桿"><div class="joy-knob" id="joyKnob"></div></div>
+</div>
+<button type="button" id="zonePrompt" hidden></button>
+
+<div id="bakTip" class="modal" hidden>
+  <div class="modal-card" role="dialog" aria-labelledby="bakTipTitle">
+    <img class="tip-logo" data-star-logo alt="史塔">
+    <h2 id="bakTipTitle">先備份你的進度</h2>
+    <p>進度只存在這支手機，換手機或清除瀏覽器會不見，請先備份</p>
+    <div class="row" style="justify-content:center;gap:8px;flex-wrap:wrap;margin-top:12px">
+      <button class="btn primary" id="bakNow">立即備份</button>
+      <button class="btn ghost" id="bakLater">稍後</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <footer class="disclaimer" id="disclaimer">不帶單、不喊單、不承諾獲利，內容非投資建議</footer>
 

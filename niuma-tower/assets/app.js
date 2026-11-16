@@ -1,8 +1,11 @@
 import { toggleMusic, blip, preferMusicOn, isMusicOn } from './audio.js';
+import { applyBrand, STAR_LOGO_UI, TOWER_NAME, EVENT_NAME, isCyber } from './brand.js';
+import { encodeBackup, decodeBackup, applySnapshot, hasProgress } from './backup.js';
 
 /* ---------- 基本資料 ---------- */
 import { GATE_HASH, SEALED } from './insider-data.js';
 import { modelStates, encodeQual, last7, RULE_MIN, VALID_DAYS, LADDER, TARGET_DAYS, MASTER_DAYS } from './qual.js';
+applyBrand();
 const IG = 'https://instagram.com/wuz200200';
 const LINE_OA = 'https://page.line.me/803kongz';
 const LINE_OA_NAME = 'S.T.A.R 機構級交易系統';
@@ -46,7 +49,9 @@ export const ZONES = [
   { id: 'checkin', floor: 'lobby', slot: 'A', name: '打卡櫃台', kicker: '每日上班', gold: true },
   { id: 'guide', floor: 'lobby', slot: 'B', name: '接引櫃台', kicker: '我的資格・新人報到', gold: true },
   { id: 'fortune', floor: 'lobby', slot: 'C', name: '心法籤機', kicker: '每日一籤', gold: true },
+  { id: 'shop', floor: 'lobby', slot: 'D', name: '服裝店', kicker: '薪水換裝扮', gold: true },
   { id: 'directory', floor: 'lobby', slot: 'G', name: '樓層導覽', kicker: '各樓層開放狀態' },
+  { id: 'backup', floor: '_ui', slot: 'A', name: '備份進度', kicker: '換機還原' },
   { id: 'guess', floor: 'f2', slot: 'D', name: '猜盤桌', kicker: '台股・美股猜漲跌' },
   { id: 'leader', floor: 'f2', slot: 'G', name: '本週排行榜', kicker: '猜盤積分', gold: true },
   { id: 'kline', floor: 'f3', slot: 'C', name: '看K線猜下一根', kicker: '小遊戲' },
@@ -107,7 +112,33 @@ ICON.tips = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-w
 ICON.guess = ICON.meeting; ICON.leader = ICON.heroes; ICON.honor = ICON.elevator; ICON.cta = ICON.guide; ICON.ireports = ICON.reports;
 ICON.target = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5" stroke="#ffc85a"/><circle cx="12" cy="12" r="1.5" fill="#ffc85a"/></svg>';
 ICON.cta5 = ICON.guide;
+ICON.shop = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 8 5 21h14L18 8M4 8h16"/><path d="M9 8a3 3 0 0 1 6 0" stroke="#ffc85a"/><path d="M9 13h3"/></svg>';
+ICON.backup = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5" stroke="#3ef2ff"/></svg>';
 Object.keys(FLOORS).forEach(f => ICON['lift_' + f] = ICON.elevator);
+
+export const SHOP = [
+  { id: 'jacket-navy', slot: 'jacket', name: '藏青西裝外套', price: 80 },
+  { id: 'jacket-black', slot: 'jacket', name: '黑色西裝外套', price: 80 },
+  { id: 'tie-gold', slot: 'tie', name: '金色領帶', price: 40 },
+  { id: 'tie-cyan', slot: 'tie', name: '青色領帶', price: 40 },
+  { id: 'tie-red', slot: 'tie', name: '紅色領帶', price: 40 },
+  { id: 'hat-cap', slot: 'hat', name: '便帽', price: 90 },
+  { id: 'hat-bowler', slot: 'hat', name: '紳士帽', price: 120 },
+  { id: 'glasses-black', slot: 'glasses', name: '墨鏡', price: 100 },
+  { id: 'glasses-gold', slot: 'glasses', name: '金框墨鏡', price: 140 },
+  { id: 'cape-cyan', slot: 'cape', name: '青色披風', price: 180 },
+  { id: 'cape-gold', slot: 'cape', name: '金色披風', price: 220 },
+  { id: 'horns-gold', slot: 'horns', name: '金色牛角', price: 280 },
+];
+const shopState = () => {
+  if (!S.shop || typeof S.shop !== 'object') S.shop = { owned: [], eq: {} };
+  if (!Array.isArray(S.shop.owned)) S.shop.owned = [];
+  if (!S.shop.eq || typeof S.shop.eq !== 'object') S.shop.eq = {};
+  return S.shop;
+};
+const equipped = () => shopState().eq;
+function wearAll() { world && world.setOutfit && world.setOutfit(equipped()); paintAvatars(); }
+function paintAvatars() { document.querySelectorAll('[data-avatar]').forEach(a => { a.innerHTML = avatarSVG(equipped()); }); }
 
 /* ---------- 狀態 ---------- */
 const pad = n => String(n).padStart(2, '0');
@@ -115,7 +146,7 @@ const dstr = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate()
 const today = () => dstr(new Date());
 const yesterday = () => { const d = new Date(); d.setDate(d.getDate() - 1); return dstr(d); };
 const hash = s => { let h = 2166136261; for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return h >>> 0; };
-const fresh = () => ({ coins: 0, xp: 0, streak: 0, last: null, days: [], guesses: {}, fortune: null, reviews: {}, pref: {}, week: {}, claims: {}, vid: null, games: {} });
+const fresh = () => ({ coins: 0, xp: 0, streak: 0, last: null, days: [], guesses: {}, fortune: null, reviews: {}, pref: {}, week: {}, claims: {}, vid: null, games: {}, shop: { owned: [], eq: {} }, bak: { seen: false, last: null, snooze: null, remindDays: 0 } });
 let S; try { S = Object.assign(fresh(), JSON.parse(localStorage.getItem(KEY) || '{}')); } catch { S = fresh(); }
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
 if (!S.vid) { S.vid = String(100000 + Math.floor(Math.random() * 900000)); save(); }
@@ -225,6 +256,7 @@ export function openPanel(id) {
   $('#panelKicker').textContent = z.kicker; $('#panelTitle').textContent = z.name;
   RENDER[z.type || id]($('#panelBody'));
   panel.classList.add('open'); panel.setAttribute('aria-hidden', 'false');
+  const zp = document.getElementById('zonePrompt'); if (zp) zp.hidden = true;
   document.querySelectorAll('.dock button').forEach(b => b.classList.toggle('active', b.dataset.zone === id));
   world && world.onPanel && world.onPanel(true, id);
   blip(760);
@@ -250,6 +282,99 @@ const ladderHTML = () => {
     <p class="note">升職方式：上班打卡 +10 起（連續越久越多）、晨會猜盤 +3、抽心法籤 +2、寫下班複盤 +5。猜中加分與各職級福利即將公開。</p>`;
 };
 
+
+function renderShop(el) {
+  const st = shopState();
+  el.innerHTML = `<div class="card"><div class="row between"><b>服裝店</b><span class="tag">僅供裝扮</span></div>
+    <p class="note" style="margin:8px 0 0">用薪水兌換裝扮，穿上或脫下都不會影響獎勵階梯或資格碼。</p>
+    <div class="row between" style="margin-top:8px"><span>你的薪水</span><b style="color:var(--gold)">${S.coins.toLocaleString('zh-TW')}</b></div></div>
+    <div class="shop-grid">${SHOP.map(it => {
+      const own = st.owned.includes(it.id), on = st.eq[it.slot] === it.id;
+      const act = on ? '脫下' : own ? '穿上' : `購買・${it.price}`;
+      return `<div class="shop-item${on ? ' on' : ''}" data-id="${it.id}"><b>${it.name}</b><span class="price">${own ? '已擁有' : it.price + ' 薪水'}</span><button class="btn ${own ? (on ? 'ghost' : 'cyan') : 'primary'} sm" data-shop="${it.id}">${act}</button></div>`;
+    }).join('')}</div>`;
+  el.querySelectorAll('[data-shop]').forEach(b => b.onclick = ev => {
+    const it = SHOP.find(x => x.id === b.dataset.shop); if (!it) return;
+    const st = shopState();
+    if (!st.owned.includes(it.id)) {
+      if (S.coins < it.price) { toast('薪水不夠，再去打卡賺一點吧'); return; }
+      S.coins -= it.price; st.owned.push(it.id); st.eq[it.slot] = it.id; save(); blip(1046); toast(`已購買「${it.name}」`); coinBurst(ev.target); refreshHud(); wearAll(); renderShop(el); return;
+    }
+    if (st.eq[it.slot] === it.id) { delete st.eq[it.slot]; toast(`已脫下「${it.name}」`); }
+    else { st.eq[it.slot] = it.id; toast(`已穿上「${it.name}」`); }
+    save(); wearAll(); renderShop(el);
+  });
+}
+function bakReason(r) {
+  return r === 'tampered' ? '這組備份碼被改過，無法還原'
+    : r === 'old' ? '這組備份碼版本太舊，無法還原'
+    : '這組備份碼無效，請檢查是否貼完整，或重新產生一組';
+}
+function markBakSnooze() { S.bak = Object.assign({ seen: false, last: null, snooze: null, remindDays: 0 }, S.bak || {}); S.bak.seen = true; S.bak.snooze = today(); S.bak.remindDays = realDays(); save(); }
+function markBakDone() { markBakSnooze(); S.bak.last = today(); save(); }
+function renderBackup(el) {
+  el.innerHTML = `<div class="card"><div class="row between"><b>備份進度</b><span class="tag">換機用</span></div>
+    <p class="note" style="margin:8px 0 10px">進度只存在這支手機。換手機或清除瀏覽器前，請先備份，再到新手機還原。</p>
+    <button class="btn primary" id="mkBak" style="width:100%">備份進度</button>
+    <textarea class="bak-code" id="bakCode" readonly hidden></textarea>
+    <button class="btn ghost sm" id="cpBak" hidden style="margin-top:6px">複製備份碼</button></div>
+    <div class="card"><b>還原進度</b>
+      <p class="note">把備份碼貼在下面，確認後會覆蓋這支手機目前的進度。</p>
+      <textarea class="bak-code" id="bakIn" placeholder="在這裡貼上備份碼"></textarea>
+      <button class="btn cyan" id="doBak" style="width:100%">還原進度</button>
+      <div class="bak-msg" id="bakMsg"></div>
+      <div id="bakAsk" hidden style="margin-top:10px">
+        <p>還原會覆蓋這支手機目前的進度，確定要還原嗎？</p>
+        <div class="row" style="justify-content:center;gap:8px;flex-wrap:wrap;margin-top:8px">
+          <button class="btn primary sm" id="bakYes">確定還原</button>
+          <button class="btn ghost sm" id="bakNo">取消</button>
+        </div>
+      </div></div>`;
+  const codeEl = el.querySelector('#bakCode'), cp = el.querySelector('#cpBak'), msg = el.querySelector('#bakMsg');
+  const say = (txt, ok) => { msg.textContent = txt; msg.className = 'bak-msg ' + (ok ? 'ok' : 'bad'); };
+  el.querySelector('#mkBak').onclick = async () => {
+    try {
+      const code = await encodeBackup(S);
+      codeEl.hidden = false; codeEl.value = code; cp.hidden = false; markBakDone(); say('備份碼已產生，請複製保存', true);
+    } catch { say('這台裝置無法產生備份碼', false); }
+  };
+  cp.onclick = async () => { try { await navigator.clipboard.writeText(codeEl.value); toast('已複製備份碼'); } catch { toast('請長按備份碼複製'); } };
+  let pending = null;
+  const ask = el.querySelector('#bakAsk');
+  el.querySelector('#doBak').onclick = async () => {
+    const raw = el.querySelector('#bakIn').value; ask.hidden = true; pending = null;
+    const out = await decodeBackup(raw);
+    if (!out.ok) { say(bakReason(out.reason), false); return; }
+    pending = out.data;
+    if (hasProgress(S)) { ask.hidden = false; say('請先確認是否覆蓋目前進度', true); return; }
+    doRestore(out.data, say);
+  };
+  el.querySelector('#bakYes').onclick = () => { if (pending) doRestore(pending, say); ask.hidden = true; };
+  el.querySelector('#bakNo').onclick = () => { pending = null; ask.hidden = true; say('已取消還原', true); };
+}
+function doRestore(data, say) {
+  applySnapshot(S, data); save(); markBakDone(); refreshHud(); buildDock(); wearAll();
+  say('進度已還原', true); toast('進度已還原');
+}
+function maybeRemind() {
+  const b = S.bak || (S.bak = { seen: false, last: null, snooze: null, remindDays: 0 });
+  if (b.snooze === today()) return;
+  let show = false;
+  if (!b.seen) show = true;
+  else {
+    const days = realDays();
+    const age = b.last ? Math.round((Date.parse(today() + 'T00:00:00') - Date.parse(b.last + 'T00:00:00')) / 86400000) : 99;
+    const milestone = days >= 7 && Math.floor(days / 7) > Math.floor((b.remindDays || 0) / 7);
+    const stale = !b.last ? days >= 7 : age >= 7;
+    if ((milestone || stale) && b.last !== today()) show = true;
+  }
+  if (!show) return;
+  const tip = document.getElementById('bakTip'); if (!tip) return;
+  tip.hidden = false;
+  document.getElementById('bakNow').onclick = () => { tip.hidden = true; markBakSnooze(); openPanel('backup'); };
+  document.getElementById('bakLater').onclick = () => { tip.hidden = true; markBakSnooze(); };
+}
+
 const RENDER = {
   checkin(el) {
     const done = checkedToday(), st = streakNow();
@@ -265,7 +390,7 @@ const RENDER = {
       <p class="note" style="text-align:center;margin:4px 0 0">${done ? '明天記得回來，斷簽就要重新累積喔' : '每天打卡領薪水，連續七天有大禮'}</p>
       <h3 style="margin:16px 0 0;font-size:1rem">七日打卡獎勵 <span class="tag">即將公開</span></h3>
       <div class="track">${days}</div>
-      <p class="note">薪水是站內虛擬點數，用來升職與兌換活動獎勵（兌換內容即將公開），不能換現金。</p>`;
+      <p class="note">薪水是站內虛擬點數，可在服裝店兌換裝扮；其他兌換內容即將公開。不能換現金。</p>`;
     const b = el.querySelector('#punch');
     b && (b.onclick = () => {
       const before = ['f2', 'f3'].filter(f => floorOpen(f));
@@ -333,6 +458,8 @@ const RENDER = {
       <button class="btn primary" id="toCta5" style="width:100%">去登記・私訊『成長』</button>`;
     el.querySelector('#toCta5').onclick = () => world ? world.go('cta5') : openPanel('cta5');
   },
+  shop(el) { renderShop(el); },
+  backup(el) { renderBackup(el); },
   kline(el) { klineGame(el); },
   fakeout(el) { fakeoutGame(el); },
   tips(el) {
@@ -479,8 +606,12 @@ function guideHTML(el, isCta) {
       <p style="margin:10px 0 0">累積打卡 ${MASTER_DAYS} 天，取得面試拜師資格。請加官方 LINE「${LINE_OA_NAME}」，把資格碼傳給助理小編審核。</p>
       <div class="row between" style="margin:10px 0 12px"><span>你的狀態</span><b>${masterSt}</b></div>
       <div class="row" style="justify-content:center;gap:8px;flex-wrap:wrap">${master.state === 1 ? `<button class="btn ghost sm" data-claim="master">登記領取</button>` : ''}${lineOABtn('btn primary')}</div></div>
+    <div class="card"><div class="row between"><b>備份與還原</b><span class="tag">換機用</span></div>
+      <p class="note" style="margin:8px 0 10px">進度只存在這支手機。建議先備份，換手機再還原。</p>
+      <button class="btn ghost" id="openBak" style="width:100%">打開備份進度</button></div>
     ${isCta ? '' : '<p class="note" style="text-align:center">打開 IG 後，私訊輸入「成長」就會收到；申請掌門面試請走官方 LINE。</p>'}`;
   el.querySelector('#cp').onclick = async () => { try { await navigator.clipboard.writeText('成長'); toast('已複製「成長」'); } catch { toast('請手動輸入「成長」'); } };
+  const ob = el.querySelector('#openBak'); ob && (ob.onclick = () => openPanel('backup'));
   el.querySelectorAll('[data-claim]').forEach(b => b.onclick = () => { S.claims[b.dataset.claim] = today(); save(); toast(`已登記領取，${VALID_DAYS} 天內有效`); guideHTML(el, isCta); });
   const q = el.querySelector('#qcode'), cpq = el.querySelector('#cpq'), genq = el.querySelector('#genq');
   const putCode = c => {
@@ -533,7 +664,7 @@ function klineGame(el) {
     el.querySelector('#kscore').textContent = `第 ${Math.min(round + 1, ROUNDS)}／${ROUNDS} 題・答對 ${score}`;
     setTimeout(() => {
       if (round < ROUNDS) { el.querySelectorAll('[data-k]').forEach(x => x.disabled = false); draw(); el.querySelector('#kres').innerHTML = ''; return; }
-      const gain = score * 10; addXP(score, gain);
+      const gain = score * 10; addXP(score, gain); S.games = S.games || {}; const kg = S.games.kline = S.games.kline || { plays: 0, best: 0, total: 0 }; kg.plays++; kg.total += score; kg.best = Math.max(kg.best, score); save();
       el.querySelector('#kres').innerHTML = `<div class="card"><b>本局答對 ${score}／${ROUNDS}</b>　薪水 +${gain}<div class="note">隨機產生的 K 線本來就猜不準，這個遊戲練的是看圖習慣，不是預測。</div></div>${tipCard()}<button class="btn primary" id="again" style="width:100%">再玩一局</button>`;
       el.querySelector('#again').onclick = () => klineGame(el);
     }, 900);
@@ -578,7 +709,7 @@ function fakeoutGame(el) {
   function finish() {
     phase = 'done'; btn.textContent = '再玩一局';
     const avg = rts.length ? Math.round(rts.reduce((a, b) => a + b, 0) / rts.length) : 0, gain = dodged * 8;
-    addXP(dodged, gain); msg.textContent = '本局結束';
+    addXP(dodged, gain); S.games = S.games || {}; const fg = S.games.fakeout = S.games.fakeout || { plays: 0, best: 0, dodged: 0 }; fg.plays++; fg.dodged += dodged; fg.best = Math.max(fg.best, dodged); save(); msg.textContent = '本局結束';
     el.querySelector('#fres').innerHTML = `<div class="card"><b>躲過 ${dodged}・被騙 ${fooled}・誤躲 ${wrong}</b>${avg ? `　平均反應 ${avg} 毫秒` : ''}<div class="note">薪水 +${gain}。遊戲是隨機產生的，練的是「等收盤再判斷」的習慣。</div></div>${tipCard()}`;
   }
 }
@@ -613,23 +744,34 @@ async function ride(to) {
 }
 
 /* ---------- 牛馬小人（平面版） ---------- */
-export const AVATAR_SVG = `<div class="av-in"><svg viewBox="0 0 90 110"><ellipse cx="45" cy="106" rx="22" ry="4" fill="#000" opacity=".35"/>
+function avatarSVG(eq = {}) {
+  const jacket = eq.jacket === 'jacket-black' ? '#151515' : eq.jacket === 'jacket-navy' ? '#1a2744' : '#f2f5fb';
+  const tie = eq.tie === 'tie-cyan' ? '#1aa9c9' : eq.tie === 'tie-red' ? '#8a2030' : '#ffc85a';
+  const horn = eq.horns ? '#ffd56a' : '#f4e3c0';
+  const cape = eq.cape === 'cape-gold' ? '#d9a441' : eq.cape === 'cape-cyan' ? '#1aa9c9' : '';
+  const hat = eq.hat === 'hat-cap' ? `<rect x="18" y="2" width="54" height="12" rx="4" fill="#1a2744"/><rect x="28" y="8" width="34" height="6" rx="2" fill="#1a2744"/>` : eq.hat === 'hat-bowler' ? `<ellipse cx="45" cy="10" rx="28" ry="7" fill="#161616"/><rect x="24" y="0" width="42" height="12" rx="8" fill="#161616"/>` : '';
+  const glasses = eq.glasses ? `<rect x="26" y="22" width="14" height="8" rx="2" fill="#111" opacity=".75"/><rect x="50" y="22" width="14" height="8" rx="2" fill="#111" opacity=".75"/><path d="M40 26h10" stroke="${eq.glasses === 'glasses-gold' ? '#d9a441' : '#111'}" stroke-width="2"/>` : '';
+  return `<div class="av-in"><svg viewBox="0 0 90 110"><ellipse cx="45" cy="106" rx="22" ry="4" fill="#000" opacity=".35"/>
+${cape ? `<path d="M22 52 q23 40 46 0 v36 q-23 16 -46 0z" fill="${cape}" opacity=".9"/>` : ''}
 <rect x="31" y="78" width="11" height="26" rx="4" fill="#1d2640"/><rect x="48" y="78" width="11" height="26" rx="4" fill="#1d2640"/>
-<rect x="24" y="48" width="42" height="36" rx="10" fill="#f2f5fb"/><path d="M45 50 l-5 6 5 22 5-22z" fill="#ffc85a"/><rect x="52" y="60" width="9" height="6" rx="1.5" fill="#3ef2ff"/>
-<rect x="15" y="52" width="10" height="26" rx="5" fill="#e6ebf5"/><rect x="65" y="52" width="10" height="26" rx="5" fill="#e6ebf5"/>
-<path d="M22 18 q-12 -4 -14 -14 q10 4 18 8z" fill="#f4e3c0"/><path d="M68 18 q12 -4 14 -14 q-10 4 -18 8z" fill="#f4e3c0"/>
+<rect x="24" y="48" width="42" height="36" rx="10" fill="${jacket}"/><path d="M45 50 l-5 6 5 22 5-22z" fill="${tie}"/><rect x="52" y="60" width="9" height="6" rx="1.5" fill="#3ef2ff"/>
+<rect x="15" y="52" width="10" height="26" rx="5" fill="${eq.jacket ? jacket : '#e6ebf5'}"/><rect x="65" y="52" width="10" height="26" rx="5" fill="${eq.jacket ? jacket : '#e6ebf5'}"/>
+<path d="M22 18 q-12 -4 -14 -14 q10 4 18 8z" fill="${horn}"/><path d="M68 18 q12 -4 14 -14 q-10 4 -18 8z" fill="${horn}"/>
 <ellipse cx="16" cy="28" rx="8" ry="4" fill="#8a5a33"/><ellipse cx="74" cy="28" rx="8" ry="4" fill="#8a5a33"/>
 <rect x="20" y="10" width="50" height="40" rx="16" fill="#a8703f"/><rect x="28" y="32" width="34" height="18" rx="9" fill="#e9c49a"/>
-<circle cx="37" cy="41" r="2.4" fill="#5b3a1e"/><circle cx="53" cy="41" r="2.4" fill="#5b3a1e"/><circle cx="34" cy="25" r="3.6" fill="#111"/><circle cx="56" cy="25" r="3.6" fill="#111"/><circle cx="35" cy="24" r="1.2" fill="#fff"/><circle cx="57" cy="24" r="1.2" fill="#fff"/></svg></div>`;
+<circle cx="37" cy="41" r="2.4" fill="#5b3a1e"/><circle cx="53" cy="41" r="2.4" fill="#5b3a1e"/><circle cx="34" cy="25" r="3.6" fill="#111"/><circle cx="56" cy="25" r="3.6" fill="#111"/><circle cx="35" cy="24" r="1.2" fill="#fff"/><circle cx="57" cy="24" r="1.2" fill="#fff"/>
+${glasses}${hat}</svg></div>`;
+}
+export const AVATAR_SVG = avatarSVG();
 
 /* ---------- 平面版世界（2.5D，功能與樓層和立體版相同） ---------- */
 function createFlat() {
   const root = $('#flat'), zonesEl = $('#flatZones'), av = $('#flatAvatar');
   root.hidden = false; document.body.classList.add('flat');
-  root.querySelectorAll('[data-avatar]').forEach(a => a.innerHTML = AVATAR_SVG);
+  paintAvatars();
   const draw = () => {
     root.dataset.floor = floor;
-    $('#flatWallName').textContent = floor === 'lobby' ? '史塔科技大樓・交易大廳' : FLOORS[floor].name;
+    $('#flatWallName').textContent = floor === 'lobby' ? '史塔金融大樓・交易大廳' : FLOORS[floor].name;
     zonesEl.innerHTML = zonesOn(floor).map(z => { const [x, y] = SLOTS[z.flatSlot || z.slot]; return `<button class="fzone ${z.gold ? 'gold' : ''} ${z.lock ? 'locked' : ''} ${z.slot === 'H' ? 'lift' : ''}" data-zone="${z.id}" style="left:${x}%;top:${y}%">${ICON[z.id]}${z.name}${z.lock ? '<em>僅限自己人</em>' : ''}</button>`; }).join('');
     zonesEl.querySelectorAll('.fzone').forEach(b => b.onclick = () => go(b.dataset.zone));
     refreshHud();
@@ -663,7 +805,7 @@ function createFlat() {
     intro(caption) {
       return new Promise(res => {
         root.classList.add('intro'); requestAnimationFrame(() => root.classList.add('go'));
-        caption('走進史塔科技大樓…');
+        caption('走進史塔金融大樓…');
         this._t = setTimeout(() => { this.enterDirect(); res(); }, 3000);
       });
     },
@@ -704,6 +846,13 @@ const hooks = {
   go: id => world && world.go(id),
   open: id => openPanel(id),
   floor: () => floor,
+  outfit: () => equipped(),
+  nearZone(z) {
+    const b = document.getElementById('zonePrompt'); if (!b) return;
+    if (!z || document.getElementById('panel').classList.contains('open')) { b.hidden = true; return; }
+    b.hidden = false; b.textContent = z.id.startsWith('lift_') ? '打開電梯' : '打開' + z.name;
+    b.onclick = () => world && world.go(z.id);
+  },
   fallback(reason) { toast(reason || '已自動切換為省電平面版'); switchTo('flat', true); },
 };
 async function make(kind) {
@@ -720,7 +869,31 @@ async function switchTo(kind, inLobby) {
   setModeLabel(); buildDock();
   if (inLobby) { world.enterDirect(); showLobbyUI(); } else world.idle();
 }
-function showLobbyUI() { $('#start').classList.add('hide'); $('#introBar').hidden = true; $('#hud').hidden = false; $('#dock').hidden = false; }
+function showLobbyUI() {
+  $('#start').classList.add('hide'); $('#introBar').hidden = true; $('#hud').hidden = false; $('#dock').hidden = false;
+  const joy = document.getElementById('joy');
+  if (joy) joy.hidden = !(world && world.kind === '3d');
+  document.body.classList.toggle('play3d', !!(world && world.kind === '3d'));
+  wearAll();
+  setTimeout(maybeRemind, 700);
+}
+function bindJoy() {
+  const root = document.getElementById('joy'); if (!root) return;
+  const knob = document.getElementById('joyKnob');
+  let pid = null, cx = 0, cy = 0;
+  const apply = (x, y) => {
+    const l = Math.hypot(x, y), m = l > 40 ? 40 / l : 1, nx = x * m / 40, ny = y * m / 40;
+    knob.style.transform = `translate(${nx * 34}px,${ny * 34}px)`;
+    world && world.setSteer && world.setSteer(nx, -ny);
+  };
+  const end = e => { if (pid == null || (e && e.pointerId !== pid)) return; pid = null; apply(0, 0); knob.style.transform = ''; };
+  root.addEventListener('pointerdown', e => { pid = e.pointerId; const r = root.getBoundingClientRect(); cx = r.left + r.width / 2; cy = r.top + r.height / 2; root.setPointerCapture(pid); apply(e.clientX - cx, e.clientY - cy); e.preventDefault(); });
+  root.addEventListener('pointermove', e => { if (e.pointerId !== pid) return; apply(e.clientX - cx, e.clientY - cy); });
+  root.addEventListener('pointerup', end); root.addEventListener('pointercancel', end);
+}
+bindJoy();
+const shopBtn = document.getElementById('btnShop'); shopBtn && (shopBtn.onclick = () => openPanel('shop'));
+const bakBtn = document.getElementById('btnBak'); bakBtn && (bakBtn.onclick = () => openPanel('backup'));
 const skip = async () => { await ready; world.skipIntro ? world.skipIntro() : world.enterDirect(); showLobbyUI(); };
 
 $('#btnStart').onclick = async () => {
@@ -754,6 +927,6 @@ if (S.pref.music !== false) {
 } else syncMusicBtn(false);
 
 const startFlat = qs.has('flat') || (!qs.has('force3d') && (S.pref.flat === true || (S.pref.flat == null && weakDevice())));
-window.__niuma = { get world() { return world; }, get floor() { return floor; }, openPanel, closePanel, ride, get ready() { return ready; } };
+window.__niuma = { get world() { return world; }, get floor() { return floor; }, openPanel, closePanel, ride, get ready() { return ready; }, SHOP, encodeBackup, decodeBackup, applySnapshot, maybeRemind };
 ready = (async () => { await restoreInsider(); await switchTo(startFlat ? 'flat' : '3d', false); })();
 if (qs.has('lobby')) skip();
