@@ -4,13 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#07080c" />
-  <meta name="description" content="LEO 史塔 仙府 · 大殿。門徒專屬引薦計劃與師門介紹。" />
+  <meta name="description" content="LEO 史塔 仙府 · 洞天三境。內門、外門與凡間。" />
   <meta property="og:title" content="LEO 史塔 仙府" />
-  <meta property="og:description" content="LEO 史塔 仙府 · 大殿。門徒專屬引薦計劃與師門介紹。" />
+  <meta property="og:description" content="LEO 史塔 仙府 · 洞天三境。內門、外門與凡間。" />
   <meta property="og:type" content="website" />
   <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="LEO 史塔 仙府" />
-  <meta name="twitter:description" content="LEO 史塔 仙府 · 大殿。門徒專屬引薦計劃與師門介紹。" />
+  <meta name="twitter:description" content="LEO 史塔 仙府 · 洞天三境。內門、外門與凡間。" />
   <title>LEO 史塔 仙府</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%2307080c' stroke='%23c9a84c' stroke-width='1'/%3E%3Ctext x='16' y='21' text-anchor='middle' fill='%23e8d7a8' font-size='11' font-family='serif'%3EL%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -77,19 +77,24 @@
       </svg>
       <div class="ornament" aria-hidden="true"><span class="line"></span><span class="diamond"></span><span class="line"></span></div>
       <h1><span class="latin">LEO</span>史塔 仙府</h1>
-      <p class="sub">門徒專屬</p>
+      <p class="sub">洞天三境</p>
       <button class="enter-btn" id="enter-btn" type="button">入府</button>
       <div class="path-choice" id="path-choice" hidden>
         <p class="path-lead">擇一路而行</p>
-        <div class="path-cards">
+        <div class="path-cards three">
           <button type="button" class="path-card inner" id="path-inner">
-            <span class="path-tag">山上</span>
+            <span class="path-tag">山頂</span>
             <strong class="path-name">內門</strong>
             <span class="path-desc">門徒專屬 · 大殿</span>
           </button>
           <button type="button" class="path-card outer" id="path-outer">
+            <span class="path-tag">山腰</span>
+            <strong class="path-name">外門</strong>
+            <span class="path-desc">公開試修</span>
+          </button>
+          <button type="button" class="path-card mortal" id="path-mortal">
             <span class="path-tag">山腳下</span>
-            <strong class="path-name">外門凡人</strong>
+            <strong class="path-name">凡間</strong>
             <span class="path-desc">凡塵樓宇</span>
           </button>
         </div>
@@ -112,9 +117,19 @@
 
   <section id="hall" aria-label="大殿" aria-hidden="true">
     <div class="hall-head">
-      <p>LEO 史塔 仙府 · 大殿</p>
+      <div class="head-id">
+        <p>LEO 史塔 仙府 · 內門大殿</p>
+        <span class="realm-badge" id="realm-badge">練氣</span>
+        <div class="qi-bar" id="qi-bar" aria-label="靈氣">
+          <span class="qi-label">靈氣</span>
+          <span class="qi-track"><span class="qi-fill" id="qi-fill"></span></span>
+        </div>
+      </div>
       <div class="hall-actions">
-        <button class="descend-btn" id="descend-btn" type="button">下山 · 外門</button>
+        <button class="cult-btn" id="duty-btn" type="button">今日功課</button>
+        <button class="cult-btn" id="slip-btn" type="button">求籤</button>
+        <button class="cult-btn" id="retreat-btn" type="button">閉關</button>
+        <button class="descend-btn" id="to-outer-btn" type="button">下行 · 外門</button>
         <button class="back-btn" id="back-btn" type="button">回至洞口</button>
       </div>
     </div>
@@ -152,6 +167,11 @@
           <span class="aura"></span>
           <span class="npc-inner"><img src="assets/img/npc-master.webp" alt="" /></span>
           <span class="plaque">掌門<span class="sub">Leo</span></span>
+        </button>
+        <button class="npc coach" type="button" data-id="coach" data-panel="coach" data-focus="coach" aria-label="演武場教頭">
+          <span class="aura"></span>
+          <span class="npc-inner"><img src="assets/img/npc-coach.webp" alt="" /></span>
+          <span class="plaque">演武場教頭</span>
         </button>
         <button class="array-btn is-lit" type="button" data-panel="referral" data-focus="envoy" aria-label="生辰法陣／引薦令">
           <span class="array-floor">
@@ -200,8 +220,131 @@
       <button type="button" data-panel="elder" data-focus="elder">傳功長老</button>
       <button type="button" data-panel="star" data-focus="star">觀星閣主</button>
       <button type="button" data-panel="canon" data-focus="library">藏經閣</button>
+      <button type="button" data-panel="coach" data-focus="coach">演武場</button>
       <button type="button" data-panel="steward" data-focus="steward">執事堂</button>
       <button type="button" class="special" data-panel="referral" data-focus="envoy">生辰法陣</button>
+    </nav>
+  </section>
+
+
+  <section id="outer" aria-label="外門" aria-hidden="true">
+    <div class="hall-head">
+      <div class="head-id">
+        <p>LEO 史塔 仙府 · 外門</p>
+        <span class="realm-badge is-outer" id="outer-badge">遊山</span>
+      </div>
+      <div class="hall-actions">
+        <button class="descend-btn" id="to-mortal-btn" type="button">下行 · 凡間</button>
+        <button class="cult-btn" id="to-inner-btn" type="button">上行 · 內門</button>
+        <button class="back-btn" id="outer-back-btn" type="button">回至洞口</button>
+      </div>
+    </div>
+    <div class="hall-world">
+      <div class="bg">
+        <picture>
+          <source media="(min-width: 800px)" type="image/webp" srcset="assets/img/outer-16x9.webp 1280w, assets/img/outer-16x9-2x.webp 2560w" sizes="100vw" />
+          <source media="(min-width: 800px)" type="image/jpeg" srcset="assets/img/outer-16x9.jpg 1280w, assets/img/outer-16x9-2x.jpg 2560w" sizes="100vw" />
+          <source type="image/webp" srcset="assets/img/outer-9x16.webp" />
+          <img src="assets/img/outer-9x16.jpg" alt="山腰外門演武廣場，松風、石燈與雲海" />
+        </picture>
+      </div>
+      <div class="hall-rays desk-fx" aria-hidden="true"><span></span></div>
+      <div class="hall-mist desk-fx" aria-hidden="true"><span class="a"></span><span class="b"></span></div>
+      <span class="fx-lantern" style="left:22%;top:48%;width:8%;height:14%;animation-delay:-.6s" aria-hidden="true"></span>
+      <span class="fx-lantern" style="left:70%;top:28%;width:10%;height:16%;animation-delay:-1.4s" aria-hidden="true"></span>
+      <span class="fx-lantern desk-fx" style="left:86%;top:52%;width:7%;height:12%;animation-delay:-2.2s" aria-hidden="true"></span>
+      <span class="fx-lantern desk-fx" style="left:40%;top:42%;width:6%;height:10%;animation-delay:-.9s" aria-hidden="true"></span>
+      <div class="mist outer-mist" aria-hidden="true">
+        <span class="a"></span><span class="b"></span>
+      </div>
+
+      <div class="crowd" id="outer-crowd" aria-hidden="true">
+        <div class="crowd-far">
+          <span class="disciple walk" style="left:24%;bottom:38%;width:5.1%;--dur:26s;--delay:-3s;--span:7%;">
+            <span class="path"><span class="inner"><img src="assets/img/d-walk.webp" alt="" /></span></span>
+          </span>
+          <span class="disciple walk flip" style="left:46%;bottom:37%;width:5.3%;--dur:28s;--delay:-14s;--span:8%;">
+            <span class="path"><span class="inner"><img src="assets/img/d-scroll.webp" alt="" /></span></span>
+          </span>
+          <span class="disciple bob" style="left:17%;bottom:36%;width:5.6%;--delay:-2s;">
+            <span class="inner"><img src="assets/img/d-meditate.webp" alt="" /></span>
+          </span>
+          <span class="disciple walk" style="left:61%;bottom:35.5%;width:4.7%;--dur:24s;--delay:-8s;--span:6%;">
+            <span class="path"><span class="inner"><img src="assets/img/d-walk.webp" alt="" /></span></span>
+          </span>
+          <span class="disciple bob sword-idle" style="left:33%;bottom:36.5%;width:5.2%;--delay:-5s;">
+            <span class="inner"><img src="assets/img/d-sword-b.webp" alt="" /></span>
+          </span>
+        </div>
+        <div class="crowd-mid">
+          <span class="disciple sword" style="left:28%;bottom:25%;width:9.6%;">
+            <span class="inner">
+              <img class="f1" src="assets/img/d-sword-a.webp" alt="" />
+              <img class="f2" src="assets/img/d-sword-b.webp" alt="" />
+            </span>
+          </span>
+          <span class="disciple sword flip" style="left:38.5%;bottom:24%;width:9.1%;--delay:.6s;">
+            <span class="inner">
+              <img class="f1" src="assets/img/d-sword-b.webp" alt="" />
+              <img class="f2" src="assets/img/d-sword-a.webp" alt="" />
+            </span>
+          </span>
+          <span class="disciple bob" style="left:20%;bottom:27%;width:8.6%;">
+            <span class="inner"><img src="assets/img/d-meditate.webp" alt="" /></span>
+          </span>
+          <span class="disciple sweep" style="left:73%;bottom:19%;width:8.8%;">
+            <span class="inner"><img src="assets/img/d-sweep.webp" alt="" /></span>
+          </span>
+          <span class="disciple walk" style="left:51%;bottom:21%;width:8.2%;--dur:22s;--delay:-2s;--span:11%;">
+            <span class="path"><span class="inner"><img src="assets/img/d-scroll.webp" alt="" /></span></span>
+          </span>
+          <span class="disciple walk flip" style="left:58%;bottom:22.5%;width:7.6%;--dur:20s;--delay:-10s;--span:10%;">
+            <span class="path"><span class="inner"><img src="assets/img/d-walk.webp" alt="" /></span></span>
+          </span>
+          <span class="disciple bob" style="left:66%;bottom:26%;width:7.2%;--delay:-3s;">
+            <span class="inner"><img src="assets/img/d-meditate.webp" alt="" /></span>
+          </span>
+          <span class="disciple sweep" style="left:14%;bottom:24%;width:7.4%;--delay:-1.4s;">
+            <span class="inner"><img src="assets/img/d-sweep.webp" alt="" /></span>
+          </span>
+        </div>
+      </div>
+
+      <div class="hall-stage" id="outer-stage">
+        <button class="npc guard is-on" type="button" data-id="guard" data-panel="guard" data-focus="guard" aria-label="護法長老">
+          <span class="aura"></span>
+          <span class="npc-inner"><img src="assets/img/npc-guard.webp" alt="" /></span>
+          <span class="plaque">護法長老</span>
+        </button>
+        <button class="npc alchemy" type="button" data-id="alchemy" data-panel="alchemy" data-focus="alchemy" aria-label="煉丹房丹師">
+          <span class="aura"></span>
+          <span class="npc-inner"><img src="assets/img/npc-alchemist.webp" alt="" /></span>
+          <span class="plaque">煉丹房丹師</span>
+        </button>
+        <button class="npc oracle" type="button" data-id="oracle" data-panel="oracle" data-focus="oracle" aria-label="天機閣">
+          <span class="aura"></span>
+          <span class="npc-inner"><img src="assets/img/npc-oracle.webp" alt="" /></span>
+          <span class="plaque">天機閣</span>
+        </button>
+        <button class="npc stele" type="button" data-id="heroes" data-panel="heroes" data-focus="heroes" aria-label="英雄榜">
+          <span class="aura"></span>
+          <span class="npc-inner"><img src="assets/img/hero-stele.webp" alt="" /></span>
+          <span class="plaque">英雄榜</span>
+        </button>
+        <button class="npc guide" type="button" data-id="guide" data-panel="guide" data-focus="guide" aria-label="接引使者">
+          <span class="aura"></span>
+          <span class="npc-inner"><img src="assets/img/npc-guide.webp" alt="" /></span>
+          <span class="plaque">接引使者</span>
+        </button>
+      </div>
+    </div>
+    <p class="hint-pan">左右滑動 · 點選牌位探訪</p>
+    <nav class="dock" id="outer-dock" aria-label="外門牌位">
+      <button type="button" data-panel="guard" data-focus="guard">護法長老</button>
+      <button type="button" data-panel="alchemy" data-focus="alchemy">煉丹房</button>
+      <button type="button" data-panel="oracle" data-focus="oracle">天機閣</button>
+      <button type="button" data-panel="heroes" data-focus="heroes">英雄榜</button>
+      <button type="button" class="special" data-panel="guide" data-focus="guide">接引使者</button>
     </nav>
   </section>
 
@@ -248,12 +391,98 @@
 
         <article class="panel" id="panel-canon">
           <h2>藏經閣</h2>
+          <p class="who">三卷心法 · 循序修習</p>
           <div class="rule" aria-hidden="true"><span class="ln"></span></div>
-          <ul class="canon">
-            <li><span class="k">講義</span>待補充</li>
-            <li><span class="k">門徒成果</span>待補充</li>
-            <li><span class="k">實盤紀錄</span>待補充</li>
-          </ul>
+          <p class="lede">經文由掌門親訂。以下章目已備，正文待掌門放置。</p>
+          <div class="volumes">
+            <section class="volume" data-vol="struct">
+              <h3>卷上 · 市場結構</h3>
+              <ul class="chapters">
+                <li>
+                  <div>
+                    <span class="k">第一章</span>
+                    <span>趨勢與區間</span>
+                    <span class="pending-inline">待掌門提供</span>
+                  </div>
+                  <button type="button" class="read-btn" data-chapter="struct-1">記為已閱</button>
+                </li>
+                <li>
+                  <div>
+                    <span class="k">第二章</span>
+                    <span>高低點與結構轉換</span>
+                    <span class="pending-inline">待掌門提供</span>
+                  </div>
+                  <button type="button" class="read-btn" data-chapter="struct-2">記為已閱</button>
+                </li>
+                <li>
+                  <div>
+                    <span class="k">第三章</span>
+                    <span>時段與節奏</span>
+                    <span class="pending-inline">待掌門提供</span>
+                  </div>
+                  <button type="button" class="read-btn" data-chapter="struct-3">記為已閱</button>
+                </li>
+              </ul>
+            </section>
+            <section class="volume" data-vol="flow">
+              <h3>卷中 · 流動性</h3>
+              <ul class="chapters">
+                <li>
+                  <div>
+                    <span class="k">第一章</span>
+                    <span>供需與停駐</span>
+                    <span class="pending-inline">待掌門提供</span>
+                  </div>
+                  <button type="button" class="read-btn" data-chapter="flow-1">記為已閱</button>
+                </li>
+                <li>
+                  <div>
+                    <span class="k">第二章</span>
+                    <span>盤中的流動與休止</span>
+                    <span class="pending-inline">待掌門提供</span>
+                  </div>
+                  <button type="button" class="read-btn" data-chapter="flow-2">記為已閱</button>
+                </li>
+                <li>
+                  <div>
+                    <span class="k">第三章</span>
+                    <span>位置與耐心</span>
+                    <span class="pending-inline">待掌門提供</span>
+                  </div>
+                  <button type="button" class="read-btn" data-chapter="flow-3">記為已閱</button>
+                </li>
+              </ul>
+            </section>
+            <section class="volume" data-vol="break">
+              <h3>卷下 · 二次突破進場</h3>
+              <ul class="chapters">
+                <li>
+                  <div>
+                    <span class="k">第一章</span>
+                    <span>突破與回測</span>
+                    <span class="pending-inline">待掌門提供</span>
+                  </div>
+                  <button type="button" class="read-btn" data-chapter="break-1">記為已閱</button>
+                </li>
+                <li>
+                  <div>
+                    <span class="k">第二章</span>
+                    <span>進場條件</span>
+                    <span class="pending-inline">待掌門提供</span>
+                  </div>
+                  <button type="button" class="read-btn" data-chapter="break-2">記為已閱</button>
+                </li>
+                <li>
+                  <div>
+                    <span class="k">第三章</span>
+                    <span>出場與復盤</span>
+                    <span class="pending-inline">待掌門提供</span>
+                  </div>
+                  <button type="button" class="read-btn" data-chapter="break-3">記為已閱</button>
+                </li>
+              </ul>
+            </section>
+          </div>
         </article>
 
         <article class="panel" id="panel-steward">
@@ -265,6 +494,142 @@
             <li>不承諾獲利</li>
             <li>如何聯繫：私訊關鍵字「成長」領取交易觀察模型</li>
           </ul>
+        </article>
+
+        <article class="panel" id="panel-coach">
+          <h2>演武場教頭</h2>
+          <p class="who">模型實盤回顧</p>
+          <div class="rule" aria-hidden="true"><span class="ln"></span></div>
+          <p class="lede">本欄只記觸發的時間點與結果，不公開點位。以下為欄位框架，內容待掌門放置。</p>
+          <div class="review-cards">
+            <article class="review-card pending-card">
+              <h4>回顧其一</h4>
+              <ul>
+                <li><span class="k">觀察日時</span>待掌門提供</li>
+                <li><span class="k">觸發時間點</span>待掌門提供</li>
+                <li><span class="k">結果</span>待掌門提供</li>
+              </ul>
+            </article>
+            <article class="review-card pending-card">
+              <h4>回顧其二</h4>
+              <ul>
+                <li><span class="k">觀察日時</span>待掌門提供</li>
+                <li><span class="k">觸發時間點</span>待掌門提供</li>
+                <li><span class="k">結果</span>待掌門提供</li>
+              </ul>
+            </article>
+            <article class="review-card pending-card">
+              <h4>回顧其三</h4>
+              <ul>
+                <li><span class="k">觀察日時</span>待掌門提供</li>
+                <li><span class="k">觸發時間點</span>待掌門提供</li>
+                <li><span class="k">結果</span>待掌門提供</li>
+              </ul>
+            </article>
+          </div>
+          <p class="disclaimer">本頁整理僅供學習觀察，非投資建議，亦不保證任何結果。</p>
+        </article>
+
+        <article class="panel" id="panel-guard">
+          <h2>護法長老</h2>
+          <p class="who">擋人財路</p>
+          <div class="rule" aria-hidden="true"><span class="ln"></span></div>
+          <div class="prose stack">
+            <p>「擋人財路」是掌門 Leo 對外的防詐系列，把市場裡常見的話術攤開來看。先學會辨識，再談其他。</p>
+            <p>以下幾種說法，建議多停一步。這是護法的功課，不是要嚇你，是要你把眼睛擦亮。</p>
+          </div>
+          <ul class="scam-list">
+            <li>
+              <span class="k">帶單喊單</span>
+              <p>有人要你跟著他的指令進出，把判斷交給別人。要在市場活下來，判斷仍須自己做；把倉位交給陌生人，風險也就交給對方。</p>
+            </li>
+            <li>
+              <span class="k">保證獲利</span>
+              <p>市場沒有人能保證結果。凡把「穩賺、保本、穩了」掛在嘴邊的，多半是要你先把錢送出去。</p>
+            </li>
+            <li>
+              <span class="k">投顧老師加 LINE 群</span>
+              <p>以老師、顧問之名，邀你進群看盤，再轉私訊下單或繳費。陌生加群、又急著要你匯款的，請先查證、先停手。</p>
+            </li>
+            <li>
+              <span class="k">假冒名人</span>
+              <p>盜用掌門或其他人的姓名、照片、帳號來取信。聯繫請走你本來就認識的管道，不要從陌生連結或臨時帳號進去。</p>
+            </li>
+            <li>
+              <span class="k">出金卡關要先繳費</span>
+              <p>已經「賺錢」，卻說要先繳稅、繳保證金才能出金——這是常見套路。正路不會用出金來要你再付錢。</p>
+            </li>
+          </ul>
+          <p class="lede" style="margin-top:18px;">不帶單、不喊單、不承諾報酬，是師門自己的規矩；也請你用同一把尺，去量外面的人。</p>
+          <button type="button" class="read-btn ink" data-outer-read="guard">掩卷，記為已閱</button>
+        </article>
+
+        <article class="panel" id="panel-alchemy">
+          <h2>煉丹房丹師</h2>
+          <p class="who">火候 · 風險控管</p>
+          <div class="rule" aria-hidden="true"><span class="ln"></span></div>
+          <div class="prose stack">
+            <p>煉丹講火候。火太旺，丹焦；火太弱，丹生。交易裡的火候，就是風險怎麼控。</p>
+          </div>
+          <ul class="item-list">
+            <li><span class="k" style="display:block;font-family:var(--serif);color:#6b5420;letter-spacing:.1em;margin-bottom:4px;">停損</span>先想清楚這一手最壞能走到哪，再決定要不要進。停損不是認輸，是把明天留下來。</li>
+            <li><span class="k" style="display:block;font-family:var(--serif);color:#6b5420;letter-spacing:.1em;margin-bottom:4px;">部位大小</span>再有把握，也不把身子全壓上去。份量對了，錯一次還站得住。</li>
+            <li><span class="k" style="display:block;font-family:var(--serif);color:#6b5420;letter-spacing:.1em;margin-bottom:4px;">資金控管</span>把能虧的、不能動的分開。日常能用的火，不該把整座丹房燒掉。</li>
+            <li><span class="k" style="display:block;font-family:var(--serif);color:#6b5420;letter-spacing:.1em;margin-bottom:4px;">先學會在市場活下來</span>活得久，才有下一爐。這不是口號，是煉丹的第一課。</li>
+          </ul>
+          <p class="disclaimer">以上為觀念整理，非投資建議，亦不保證任何結果。</p>
+          <button type="button" class="read-btn ink" data-outer-read="alchemy">掩卷，記為已閱</button>
+        </article>
+
+        <article class="panel" id="panel-oracle">
+          <h2>天機閣</h2>
+          <p class="who">三市每日戰報</p>
+          <div class="rule" aria-hidden="true"><span class="ln"></span></div>
+          <p class="lede">天機閣彙整師門公開的每日戰報，供來人閱覽。戰報為盤面觀察整理，非投資建議。</p>
+          <ul class="report-links">
+            <li><a href="https://wuz5566tt-oss.github.io/company-dashboard/" target="_blank" rel="noopener noreferrer">公司總控台 · 三市總覽</a></li>
+            <li><a href="https://wuz5566tt-oss.github.io/tw-daily-report/" target="_blank" rel="noopener noreferrer">台股戰報</a></li>
+            <li><a href="https://wuz5566tt-oss.github.io/tw-daily-report/morning/" target="_blank" rel="noopener noreferrer">台股盤前早報</a></li>
+            <li><a href="https://wuz5566tt-oss.github.io/ashare-daily-report/" target="_blank" rel="noopener noreferrer">A 股戰報</a></li>
+            <li><a href="https://wuz5566tt-oss.github.io/nasdaq-daily-report/" target="_blank" rel="noopener noreferrer">美股戰報</a></li>
+          </ul>
+          <h3 class="subhead">更新時程 · 台北時間</h3>
+          <ul class="canon">
+            <li><span class="k">08:30</span>台股盤前早報（交易日）</li>
+            <li><span class="k">09:00</span>A 股盤前提醒（交易日 · 以私訊圖卡發送，不另設公開頁）</li>
+            <li><span class="k">08:00</span>美股戰報（每日）</li>
+            <li><span class="k">18:00</span>台股戰報、A 股戰報（交易日收盤後）</li>
+            <li><span class="k">週日晚間</span>美股財報行事曆</li>
+          </ul>
+          <p class="disclaimer">各戰報為固定網址，每日覆蓋更新。內容僅供觀察，非投資建議。</p>
+        </article>
+
+        <article class="panel" id="panel-heroes">
+          <h2>英雄榜</h2>
+          <p class="who">門徒成果</p>
+          <div class="rule" aria-hidden="true"><span class="ln"></span></div>
+          <p class="lede">此牆留給掌門確認過的成果。位置已備，內容待掌門提供，不另行添寫。</p>
+          <div class="hero-grid">
+            <article class="hero-card pending-card"><div class="hero-frame" aria-hidden="true"></div><h4>待掌門提供</h4><p>位置一</p></article>
+            <article class="hero-card pending-card"><div class="hero-frame" aria-hidden="true"></div><h4>待掌門提供</h4><p>位置二</p></article>
+            <article class="hero-card pending-card"><div class="hero-frame" aria-hidden="true"></div><h4>待掌門提供</h4><p>位置三</p></article>
+            <article class="hero-card pending-card"><div class="hero-frame" aria-hidden="true"></div><h4>待掌門提供</h4><p>位置四</p></article>
+          </div>
+        </article>
+
+        <article class="panel" id="panel-guide">
+          <h2>接引使者</h2>
+          <p class="who">外門引路</p>
+          <div class="rule" aria-hidden="true"><span class="ln"></span></div>
+          <div class="prose stack">
+            <p>若你願意再往前走一步，可私訊「成長」，領取交易觀察模型。</p>
+          </div>
+          <div class="gate-box" style="margin-top:22px;">
+            <p class="gate-copy">想領取交易觀察模型</p>
+            <p class="gate-label">請私訊「成長」</p>
+            <a class="btn-ink ig-btn" href="https://www.instagram.com/wuz200200/" target="_blank" rel="noopener noreferrer">前往掌門 Instagram</a>
+          </div>
+          <p class="disclaimer">本頁內容皆非投資建議，不構成任何買賣建議，亦不保證結果。</p>
         </article>
 
         <article class="panel ref" id="panel-referral">
@@ -357,6 +722,174 @@
     <div class="swoop-streaks" aria-hidden="true"></div>
     <div class="swoop-trail" aria-hidden="true"></div>
     <div class="swoop-veil" aria-hidden="true"></div>
+  </div>
+
+  <div id="glide" aria-hidden="true">
+    <div class="glide-world">
+      <picture>
+        <source media="(min-width: 800px)" type="image/webp" srcset="assets/img/entrance-16x9.webp 1280w, assets/img/entrance-16x9-2x.webp 2560w" sizes="100vw" />
+        <source media="(min-width: 800px)" type="image/jpeg" srcset="assets/img/entrance-16x9.jpg 1280w, assets/img/entrance-16x9-2x.jpg 2560w" sizes="100vw" />
+        <source type="image/webp" srcset="assets/img/entrance-9x16.webp" />
+        <img src="assets/img/entrance-9x16.jpg" alt="" />
+      </picture>
+      <div class="glide-mist"></div>
+    </div>
+    <div class="glide-veil" aria-hidden="true"></div>
+  </div>
+
+
+  <div id="duty-omen" class="omen" aria-hidden="true">
+    <div class="omen-back" data-close="duty-omen" title="關閉"></div>
+    <div class="omen-slip" role="dialog" aria-modal="true" aria-labelledby="duty-title">
+      <button class="omen-close" type="button" data-close="duty-omen">闔上</button>
+      <h2 id="duty-title">今日功課</h2>
+      <p class="omen-who">內門日課 · 三件即可</p>
+      <div class="rule" aria-hidden="true"><span class="ln"></span><span class="diamond" style="width:7px;height:7px;border:1px solid #8a6a28;transform:rotate(45deg);flex:none;"></span><span class="ln"></span></div>
+      <ul class="duty-list" id="duty-list">
+        <li data-duty="slip"><button type="button" class="duty-item" data-open="slip"><span class="duty-mark" aria-hidden="true"></span><span>求一支籤</span></button></li>
+        <li data-duty="checkin"><button type="button" class="duty-item" data-open="retreat"><span class="duty-mark" aria-hidden="true"></span><span>閉關打卡</span></button></li>
+        <li data-duty="read"><button type="button" class="duty-item" data-open="canon"><span class="duty-mark" aria-hidden="true"></span><span>讀一章經文</span></button></li>
+      </ul>
+      <p class="tomorrow-hint" id="tomorrow-hint" hidden>今日功課已了。明日再來：可再求一支新籤，並續燃蓮燈。</p>
+    </div>
+  </div>
+
+  <div id="slip-omen" class="omen slip-scene" aria-hidden="true">
+    <div class="omen-back" data-close="slip-omen" title="關閉"></div>
+    <div class="omen-slip" role="dialog" aria-modal="true" aria-labelledby="slip-title">
+      <div class="slip-altar" aria-hidden="true">
+        <picture>
+          <source media="(min-width: 800px)" type="image/webp" srcset="assets/img/slip-altar-16x9.webp" />
+          <source media="(min-width: 800px)" type="image/jpeg" srcset="assets/img/slip-altar-16x9.jpg" />
+          <source type="image/webp" srcset="assets/img/slip-altar-9x16.webp" />
+          <img src="assets/img/slip-altar-9x16.jpg" alt="" />
+        </picture>
+        <div class="slip-smoke">
+          <span class="wisp w1"></span>
+          <span class="wisp w2"></span>
+          <span class="wisp w3"></span>
+          <span class="wisp w4"></span>
+        </div>
+        <div class="slip-candles">
+          <span class="glow c1"></span>
+          <span class="glow c2"></span>
+          <span class="glow c3"></span>
+          <span class="glow c4"></span>
+        </div>
+        <span class="slip-lantern-glow"></span>
+      </div>
+      <button class="omen-close" type="button" data-close="slip-omen">闔上</button>
+      <header class="slip-head">
+        <h2 id="slip-title">每日一簽</h2>
+        <p class="omen-who">一日一支 · 收入籤譜</p>
+      </header>
+      <div class="tube-stage" id="tube-stage">
+        <div class="tube-rig" id="tube-rig" tabindex="0" role="button" aria-label="搖籤筒：按住拖曳，或輕點自動搖">
+          <div class="stick-cluster" aria-hidden="true">
+            <span class="jostle" data-sk="0" style="left:28%;bottom:79%;width:7.2%;height:32%;z-index:1"><img src="assets/img/slip-stick.webp" alt="" /></span>
+            <span class="jostle" data-sk="1" style="left:34%;bottom:80%;width:7.0%;height:34%;z-index:1"><img src="assets/img/slip-stick.webp" alt="" /></span>
+            <span class="jostle" data-sk="2" style="left:40%;bottom:78.5%;width:7.4%;height:36%;z-index:1"><img src="assets/img/slip-stick.webp" alt="" /></span>
+            <span class="jostle" data-sk="3" style="left:46%;bottom:80%;width:7.1%;height:33%;z-index:1"><img src="assets/img/slip-stick.webp" alt="" /></span>
+            <span class="jostle" data-sk="4" style="left:52%;bottom:79%;width:7.3%;height:35%;z-index:1"><img src="assets/img/slip-stick.webp" alt="" /></span>
+            <span class="jostle" data-sk="5" style="left:58%;bottom:80.5%;width:6.8%;height:31%;z-index:1"><img src="assets/img/slip-stick.webp" alt="" /></span>
+            <span class="jostle" data-sk="6" style="left:31%;bottom:78%;width:6.6%;height:30%;z-index:1"><img src="assets/img/slip-stick.webp" alt="" /></span>
+            <span class="jostle" data-sk="7" style="left:43%;bottom:81%;width:7.0%;height:37%;z-index:1"><img src="assets/img/slip-stick.webp" alt="" /></span>
+            <span class="jostle" data-sk="8" style="left:49%;bottom:78.8%;width:6.9%;height:32%;z-index:1"><img src="assets/img/slip-stick.webp" alt="" /></span>
+          </div>
+          <img class="tube-body" src="assets/img/slip-tube.webp" alt="" />
+          <div class="rising-stick" id="rising-stick" hidden>
+            <img src="assets/img/slip-stick.webp" alt="" />
+          </div>
+          <div class="tube-burst" id="tube-burst" aria-hidden="true"></div>
+        </div>
+        <p class="tube-hint" id="tube-hint">按住拖曳搖筒，或輕點自動搖</p>
+        <div class="tube-actions">
+          <button type="button" class="motion-btn" id="motion-btn" hidden>允許以搖動求籤</button>
+          <button type="button" class="shake-fallback" id="shake-fallback">輕點搖筒</button>
+        </div>
+      </div>
+      <div class="slip-result" id="slip-result" hidden>
+        <div class="result-scroll">
+          <span class="scroll-cap top" aria-hidden="true"></span>
+          <div class="scroll-body">
+            <span class="seal" id="result-seal" hidden></span>
+            <p class="tier-label" id="tier-label"></p>
+            <p class="slip-kicker">今日之籤</p>
+            <p class="slip-text" id="slip-text"></p>
+          </div>
+          <span class="scroll-cap bot" aria-hidden="true"></span>
+        </div>
+      </div>
+      <p class="slip-note" id="slip-note" hidden></p>
+      <div class="drawn-card" id="drawn-card" hidden>
+        <div class="scroll-shell">
+          <span class="scroll-cap top" aria-hidden="true"></span>
+          <div class="scroll-body">
+            <span class="seal" id="fly-seal" hidden></span>
+            <p class="tier-label" id="fly-tier"></p>
+            <p class="slip-text" id="fly-text"></p>
+          </div>
+          <span class="scroll-cap bot" aria-hidden="true"></span>
+        </div>
+      </div>
+      <canvas id="slip-fx" aria-hidden="true"></canvas>
+      <div class="album" id="slip-album">
+        <button type="button" class="album-handle" id="album-handle" aria-expanded="false" aria-controls="album-panel">
+          <span class="album-grip" aria-hidden="true"></span>
+          <span class="album-handle-label">籤譜　<span id="album-count">已收集 0/28</span></span>
+        </button>
+        <div class="album-panel" id="album-panel">
+          <div class="album-rail" aria-hidden="true"></div>
+          <ol class="album-grid" id="album-grid"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="retreat-omen" class="omen" aria-hidden="true">
+    <div class="omen-back" data-close="retreat-omen" title="關閉"></div>
+    <div class="omen-slip" role="dialog" aria-modal="true" aria-labelledby="retreat-title">
+      <button class="omen-close" type="button" data-close="retreat-omen">闔上</button>
+      <h2 id="retreat-title">閉關打卡</h2>
+      <p class="omen-who" id="retreat-streak">連續閉關 0 日</p>
+      <div class="rule" aria-hidden="true"><span class="ln"></span></div>
+      <p class="lede" id="retreat-msg">點起今日的蓮燈，把盤後的心安住。</p>
+      <div class="lotus-row" id="lotus-row" aria-hidden="true"></div>
+      <button type="button" class="token-btn retreat-go" id="retreat-go">今日閉關</button>
+    </div>
+  </div>
+
+  <div id="break-omen" class="omen breakthrough" aria-hidden="true">
+    <div class="storm" aria-hidden="true"></div>
+    <div class="bolts" aria-hidden="true"><span></span><span></span><span></span></div>
+    <div class="gold-burst" aria-hidden="true"></div>
+    <div class="break-text">
+      <p class="break-kicker">靈氣充盈</p>
+      <h2 id="break-title">境界將破</h2>
+      <p class="break-name" id="break-name"></p>
+    </div>
+  </div>
+
+  <div id="promote-omen" class="omen" aria-hidden="true">
+    <div class="omen-back" data-close="promote-omen" title="關閉"></div>
+    <div class="omen-slip" role="dialog" aria-modal="true" aria-labelledby="promote-title">
+      <button class="omen-close" type="button" data-close="promote-omen">闔上</button>
+      <h2 id="promote-title">外門記名</h2>
+      <div class="rule" aria-hidden="true"><span class="ln"></span></div>
+      <p class="prose">凡人看過山門，外門記上一筆。護法與火候既已入眼，可去尋接引使者，問後續的路。</p>
+      <p class="promote-step">凡人 → 外門弟子</p>
+      <button type="button" class="token-btn" id="promote-go">去見接引使者</button>
+    </div>
+  </div>
+
+  <div id="reward-omen" class="omen" aria-hidden="true">
+    <div class="omen-back" data-close="reward-omen" title="關閉"></div>
+    <div class="omen-slip reward-slip" role="dialog" aria-modal="true" aria-labelledby="reward-title">
+      <button class="omen-close" type="button" data-close="reward-omen">闔上</button>
+      <div class="bloom" aria-hidden="true"></div>
+      <h2 id="reward-title">蓮燈圓滿</h2>
+      <p class="reward-text" id="reward-text"></p>
+    </div>
   </div>
 
   <button type="button" class="audio-toggle" id="audio-toggle" aria-label="音境" aria-pressed="false" hidden>
