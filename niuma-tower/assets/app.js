@@ -1,0 +1,735 @@
+import { toggleMusic, blip } from './audio.js';
+
+/* ---------- 基本資料 ---------- */
+import { GATE_HASH, SEALED } from './insider-data.js';
+import { modelStates, encodeQual, last7, RULE_MIN, VALID_DAYS, LADDER, TARGET_DAYS, MASTER_DAYS } from './qual.js';
+const IG = 'https://instagram.com/wuz200200';
+const LINE_OA = 'https://page.line.me/803kongz';
+const LINE_OA_NAME = 'S.T.A.R 機構級交易系統';
+// 公開戰報（陌生人也能看）；A股戰報與總控台只在 68 樓，連結加密在 insider-data.js
+const PUBLIC_REPORTS = { tw: 'https://wuz5566tt-oss.github.io/tw-daily-report/', us: 'https://wuz5566tt-oss.github.io/nasdaq-daily-report/' };
+const KEY = 'niuma-tower-v1';
+const RANKS = [
+  { name: '實習牛馬', xp: 0 }, { name: '正職牛馬', xp: 50 }, { name: '組長', xp: 150 },
+  { name: '經理', xp: 350 }, { name: '總監', xp: 700 }, { name: '董事', xp: 1200 },
+];
+export const ICON = {
+  checkin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h5"/><path d="m9 16 2 2 4-4" stroke="#ffc85a"/></svg>',
+  meeting: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><ellipse cx="12" cy="16" rx="8" ry="3"/><path d="m8 9 3-4 3 4" stroke="#ff5468"/><path d="m13 7 3 4 3-4" stroke="#2fd38a" transform="translate(-2 2)"/></svg>',
+  fortune: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="5" y="3" width="14" height="18" rx="3"/><rect x="8" y="7" width="8" height="6" rx="1.5" stroke="#ffc85a"/><path d="M9 17h6"/></svg>',
+  war: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="m5 13 4-4 3 3 5-5" stroke="#3ef2ff"/><path d="M9 21h6"/></svg>',
+  elevator: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M12 3v18"/><path d="m7 10 1.5-2 1.5 2M14 8l1.5 2 1.5-2" stroke="#ffc85a"/></svg>',
+  heroes: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M7 4h10v5a5 5 0 0 1-10 0z" stroke="#ffc85a"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4M12 14v3M8 20h8"/></svg>',
+  review: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M18 14a6 6 0 1 1-7-9 5 5 0 0 0 7 9z" stroke="#ffc85a"/><path d="M4 20h16"/></svg>',
+  boss: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 9h18l-2 11H5z"/><path d="m7 9 2-5 3 3 3-3 2 5" stroke="#ffc85a"/></svg>',
+  hall: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h8M8 17h5" stroke="#3ef2ff"/></svg>',
+  library: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 5h4v15H4zM10 5h4v15h-4z"/><path d="m16 6 3.5-1 3 14-3.5 1z" stroke="#ffc85a"/></svg>',
+  course: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="m2 9 10-5 10 5-10 5z"/><path d="M6 11v5c3 3 9 3 12 0v-5" stroke="#3ef2ff"/></svg>',
+  arena: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M5 19 19 5M14 5h5v5" stroke="#ffc85a"/><path d="M5 5l5 5M19 19l-5-5"/></svg>',
+  reports: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="2" y="4" width="9" height="7" rx="1.5"/><rect x="13" y="4" width="9" height="7" rx="1.5"/><rect x="7" y="13" width="10" height="7" rx="1.5" stroke="#3ef2ff"/></svg>',
+  guide: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 5h16v11H9l-5 4z"/><path d="M9 10h6" stroke="#3ef2ff"/></svg>',
+};
+// 樓層：lobby＝一樓公開大廳（陌生人也看得到）；insider＝68 樓自己人專區（要暗號）
+// slot＝在大廳的位置（立體版與平面版共用），兩層樓的格局相同
+export const SLOTS = { A: [18, 74], B: [82, 74], C: [18, 55], D: [82, 55], E: [50, 74], F: [18, 37], G: [50, 37], H: [82, 37] };
+// 樓層：need＝累積打卡天數門檻；pass＝要暗號
+export const FLOORS = {
+  lobby: { name: '1 樓・交易大廳', num: 1, need: 0 },
+  f2: { name: '2 樓・晨會室', num: 2, need: 3 },
+  f3: { name: '3 樓・訓練場', num: 3, need: 7 },
+  f4: { name: '4 樓・戰報與英雄榜', num: 4, need: 0 },
+  f5: { name: '5 樓・目標值研究室', num: 5, need: TARGET_DAYS },
+  insider: { name: '68 樓・自己人專區', num: 68, pass: true },
+};
+const FLOOR_ORDER = ['insider', 'f5', 'f4', 'f3', 'f2', 'lobby'];
+export const ZONES = [
+  { id: 'checkin', floor: 'lobby', slot: 'A', name: '打卡櫃台', kicker: '每日上班', gold: true },
+  { id: 'guide', floor: 'lobby', slot: 'B', name: '接引櫃台', kicker: '我的資格・新人報到', gold: true },
+  { id: 'fortune', floor: 'lobby', slot: 'C', name: '心法籤機', kicker: '每日一籤', gold: true },
+  { id: 'directory', floor: 'lobby', slot: 'G', name: '樓層導覽', kicker: '各樓層開放狀態' },
+  { id: 'guess', floor: 'f2', slot: 'D', name: '猜盤桌', kicker: '台股・美股猜漲跌' },
+  { id: 'leader', floor: 'f2', slot: 'G', name: '本週排行榜', kicker: '猜盤積分', gold: true },
+  { id: 'kline', floor: 'f3', slot: 'C', name: '看K線猜下一根', kicker: '小遊戲' },
+  { id: 'fakeout', floor: 'f3', slot: 'D', name: '躲假突破', kicker: '反應小遊戲', gold: true },
+  { id: 'tips', floor: 'f3', slot: 'G', name: '心法小提醒', kicker: '練完記一句' },
+  { id: 'reports', floor: 'f4', slot: 'G', name: '戰報牆', kicker: '台股・美股每日戰報' },
+  { id: 'heroes', floor: 'f4', slot: 'F', name: '英雄榜', kicker: '榮譽牆', gold: true },
+  { id: 'honor', floor: 'f4', slot: 'C', name: '職級榮譽牆', kicker: '升職之路', gold: true },
+  { id: 'cta', floor: 'f4', slot: 'B', name: '私訊『成長』', kicker: '我的資格・加入自己人', gold: true },
+  { id: 'target', floor: 'f5', slot: 'G', name: '目標值系統', kicker: '最高獎勵', gold: true },
+  { id: 'cta5', type: 'cta', floor: 'f5', slot: 'B', flatSlot: 'E', name: '私訊『成長』', kicker: '領取目標值系統', gold: true },
+  { id: 'boss', floor: 'insider', slot: 'A', name: '掌門辦公室', kicker: '自己人專區', gold: true },
+  { id: 'hall', floor: 'insider', slot: 'B', name: '執事堂', kicker: '公告與排程' },
+  { id: 'library', floor: 'insider', slot: 'C', name: '藏經閣講義', kicker: '三卷九章', gold: true },
+  { id: 'course', floor: 'insider', slot: 'D', name: '傳功課程', kicker: '課程' },
+  { id: 'review', floor: 'insider', slot: 'E', name: '下班複盤', kicker: '今日心得' },
+  { id: 'arena', floor: 'insider', slot: 'F', name: '演武場', kicker: '實盤複盤', gold: true },
+  { id: 'ireports', floor: 'insider', slot: 'G', name: '三市戰報室', kicker: 'A股戰報與總控台' },
+  ...Object.keys(FLOORS).map(f => ({ id: 'lift_' + f, type: 'lift', floor: f, slot: 'H', name: '電梯', kicker: '各樓層' })),
+];
+const QUOTES = [ // 示範內容，待老闆提供
+  '先求活下來，再求賺多少。', '計畫你的交易，交易你的計畫。', '停損是保險，不是失敗。',
+  '看不懂的行情，不做也是一種功力。', '情緒上頭時，先離開螢幕三分鐘。', '紀律比預測更重要。',
+  '複盤的人，明天會更清楚。', '別讓一筆交易決定你一整天的心情。', '少即是多，等待是工作的一部分。',
+  '把每天的小事做好，就是最大的優勢。',
+];
+const MARKETS = [{ id: 'tw', name: '台股' }, { id: 'us', name: '美股' }];
+const TIPS = ['先確認，再行動。', '看不懂就先不動。', '錯了就認，小錯不變大錯。', '別追已經跑掉的車。', '一次只練一件事。']; // 示範內容，待老闆提供
+const DEMO_BOARD = [['示範・早起牛馬', 120], ['示範・紀律牛馬', 90], ['示範・佛系牛馬', 60], ['示範・衝動牛馬', 30], ['示範・新來牛馬', 10]];
+const MOODS = ['平靜', '開心', '焦慮', '後悔', '充實'];
+
+ICON.directory = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h8M8 19h4" stroke="#3ef2ff"/></svg>';
+ICON.kline = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 4v16M12 6v12M18 3v15"/><rect x="4.5" y="8" width="3" height="6" fill="#ff5468" stroke="#ff5468"/><rect x="10.5" y="9" width="3" height="5" fill="#2fd38a" stroke="#2fd38a"/><rect x="16.5" y="6" width="3" height="7" stroke="#ffc85a"/></svg>';
+ICON.fakeout = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 9h18" stroke="#ffc85a" stroke-dasharray="3 2"/><path d="m3 17 5-4 4 2 3-9 2 10 4-2"/></svg>';
+ICON.tips = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.5 1 2.5h6c0-1 .2-1.7 1-2.5A6 6 0 0 0 12 3z" stroke="#ffc85a"/></svg>';
+ICON.guess = ICON.meeting; ICON.leader = ICON.heroes; ICON.honor = ICON.elevator; ICON.cta = ICON.guide; ICON.ireports = ICON.reports;
+ICON.target = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5" stroke="#ffc85a"/><circle cx="12" cy="12" r="1.5" fill="#ffc85a"/></svg>';
+ICON.cta5 = ICON.guide;
+Object.keys(FLOORS).forEach(f => ICON['lift_' + f] = ICON.elevator);
+
+/* ---------- 狀態 ---------- */
+const pad = n => String(n).padStart(2, '0');
+const dstr = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const today = () => dstr(new Date());
+const yesterday = () => { const d = new Date(); d.setDate(d.getDate() - 1); return dstr(d); };
+const hash = s => { let h = 2166136261; for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return h >>> 0; };
+const fresh = () => ({ coins: 0, xp: 0, streak: 0, last: null, days: [], guesses: {}, fortune: null, reviews: {}, pref: {}, week: {}, claims: {}, vid: null, games: {} });
+let S; try { S = Object.assign(fresh(), JSON.parse(localStorage.getItem(KEY) || '{}')); } catch { S = fresh(); }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
+if (!S.vid) { S.vid = String(100000 + Math.floor(Math.random() * 900000)); save(); }
+const QS = new URLSearchParams(location.search);
+const realDays = () => new Set(S.days).size;
+const effDays = () => Math.max(realDays(), QS.has('days') ? (+QS.get('days') || 0) : 0); // 隱藏測試參數 ?days=7
+const floorOpen = f => FLOORS[f].pass ? !!insiderLinks : effDays() >= FLOORS[f].need;
+const weekKey = () => { const d = new Date(); const t = new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7)); return dstr(t); };
+const weekPts = () => S.week[weekKey()] || 0;
+function boardRows() {
+  const rows = DEMO_BOARD.map(([name, pts]) => ({ name, pts, me: false })).concat([{ name: '你', pts: weekPts(), me: true }]);
+  rows.sort((a, b) => b.pts - a.pts || (a.me ? -1 : 1)); return rows.map((r, i) => ({ ...r, rank: i + 1 }));
+}
+function floorInfo() {
+  return FLOOR_ORDER.map(f => { const F = FLOORS[f], open = floorOpen(f);
+    return { id: f, num: F.num, name: F.name.split('・')[1], open, here: f === floor, status: open ? '已開放' : F.pass ? '需要暗號' : `再打卡 ${F.need - effDays()} 天解鎖` }; });
+}
+export const rankIndex = () => RANKS.reduce((a, r, i) => (S.xp >= r.xp ? i : a), 0);
+const checkedToday = () => S.last === today();
+const streakNow = () => (S.last === today() || S.last === yesterday()) ? S.streak : 0;
+const todos = () => ({
+  checkin: !checkedToday(),
+  guess: MARKETS.some(m => !(S.guesses[today()] || {})[m.id]),
+  fortune: !(S.fortune && S.fortune.date === today()),
+  review: !S.reviews[today()],
+});
+let floor = 'lobby';
+export const zonesOn = f => ZONES.filter(z => z.floor === f);
+
+/* ---------- 自己人暗號（只比對 SHA-256；連結用暗號加密，解得開才看得到） ---------- */
+const GATE_SESSION = 'niuma-insider';
+let insiderLinks = null;
+const ub64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function sha256hex(t) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
+async function unseal(phrase) {
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(phrase), 'PBKDF2', false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: ub64(SEALED.salt), iterations: SEALED.iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, true, ['decrypt']);
+  const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: ub64(SEALED.iv) }, key, ub64(SEALED.ct));
+  const raw = await crypto.subtle.exportKey('raw', key);
+  try { sessionStorage.setItem(GATE_SESSION, btoa(String.fromCharCode(...new Uint8Array(raw)))); } catch {}
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+async function restoreInsider() {
+  try {
+    const k = sessionStorage.getItem(GATE_SESSION); if (!k) return false;
+    const key = await crypto.subtle.importKey('raw', ub64(k), 'AES-GCM', false, ['decrypt']);
+    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: ub64(SEALED.iv) }, key, ub64(SEALED.ct));
+    insiderLinks = JSON.parse(new TextDecoder().decode(pt)); return true;
+  } catch { return false; }
+}
+async function tryPass(input) {
+  const p = (input || '').trim().toUpperCase();
+  if (!p || !(window.crypto && crypto.subtle)) return false;
+  if (await sha256hex(p) !== GATE_HASH) return false;
+  try { insiderLinks = await unseal(p); return true; } catch { return false; }
+}
+function lockInsider() { insiderLinks = null; try { sessionStorage.removeItem(GATE_SESSION); } catch {} }
+
+/* ---------- 介面工具 ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let toastT;
+export function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600); }
+function coinBurst(from) {
+  const target = $('#hudCoins').getBoundingClientRect();
+  const r = from ? from.getBoundingClientRect() : { left: innerWidth / 2, top: innerHeight / 2, width: 0, height: 0 };
+  for (let i = 0; i < 8; i++) {
+    const c = document.createElement('i'); c.className = 'coinfly'; c.style.left = c.style.top = '0'; document.body.appendChild(c);
+    const x0 = r.left + r.width / 2 + (Math.random() - .5) * 80, y0 = r.top + r.height / 2 + (Math.random() - .5) * 30;
+    c.animate([{ transform: `translate(${x0}px,${y0}px) scale(.6)`, opacity: 0 }, { transform: `translate(${x0}px,${y0 - 40}px) scale(1)`, opacity: 1, offset: .3 }, { transform: `translate(${target.left}px,${target.top}px) scale(.5)`, opacity: .2 }], { duration: 900 + i * 60, easing: 'cubic-bezier(.5,0,.2,1)' }).onfinish = () => c.remove();
+  }
+}
+function buildDock() {
+  $('#dockTrack').innerHTML = zonesOn(floor).map(z => `<button data-zone="${z.id}">${ICON[z.id]}<span>${z.name}</span></button>`).join('');
+  $('#dockTrack').querySelectorAll('button').forEach(b => b.onclick = () => world && world.go(b.dataset.zone));
+  $('#hudFloor').textContent = FLOORS[floor].name;
+  document.body.dataset.floor = floor;
+  refreshHud();
+}
+function refreshHud() {
+  $('#hudCoins').textContent = S.coins.toLocaleString('zh-TW');
+  $('#hudRank').textContent = RANKS[rankIndex()].name;
+  $('#hudStreak').textContent = streakNow();
+  const td = todos();
+  document.querySelectorAll('[data-zone]').forEach(el => {
+    el.querySelectorAll('.dot, .new').forEach(d => d.remove());
+    if (td[el.dataset.zone]) {
+      const n = document.createElement('span');
+      if (el.classList.contains('zlabel')) { n.className = 'new'; n.textContent = '●'; } else n.className = 'dot';
+      el.appendChild(n);
+    }
+  });
+  world && world.setRank && world.setRank(rankIndex(), RANKS[rankIndex()].name);
+  world && world.refresh && world.refresh({ floors: floorInfo(), board: boardRows(), rank: rankIndex() });
+}
+function addXP(n, coins = 0, el) {
+  const before = rankIndex();
+  S.xp += n; S.coins += coins; save();
+  if (coins) coinBurst(el);
+  if (rankIndex() > before) setTimeout(() => toast(`恭喜升職！你現在是「${RANKS[rankIndex()].name}」`), 900);
+  refreshHud();
+}
+
+/* ---------- 面板 ---------- */
+const panel = $('#panel');
+export function openPanel(id) {
+  const z = ZONES.find(z => z.id === id);
+  $('#panelKicker').textContent = z.kicker; $('#panelTitle').textContent = z.name;
+  RENDER[z.type || id]($('#panelBody'));
+  panel.classList.add('open'); panel.setAttribute('aria-hidden', 'false');
+  document.querySelectorAll('.dock button').forEach(b => b.classList.toggle('active', b.dataset.zone === id));
+  world && world.onPanel && world.onPanel(true, id);
+  blip(760);
+}
+export function closePanel() {
+  const was = panel.classList.contains('open');
+  panel.classList.remove('open'); panel.setAttribute('aria-hidden', 'true');
+  document.querySelectorAll('.dock button').forEach(b => b.classList.remove('active'));
+  was && world && world.onPanel && world.onPanel(false);
+}
+$('#panelClose').onclick = closePanel;
+(() => { let y0 = null; panel.addEventListener('touchstart', e => { if (e.target.closest('.panel-head,.panel-grip')) y0 = e.touches[0].clientY; }, { passive: true });
+  panel.addEventListener('touchend', e => { if (y0 !== null && e.changedTouches[0].clientY - y0 > 60) closePanel(); y0 = null; }); })();
+
+const LOCK = '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#ffc85a" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/><circle cx="12" cy="16" r="1.4" fill="#ffc85a"/></svg>';
+const placeholderList = (items) => items.map((t, i) => `<div class="card row between"><span>${t}</span><span class="tag">待老闆提供</span></div>`).join('');
+const ladderHTML = () => {
+  const ri = rankIndex(), next = RANKS[ri + 1];
+  const pct = next ? Math.round(((S.xp - RANKS[ri].xp) / (next.xp - RANKS[ri].xp)) * 100) : 100;
+  return `<div class="card"><div class="row between"><span>目前職級</span><b style="color:var(--cyan);font-size:1.2rem">${RANKS[ri].name}</b></div>
+    <div class="row between note" style="margin:8px 0 6px"><span>經驗值 ${S.xp}</span><span>${next ? `距離「${next.name}」還差 ${next.xp - S.xp}` : '已經登頂！'}</span></div><div class="bar"><i style="width:${pct}%"></i></div></div>
+    <ol class="ladder">${RANKS.map((r, i) => `<li class="${i < ri ? 'got' : ''} ${i === ri ? 'cur' : ''}"><span>第 ${i + 1} 階・${r.name}</span><span>${r.xp} 經驗</span></li>`).join('')}</ol>
+    <p class="note">升職方式：上班打卡 +10 起（連續越久越多）、晨會猜盤 +3、猜中再 +5、抽心法籤 +2、寫下班複盤 +5。各職級福利 <span class="tag">待老闆提供</span></p>`;
+};
+
+const RENDER = {
+  checkin(el) {
+    const done = checkedToday(), st = streakNow();
+    const cycle = done ? ((st - 1) % 7) + 1 : (st % 7) + 1;
+    const days = Array.from({ length: 7 }, (_, i) => {
+      const n = i + 1, isDone = done ? n <= cycle : n < cycle, isToday = n === cycle;
+      return `<div class="day ${isDone ? 'done' : ''} ${isToday ? 'today' : ''} ${n === 7 ? 'big' : ''}"><b>第${n}天</b><div class="gift"></div>${n === 7 ? '神秘大禮' : '+' + (100 + n * 20)}<br><span style="font-size:.6rem">待老闆提供</span></div>`;
+    }).join('');
+    el.innerHTML = `
+      <div class="card row between"><div><div class="note">連續打卡</div><div class="stat">${st}<small style="font-size:.9rem"> 天</small></div></div>
+      <div style="text-align:right"><div class="note">累積薪水</div><div class="stat">${S.coins.toLocaleString('zh-TW')}</div></div></div>
+      <div class="punch"><button class="btn primary big" id="punch" ${done ? 'disabled' : ''}>${done ? '今天已打卡' : '上班打卡'}</button><div class="stamp ${done ? 'show' : ''}" id="stamp">已上班</div></div>
+      <p class="note" style="text-align:center;margin:4px 0 0">${done ? '明天記得回來，斷簽就要重新累積喔' : '每天打卡領薪水，連續七天有大禮'}</p>
+      <h3 style="margin:16px 0 0;font-size:1rem">七日打卡獎勵 <span class="tag">獎勵內容待老闆提供</span></h3>
+      <div class="track">${days}</div>
+      <p class="note">薪水是站內虛擬點數，用來升職與兌換活動獎勵（兌換內容待老闆提供），不能換現金。</p>`;
+    const b = el.querySelector('#punch');
+    b && (b.onclick = () => {
+      const before = ['f2', 'f3'].filter(f => floorOpen(f));
+      const y = S.last === yesterday(); S.streak = y ? S.streak + 1 : 1; S.last = today(); S.days = [...S.days.slice(-60), today()];
+      const c = ((S.streak - 1) % 7) + 1;
+      el.querySelector('#stamp').classList.add('show'); blip(1046);
+      addXP(10 + Math.min(S.streak, 7) * 2, 100 + c * 20, b);
+      world && world.celebrate && world.celebrate('checkin');
+      toast(`打卡成功！薪水 +${100 + c * 20}`);
+      const opened = ['f2', 'f3'].filter(f => floorOpen(f) && !before.includes(f));
+      if (opened.length) setTimeout(() => toast(`恭喜！${FLOORS[opened[0]].name} 解鎖了`), 2700);
+      setTimeout(() => RENDER.checkin(el), 700);
+    });
+  },
+  fortune(el) {
+    const has = S.fortune && S.fortune.date === today();
+    el.innerHTML = `<div class="machine" id="mach"><div class="cab"><div class="win">${[12, 28, 44, 60, 76].map(l => `<i style="left:${l}%;animation-delay:${l * 3}ms"></i>`).join('')}</div><div class="slot"></div></div>
+      <div class="slip ${has ? 'show' : ''}" id="slip">${has ? slipHTML(S.fortune.idx) : ''}</div></div>
+      <div style="text-align:center;margin-top:8px"><button class="btn primary" id="draw" ${has ? 'disabled' : ''}>${has ? '今天已抽過，明天再來' : '搖一搖，抽今日心法'}</button></div>
+      <p class="note" style="text-align:center"><span class="tag">示範內容，待老闆提供</span><br>目前籤詩是暫放的示範句子，正式版會換成董事長 LEO易凡 的心法。</p>`;
+    const b = el.querySelector('#draw');
+    b && (b.onclick = () => {
+      b.disabled = true; const m = el.querySelector('#mach'); m.classList.add('shake'); blip(660);
+      world && world.celebrate && world.celebrate('fortune');
+      setTimeout(() => {
+        m.classList.remove('shake'); const idx = Math.floor(Math.random() * QUOTES.length);
+        S.fortune = { date: today(), idx }; addXP(2, 0);
+        const s = el.querySelector('#slip'); s.innerHTML = slipHTML(idx); requestAnimationFrame(() => s.classList.add('show')); blip(1175);
+        b.textContent = '今天已抽過，明天再來';
+      }, 1100);
+    });
+  },
+  heroes(el) {
+    el.innerHTML = `<p style="margin:0">這裡會放學員的真實成果與故事。</p>
+      <div class="heroes" style="margin-top:12px">${Array.from({ length: 6 }, (_, i) => `<div class="hero"><div class="ph"></div><b>第 ${i + 1} 位英雄</b><div class="note">待老闆提供</div></div>`).join('')}</div>
+      <p class="note"><span class="tag">待老闆提供</span> 需要：學員暱稱或頭像（經同意）、一句心得、成果截圖。不放未經證實的數字。</p>`;
+  },
+  guess(el) {
+    const g = S.guesses[today()] || (S.guesses[today()] = {});
+    const rows = MARKETS.map(m => {
+      const v = g[m.id], res = (hash(today() + m.id) % 2) ? 'up' : 'down', rv = g[m.id + '_r'];
+      return `<div class="card mkt"><h3>${m.name}</h3>
+        <button class="btn up ${v === 'up' ? 'sel' : ''}" data-m="${m.id}" data-v="up" ${v ? 'disabled' : ''}>看漲</button>
+        <button class="btn down ${v === 'down' ? 'sel' : ''}" data-m="${m.id}" data-v="down" ${v ? 'disabled' : ''}>看跌</button>
+        <div class="reveal">${!v ? '選一邊，收盤後回來看結果' : rv ? `<span class="tag">示範</span> 揭曉：${res === 'up' ? '收漲' : '收跌'}・你猜${v === 'up' ? '漲' : '跌'} → ${res === v ? '<b class="ok">猜中！積分 +10</b>' : '<b class="no">這次沒中，明天再來</b>'}` : `已選「${v === 'up' ? '看漲' : '看跌'}」 <button class="btn ghost sm" data-r="${m.id}">揭曉結果（示範）</button>`}</div></div>`;
+    }).join('');
+    el.innerHTML = `<p style="margin:0">晨會開始！猜猜今天台股、美股收盤是漲還是跌。只猜方向，不給點位，純粹練盤感。猜中一次 +10 積分，排上本週排行榜。</p>${rows}
+      <div class="card row between"><span>你本週積分</span><b class="stat" style="font-size:1.4rem">${weekPts()}</b></div>
+      <p class="note"><span class="tag">示範</span> 目前的揭曉結果是示範用的假資料，不是真實行情。正式版要接上每日收盤資料。</p>`;
+    el.querySelectorAll('[data-v]').forEach(b => b.onclick = () => { g[b.dataset.m] = b.dataset.v; save(); addXP(3, 0); blip(880); RENDER.guess(el); });
+    el.querySelectorAll('[data-r]').forEach(b => b.onclick = () => {
+      const m = b.dataset.r; g[m + '_r'] = 1; const res = (hash(today() + m) % 2) ? 'up' : 'down';
+      if (res === g[m]) { S.week[weekKey()] = weekPts() + 10; addXP(5, 20, b); } else save();
+      refreshHud(); RENDER.guess(el);
+    });
+  },
+  leader(el) {
+    const rows = boardRows(), me = rows.find(r => r.me);
+    el.innerHTML = `<div class="card row between"><span>你的本週名次</span><b class="stat" style="font-size:1.5rem">第 ${me.rank} 名</b></div>
+      <ol class="board">${rows.map(r => `<li class="${r.me ? 'me' : ''}"><b>${r.rank}</b><span>${r.name}</span><em>${r.pts} 分</em></li>`).join('')}</ol>
+      <p class="note"><span class="tag">示範</span> 除了「你」，其他名單都是示範資料。目前只存在這台裝置，正式版要有後台才能和其他人真實排名。每週一重新計算。</p>`;
+  },
+  target(el) {
+    const m = modelStates(S, today(), realDays()).find(x => x.id === 'target');
+    const st = m.state === 0 ? `再打卡 ${m.short} 天` : m.state === 1 ? '可以登記領取' : m.state === 2 ? `有效・到期日 ${m.exp.replace(/-/g, '/')}` : m.state === 4 ? '可重新啟動' : '已到期';
+    el.innerHTML = `<div class="card"><div class="row between"><b style="font-size:1.1rem">目標值系統</b><span class="tag">最高獎勵</span></div>
+      <p style="margin:10px 0 0">目標值系統是「日K波動目標價」的量化重構版。畫面上的綠色與紅色線條，都是目標值演算會到的位置。</p>
+      <p class="note" style="margin:8px 0 0">領取方式：累積打卡 ${TARGET_DAYS} 天後，按「產生資格碼」，再私訊給社群裡的助理小編審核。從登記那天起有效 ${VALID_DAYS} 天；續用與重新啟動見「領取與續用規則」。</p>
+      <p class="note" style="margin:8px 0 0">以上僅供參考，不構成投資建議。</p>
+      <div class="row between" style="margin-top:10px"><span>你的狀態</span><b>${st}</b></div></div>
+      <div class="card"><b>範例圖（待老闆補充）</b>
+        <div class="ex-ph"><span>範例圖會放在這裡</span></div>
+        <p class="note">實際畫面由老闆之後再慢慢補上。</p></div>
+      <button class="btn primary" id="toCta5" style="width:100%">去登記・私訊『成長』</button>`;
+    el.querySelector('#toCta5').onclick = () => world ? world.go('cta5') : openPanel('cta5');
+  },
+  kline(el) { klineGame(el); },
+  fakeout(el) { fakeoutGame(el); },
+  tips(el) {
+    el.innerHTML = `<p style="margin:0">每玩完一局訓練場小遊戲，就會送你一句心法小提醒。</p>${TIPS.map((t, i) => `<div class="card row between"><span>${i + 1}．${t}</span><span class="tag">示範</span></div>`).join('')}
+      <p class="note">目前是示範句子，正式內容待老闆提供。</p>`;
+  },
+  reports(el) { // 4 樓：台股、美股公開；A股在 68 樓
+    const sp = seed => { let y = 20, d = ''; for (let i = 0; i <= 20; i++) { y = Math.max(4, Math.min(36, y + ((hash(seed + i) % 9) - 4))); d += `${i ? 'L' : 'M'}${i * 10},${y}`; } return `<svg class="spark" viewBox="0 0 200 40" preserveAspectRatio="none"><path d="${d}" fill="none" stroke="#3ef2ff" stroke-width="2"/></svg>`; };
+    const a = (u, t, s, k) => `<a class="screen" href="${u}" target="_blank" rel="noopener"><div class="row between"><h3>${t}</h3><span class="tag cyan">打開</span></div>${sp(k)}<div class="note">${s}・線圖為示意</div></a>`;
+    el.innerHTML = `<p style="margin:0">每天收盤後更新的多空戰報，點下去直接看。</p>
+      <div class="screens" style="margin-top:12px">${a(PUBLIC_REPORTS.tw, '台股每日多空戰報', '每天收盤後更新', 'tw')}${a(PUBLIC_REPORTS.us, '美股（納斯達克）每日多空戰報', '美股收盤後更新', 'us')}
+      <div class="screen lockedrow"><div class="row between"><h3>A股戰報</h3><span class="tag">68樓自己人專區</span></div><div class="note">搭電梯，輸入暗號上樓查看</div></div></div>
+      <div class="card row between cta"><span>想加入自己人？私訊『成長』</span><a class="btn primary sm" href="${IG}" target="_blank" rel="noopener">前往 IG</a></div>`;
+  },
+  honor(el) { el.innerHTML = ladderHTML(); },
+  cta(el) { guideHTML(el, true); },
+  guide(el) { guideHTML(el, false); },
+  directory(el) {
+    el.innerHTML = `<p style="margin:0">每天打卡累積天數，就能解鎖新樓層。你目前累積 <b style="color:var(--gold)">${effDays()}</b> 天。</p>${floorListHTML(false)}
+      <button class="btn cyan" id="toLift" style="width:100%;margin-top:6px">走去電梯</button>${ladderBoardHTML()}`;
+    el.querySelector('#toLift').onclick = () => world && world.go('lift_' + floor);
+  },
+  lift(el, err) {
+    el.innerHTML = `<p style="margin:0">要去哪一樓？累積打卡 <b style="color:var(--gold)">${effDays()}</b> 天。</p>${floorListHTML(true)}
+      <form id="gateForm" class="card gate" autocomplete="off" ${err || el._showGate ? '' : 'hidden'}>
+        <label class="note" for="pass">68 樓・請輸入自己人暗號</label>
+        <div class="row" style="margin-top:6px"><input id="pass" class="passin ${err ? 'wrong' : ''}" type="password" autocapitalize="characters" spellcheck="false" placeholder="暗號"><button class="btn primary" type="submit">上樓</button></div>
+        <div class="err">${err ? '暗號有誤，請向掌門確認' : ''}</div>
+        <p class="note" style="margin:6px 0 0">還不是自己人？私訊「成長」申請開通。</p></form>
+      ${insiderLinks ? '<button class="btn ghost sm" id="lockout" style="width:100%">登出自己人（這台裝置）</button>' : ''}`;
+    el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => {
+      const f = b.dataset.go;
+      if (f === 'insider' && !insiderLinks) { el._showGate = true; RENDER.lift(el); el.querySelector('#pass').focus(); return; }
+      ride(f);
+    });
+    const f = el.querySelector('#gateForm');
+    f.onsubmit = async e => {
+      e.preventDefault(); const v = el.querySelector('#pass').value;
+      const btn = f.querySelector('button'); btn.disabled = true; btn.textContent = '核對中';
+      if (await tryPass(v)) { el._showGate = false; blip(1175); toast('暗號正確，歡迎自己人'); ride('insider'); }
+      else { blip(330); RENDER.lift(el, true); el.querySelector('#pass').focus(); }
+    };
+    const lo = el.querySelector('#lockout'); lo && (lo.onclick = () => { lockInsider(); toast('已登出自己人'); floor === 'insider' ? ride('lobby') : RENDER.lift(el); });
+  },
+  /* ----- 68 樓・自己人專區 ----- */
+  boss(el) {
+    el.innerHTML = `<div class="card" style="text-align:center"><div class="ph-portrait"></div><b style="font-size:1.1rem">董事長 LEO易凡</b><div class="note">掌門辦公室</div></div>
+      <h3 style="margin:14px 0 4px;font-size:1rem">本週掌門的話</h3>${placeholderList(['每週給自己人的一段話', '掌門影片或語音'])}`;
+  },
+  hall(el) {
+    el.innerHTML = `<p style="margin:0">執事堂負責公告、排程與自己人守則。</p>
+      <h3 style="margin:12px 0 4px;font-size:1rem">最新公告</h3>${placeholderList(['本週公告', '直播與課程時間表'])}
+      <h3 style="margin:12px 0 4px;font-size:1rem">自己人守則</h3>${placeholderList(['群組規範'])}`;
+  },
+  library(el) {
+    el.innerHTML = `<p style="margin:0">三卷九章講義，照順序讀。</p>${['卷一', '卷二', '卷三'].map((v, i) => `<div class="card"><b>${v}</b>${[1, 2, 3].map(c => `<div class="row between" style="margin-top:6px"><span>第 ${i * 3 + c} 章</span><span class="tag">待老闆提供</span></div>`).join('')}</div>`).join('')}`;
+  },
+  course(el) {
+    el.innerHTML = `<p style="margin:0">傳功課程：由淺入深的影片課。</p>${placeholderList(['第一課', '第二課', '第三課', '第四課'])}`;
+  },
+  arena(el) {
+    el.innerHTML = `<p style="margin:0">演武場：實盤複盤片段，只看當時的判斷與結果，不帶單、不喊單。</p>${placeholderList(['實盤複盤片段一（時間點與結果）', '實盤複盤片段二（時間點與結果）', '實盤複盤片段三（時間點與結果）'])}`;
+  },
+  ireports(el) {
+    const L = insiderLinks;
+    if (!L) { el.innerHTML = `<div class="card">需要重新輸入暗號。</div>`; return; }
+    const a = (u, t, s) => `<a class="screen" href="${u}" target="_blank" rel="noopener"><div class="row between"><h3>${t}</h3><span class="tag cyan">打開</span></div><div class="note">${s}</div></a>`;
+    el.innerHTML = `<p style="margin:0">自己人專屬：A股戰報與公司總控台。台股、美股戰報在一樓也看得到。</p><div class="screens" style="margin-top:12px">
+      ${a(L.cn, 'A股每日戰報', '交易日收盤後')}${a(L.twm, '台股盤前早報', '開盤前')}${a(PUBLIC_REPORTS.tw, '台股每日多空戰報', '每天收盤後更新')}${a(PUBLIC_REPORTS.us, '美股（納斯達克）每日多空戰報', '美股收盤後更新')}</div>
+      <div style="text-align:center;margin-top:14px"><a class="btn cyan" href="${L.dash}" target="_blank" rel="noopener">打開公司總控台</a></div>`;
+  },
+  review(el) {
+    const r = S.reviews[today()] || {};
+    const hist = Object.keys(S.reviews).sort().reverse().slice(0, 7).filter(d => d !== today());
+    el.innerHTML = `<p style="margin:0">下班前花一分鐘，寫下今天的盤後心得。只存在你自己的手機裡。</p>
+      <div class="field"><label>今天的心情</label><div class="moods">${MOODS.map(m => `<button data-mood="${m}" class="${r.mood === m ? 'sel' : ''}">${m}</button>`).join('')}</div></div>
+      <div class="field"><label for="rv1">今天做對的一件事</label><textarea id="rv1" maxlength="300">${esc(r.good || '')}</textarea></div>
+      <div class="field"><label for="rv2">今天想改進的一件事</label><textarea id="rv2" maxlength="300">${esc(r.bad || '')}</textarea></div>
+      <div class="field"><label for="rv3">明天的計畫</label><textarea id="rv3" maxlength="300">${esc(r.plan || '')}</textarea></div>
+      <button class="btn primary" id="rvSave" style="width:100%">${S.reviews[today()] ? '更新今天的複盤' : '下班！存下複盤'}</button>
+      ${hist.length ? `<div class="hist"><b>過去的複盤</b>${hist.map(d => `<div>${d.slice(5).replace('-', '/')}・${esc(S.reviews[d].mood || '')}・${esc((S.reviews[d].good || '').slice(0, 24))}</div>`).join('')}</div>` : ''}`;
+    let mood = r.mood;
+    el.querySelectorAll('[data-mood]').forEach(b => b.onclick = () => { mood = b.dataset.mood; el.querySelectorAll('[data-mood]').forEach(x => x.classList.toggle('sel', x === b)); });
+    el.querySelector('#rvSave').onclick = e => {
+      const first = !S.reviews[today()];
+      S.reviews[today()] = { mood, good: el.querySelector('#rv1').value, bad: el.querySelector('#rv2').value, plan: el.querySelector('#rv3').value };
+      if (first) addXP(5, 30, e.target); else save();
+      toast(first ? '辛苦了！下班複盤完成，薪水 +30' : '已更新今天的複盤'); RENDER.review(el);
+    };
+  },
+};
+function slipHTML(i) { return `<div class="no">第 ${pad(i + 1)} 籤・今日心法</div><p>${QUOTES[i]}</p><small>示範內容，待老闆提供</small>`; }
+
+/* ---------- 樓層清單 ---------- */
+function floorListHTML(buttons) {
+  return `<ol class="floors">${floorInfo().map(f => `<li class="${f.here ? 'here' : ''} ${f.open ? 'open' : 'locked'}">
+    <b>${f.num}F</b><span>${FLOORS[f.id].name.split('・')[1]}</span>
+    ${f.here ? '<em class="st here">你在這裡</em>' : f.open ? (buttons ? `<button class="btn cyan sm" data-go="${f.id}">前往</button>` : '<em class="st ok">已開放</em>')
+      : f.id === 'insider' ? (buttons ? `<button class="btn ghost sm" data-go="insider">${LOCK_SM}輸入暗號</button>` : `<em class="st lock">${LOCK_SM}需要暗號</em>`)
+      : `<em class="st lock">${LOCK_SM}${f.status}</em>`}</li>`).join('')}</ol>`;
+}
+const LOCK_SM = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="vertical-align:-2px;margin-right:3px"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+
+/* ---------- 我的資格（接引櫃台／4 樓） ---------- */
+const STATE_TXT = ['未達資格', '可以登記領取', '有效', '已到期', '可重新啟動'];
+function ladderBoardHTML() {
+  const d = realDays();
+  return `<div class="card rladder"><div class="row between"><b style="font-size:1.05rem">獎勵階梯</b><span class="tag">由下往上越來越強</span></div>
+    <ol>${LADDER.slice().reverse().map(r => { const ok = d >= r.need;
+      return `<li class="${ok ? 'ok' : ''} ${r.best ? 'top' : ''} ${r.last ? 'last' : ''}"><span class="w">${r.where}</span><span class="n"><b>${r.name}${r.best ? ' <em class="best">最高獎勵</em>' : ''}${r.last ? ' <em class="lastb">最後一關</em>' : ''}</b><small>${r.rule}</small></span><span class="s">${ok ? '已解鎖' : `還差 ${r.need - d} 天`}</span></li>`; }).join('')}</ol>
+    <p class="note">領取、續用與重新啟動的方式，見接引櫃台「我的資格」裡的「領取與續用規則」。</p></div>`;
+}
+function rulesCardHTML() {
+  return `<div class="card rules" id="claimRules"><div class="row between"><b style="font-size:1.05rem">領取與續用規則</b><span class="tag">請先讀過</span></div>
+    <ol>
+      <li>要領取獎勵，請先按「產生資格碼」，再複製起來，私訊給社群裡的助理小編審核（聯絡方式以社群公告為準）。</li>
+      <li>每項獎勵從登記日起有效 ${VALID_DAYS} 天。到期前請再送出一組新的資格碼；若沒有送出，視同未續用。</li>
+      <li>${VALID_DAYS} 天到期時，未達資格的人（每 7 天打卡未滿 ${RULE_MIN} 天）會被移出群組。</li>
+      <li>重新啟動：請繼續打卡，直到再次達到「7 天內打卡 ${RULE_MIN} 天以上」，再送出一組新的資格碼。審核通過後會加回群組，並重新起算 ${VALID_DAYS} 天。</li>
+    </ol></div>`;
+}
+const lineOABtn = (cls = 'btn primary sm') => `<a class="${cls}" href="${LINE_OA}" target="_blank" rel="noopener">加官方 LINE</a>`;
+function guideHTML(el, isCta) {
+  const ms = modelStates(S, today(), realDays()), l7 = last7(new Set(S.days), today());
+  const master = ms.find(x => x.id === 'master');
+  const masterSt = master.state === 0 ? `再打卡 ${master.short} 天可申請（累積 ${MASTER_DAYS} 天）` : master.state === 1 ? `累積 ${MASTER_DAYS} 天已達成，可以申請` : master.state === 2 ? `有效・到期日 ${master.exp.replace(/-/g, '/')}` : master.state === 4 ? '可重新啟動' : '已到期';
+  const modelNote = m => m.state === 0 ? `再打卡 ${m.short} 天可領（累積 ${m.need} 天）`
+    : m.state === 1 ? (m.need ? `累積 ${m.need} 天已達成，私訊「成長」後登記` : m.how)
+    : m.state === 4 ? '已暫停，近 7 天已達標，可重新啟動'
+    : `領取日 ${m.claim.replace(/-/g, '/')}${m.renew ? `・已續期 ${m.renew} 次` : ''}`;
+  el.innerHTML = `<div class="card" style="text-align:center"><div class="note">第一天見面禮・私訊關鍵字</div><div class="kw">成長</div><div>私訊「成長」進群，就送「美指模型」</div>
+      <div class="row" style="justify-content:center;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn ghost sm" id="cp">複製關鍵字</button><a class="btn primary sm" href="${IG}" target="_blank" rel="noopener">前往 IG 私訊 @wuz200200</a></div></div>
+    ${ladderBoardHTML()}
+    <div class="card qual"><div class="row between"><b style="font-size:1.05rem">我的資格</b><span class="tag cyan">訪客編號 ${S.vid}</span></div>
+      <div class="qgrid"><div><small>累積打卡</small><b>${realDays()} 天</b></div><div><small>連續打卡</small><b>${streakNow()} 天</b></div><div><small>職級</small><b>${RANKS[rankIndex()].name}</b></div><div><small>近 7 天</small><b class="${l7 >= RULE_MIN ? 'ok' : 'warn'}">${l7}/7</b></div></div>
+      <div class="qm s2"><div><b>台美股戰報</b><div class="note">4 樓，不用登記</div></div><div style="text-align:right"><span class="st">第一天就開放</span></div></div>
+      ${ms.map(m => `<div class="qm s${m.state}"><div><b>${m.name}</b><div class="note">${modelNote(m)}</div></div>
+        <div style="text-align:right">${m.state === 1 ? `<button class="btn primary sm" data-claim="${m.id}">登記領取</button>` : `<span class="st">${STATE_TXT[m.state]}</span>`}${m.state >= 2 ? `<div class="note">到期日 ${m.exp.replace(/-/g, '/')}</div>` : ''}</div></div>`).join('')}
+      <div class="qual-actions">
+        ${rulesCardHTML()}
+        <div class="qcode"><small>資格碼</small><code id="qcode">請先按「產生資格碼」</code>
+          <div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn primary sm" id="genq">產生資格碼</button><button class="btn ghost sm" id="cpq" disabled>複製資格碼</button></div></div>
+      </div></div>
+    <div class="card master-cta" id="masterCta"><div class="row between"><b style="font-size:1.05rem">掌門面試收徒</b><span class="tag">最後一關</span></div>
+      <p style="margin:10px 0 0">累積打卡 ${MASTER_DAYS} 天，取得面試拜師資格。請加官方 LINE「${LINE_OA_NAME}」，把資格碼傳給助理小編審核。</p>
+      <div class="row between" style="margin:10px 0 12px"><span>你的狀態</span><b>${masterSt}</b></div>
+      <div class="row" style="justify-content:center;gap:8px;flex-wrap:wrap">${master.state === 1 ? `<button class="btn ghost sm" data-claim="master">登記領取</button>` : ''}${lineOABtn('btn primary')}</div></div>
+    ${isCta ? '' : '<p class="note" style="text-align:center">打開 IG 後，私訊輸入「成長」就會收到；申請掌門面試請走官方 LINE。</p>'}`;
+  el.querySelector('#cp').onclick = async () => { try { await navigator.clipboard.writeText('成長'); toast('已複製「成長」'); } catch { toast('請手動輸入「成長」'); } };
+  el.querySelectorAll('[data-claim]').forEach(b => b.onclick = () => { S.claims[b.dataset.claim] = today(); save(); toast(`已登記領取，${VALID_DAYS} 天內有效`); guideHTML(el, isCta); });
+  const q = el.querySelector('#qcode'), cpq = el.querySelector('#cpq'), genq = el.querySelector('#genq');
+  const putCode = c => {
+    q.textContent = c; cpq.disabled = false;
+    cpq.onclick = async () => { try { await navigator.clipboard.writeText(c); toast('已複製資格碼'); } catch { toast('請長按資格碼複製'); } };
+  };
+  genq.onclick = () => {
+    q.textContent = '產生中…'; cpq.disabled = true;
+    encodeQual({ vid: S.vid, total: realDays(), streak: streakNow(), rank: rankIndex(), issued: today(), models: ms }).then(putCode)
+      .catch(() => { q.textContent = '這個瀏覽器無法產生資格碼'; });
+  };
+}
+
+/* ---------- 訓練場小遊戲 ---------- */
+function tipCard() { const t = TIPS[Math.floor(Math.random() * TIPS.length)]; return `<div class="tipcard"><small>心法小提醒</small><p>${t}</p><span class="tag">示範內容，待老闆提供</span></div>`; }
+function rngCandles(n, seed) {
+  let s = seed, p = 100; const r = () => (s = (s * 16807) % 2147483647) / 2147483647, out = [];
+  for (let i = 0; i < n; i++) { const o = p, c = o + (r() - .5) * 6 + Math.sin(i / 3 + seed) * 1.2; out.push({ o, c, h: Math.max(o, c) + r() * 2.2, l: Math.min(o, c) - r() * 2.2 }); p = c; }
+  return out;
+}
+function drawCandles(cv, cs, opts = {}) {
+  const g = cv.getContext('2d'), dpr = Math.min(2, devicePixelRatio || 1), W = cv.clientWidth, H = cv.clientHeight;
+  cv.width = W * dpr; cv.height = H * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.fillStyle = '#04101e'; g.fillRect(0, 0, W, H);
+  const all = cs.concat(opts.ghost ? [opts.ghost] : []); const hi = Math.max(...all.map(c => c.h), opts.line || -1e9) + 1, lo = Math.min(...all.map(c => c.l)) - 1;
+  const y = v => 10 + (hi - v) / (hi - lo) * (H - 20), n = opts.slots || cs.length + 1, bw = W / n;
+  g.strokeStyle = 'rgba(62,242,255,.08)'; for (let i = 1; i < 5; i++) { g.beginPath(); g.moveTo(0, i * H / 5); g.lineTo(W, i * H / 5); g.stroke(); }
+  if (opts.line) { g.setLineDash([6, 5]); g.strokeStyle = '#ffc85a'; g.lineWidth = 2; g.beginPath(); g.moveTo(0, y(opts.line)); g.lineTo(W, y(opts.line)); g.stroke(); g.setLineDash([]); g.fillStyle = '#ffc85a'; g.font = `700 12px ${getComputedStyle(document.body).fontFamily}`; g.fillText('壓力線', 6, y(opts.line) - 6); }
+  cs.forEach((c, i) => {
+    const up = c.c >= c.o, x = i * bw + bw / 2, col = c.col || (up ? '#ff5468' : '#2fd38a');
+    g.strokeStyle = col; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x, y(c.h)); g.lineTo(x, y(c.l)); g.stroke();
+    g.fillStyle = col; const t = y(Math.max(c.o, c.c)), b = y(Math.min(c.o, c.c)); g.fillRect(x - bw * .32, t, bw * .64, Math.max(2, b - t));
+  });
+  if (opts.qmark) { const x = cs.length * bw + bw / 2; g.fillStyle = 'rgba(255,200,90,.9)'; g.font = `900 22px sans-serif`; g.textAlign = 'center'; g.fillText('？', x, H / 2); g.textAlign = 'left'; }
+}
+function klineGame(el) {
+  const ROUNDS = 5; let round = 0, score = 0, seed = 1 + Math.floor(Math.random() * 1e6), cs = rngCandles(26, seed), shown = 18;
+  el.innerHTML = `<div class="row between"><span class="tag">示範・隨機產生，不是真實行情</span><b id="kscore">第 1／${ROUNDS} 題・答對 0</b></div>
+    <canvas class="kcv" id="kcv"></canvas>
+    <p style="margin:6px 0;text-align:center">下一根 K 線會收紅還是收綠？</p>
+    <div class="row" style="gap:8px"><button class="btn up" style="flex:1" data-k="up">收紅（漲）</button><button class="btn down" style="flex:1" data-k="down">收綠（跌）</button></div>
+    <div id="kres" class="kres"></div>`;
+  const cv = el.querySelector('#kcv'), draw = (q = true) => drawCandles(cv, cs.slice(0, shown), { slots: 24, qmark: q });
+  requestAnimationFrame(() => draw());
+  el.querySelectorAll('[data-k]').forEach(b => b.onclick = () => {
+    if (round >= ROUNDS) return; el.querySelectorAll('[data-k]').forEach(x => x.disabled = true);
+    const nx = cs[shown], up = nx.c >= nx.o, ok = (b.dataset.k === 'up') === up; if (ok) score++;
+    shown++; draw(false); blip(ok ? 1046 : 330); round++;
+    el.querySelector('#kres').innerHTML = `<b class="${ok ? 'ok' : 'no'}">${ok ? '答對！' : '沒猜中'}</b>　這根${up ? '收紅' : '收綠'}`;
+    el.querySelector('#kscore').textContent = `第 ${Math.min(round + 1, ROUNDS)}／${ROUNDS} 題・答對 ${score}`;
+    setTimeout(() => {
+      if (round < ROUNDS) { el.querySelectorAll('[data-k]').forEach(x => x.disabled = false); draw(); el.querySelector('#kres').innerHTML = ''; return; }
+      const gain = score * 10; addXP(score, gain);
+      el.querySelector('#kres').innerHTML = `<div class="card"><b>本局答對 ${score}／${ROUNDS}</b>　薪水 +${gain}<div class="note">隨機產生的 K 線本來就猜不準，這個遊戲練的是看圖習慣，不是預測。</div></div>${tipCard()}<button class="btn primary" id="again" style="width:100%">再玩一局</button>`;
+      el.querySelector('#again').onclick = () => klineGame(el);
+    }, 900);
+  });
+}
+function fakeoutGame(el) {
+  const ROUNDS = 8, LINE = 104; let round = 0, dodged = 0, fooled = 0, wrong = 0, rts = [], timer = 0, phase = 'ready', tFlash = 0, isFake = false;
+  let cs = rngCandles(10, 7).map(c => ({ o: 98 + (c.o - 100) * .3, c: 98 + (c.c - 100) * .3, h: 98 + (c.h - 100) * .3, l: 98 + (c.l - 100) * .3 }));
+  el.innerHTML = `<div class="row between"><span class="tag">示範・隨機產生</span><b id="fscore">躲過 0・被騙 0</b></div>
+    <canvas class="kcv" id="fcv"></canvas><div id="fmsg" class="fmsg">K 線衝過壓力線後，如果又跌回來就是「假突破」，看到馬上按「躲！」<br>真突破就不要按。</div>
+    <button class="btn primary big" id="fbtn" style="width:100%">開始</button><div id="fres"></div>`;
+  const cv = el.querySelector('#fcv'), btn = el.querySelector('#fbtn'), msg = el.querySelector('#fmsg');
+  const draw = () => drawCandles(cv, cs.slice(-12), { slots: 13, line: LINE });
+  requestAnimationFrame(draw);
+  const upd = () => el.querySelector('#fscore').textContent = `躲過 ${dodged}・被騙 ${fooled}${wrong ? `・誤躲 ${wrong}` : ''}`;
+  function next() {
+    if (!el.isConnected) return;
+    if (round >= ROUNDS) return finish();
+    round++; phase = 'rise'; isFake = Math.random() < .55; btn.textContent = '躲！'; btn.disabled = false;
+    msg.textContent = `第 ${round}／${ROUNDS} 根・衝向壓力線…`;
+    const o = cs[cs.length - 1].c, c = { o, c: o, h: o, l: o - .4 }; cs.push(c);
+    const peak = LINE + 2 + Math.random() * 3, t0 = performance.now(), dur = 650 + Math.random() * 300;
+    (function grow(t) {
+      if (!el.isConnected) return;
+      const k = Math.min(1, (t - t0) / dur); c.c = o + (peak - o) * k; c.h = Math.max(c.h, c.c); draw();
+      if (k < 1) return requestAnimationFrame(grow);
+      // 收盤：假突破跌回壓力線下，真突破站穩
+      c.c = isFake ? LINE - 1.5 - Math.random() * 2 : peak - .3; c.col = null; draw();
+      phase = 'judge'; tFlash = performance.now(); msg.innerHTML = isFake ? '<b class="no">跌回來了！</b>' : '<b class="ok">站穩了</b>';
+      timer = setTimeout(() => { if (phase !== 'judge') return; if (isFake) { fooled++; msg.innerHTML = '<b class="no">被假突破騙了</b>'; } else msg.innerHTML = '<b class="ok">沒亂動，很好</b>'; phase = 'gap'; upd(); setTimeout(next, 650); }, 900);
+    })(t0);
+  }
+  btn.onclick = () => {
+    if (phase === 'ready' || phase === 'done') { round = dodged = fooled = wrong = 0; rts = []; el.querySelector('#fres').innerHTML = ''; upd(); next(); return; }
+    if (phase === 'rise') { wrong++; msg.innerHTML = '<b class="no">太早了！還沒收盤</b>'; upd(); return; }
+    if (phase !== 'judge') return;
+    clearTimeout(timer); phase = 'gap';
+    if (isFake) { dodged++; rts.push(performance.now() - tFlash); msg.innerHTML = `<b class="ok">躲過！</b> ${Math.round(rts[rts.length - 1])} 毫秒`; blip(1046); }
+    else { wrong++; msg.innerHTML = '<b class="no">那是真突破，躲錯了</b>'; blip(330); }
+    upd(); setTimeout(next, 650);
+  };
+  function finish() {
+    phase = 'done'; btn.textContent = '再玩一局';
+    const avg = rts.length ? Math.round(rts.reduce((a, b) => a + b, 0) / rts.length) : 0, gain = dodged * 8;
+    addXP(dodged, gain); msg.textContent = '本局結束';
+    el.querySelector('#fres').innerHTML = `<div class="card"><b>躲過 ${dodged}・被騙 ${fooled}・誤躲 ${wrong}</b>${avg ? `　平均反應 ${avg} 毫秒` : ''}<div class="note">薪水 +${gain}。遊戲是隨機產生的，練的是「等收盤再判斷」的習慣。</div></div>${tipCard()}`;
+  }
+}
+
+/* ---------- 電梯（換樓層） ---------- */
+let riding = false;
+function rideOverlay(from, to) {
+  const o = $('#ride'), num = $('#rideNum'), b = FLOORS[to];
+  const n0 = FLOORS[from].num, n1 = b.num;
+  $('#rideArrow').textContent = n1 > n0 ? '▲' : '▼'; $('#rideName').textContent = b.name;
+  o.hidden = false; requestAnimationFrame(() => o.classList.add('show'));
+  return new Promise(res => {
+    const t0 = performance.now(), D = Math.min(1800, 900 + Math.abs(n1 - n0) * 60);
+    (function tick(t) {
+      const k = Math.min(1, (t - t0) / D), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      num.textContent = Math.round(n0 + (n1 - n0) * e);
+      if (k < 1) requestAnimationFrame(tick); else res();
+    })(t0);
+  });
+}
+function hideRideOverlay() { const o = $('#ride'); o.classList.remove('show'); setTimeout(() => o.hidden = true, 400); }
+async function ride(to) {
+  if (riding || to === floor) return; riding = true; closePanel();
+  if (!floorOpen(to)) { riding = false; toast('這層樓還沒解鎖'); return; }
+  const from = floor;
+  await world.ride(to, {
+    async between() { await rideOverlay(from, to); floor = to; buildDock(); },
+    after() { hideRideOverlay(); },
+  });
+  riding = false;
+  toast(`歡迎來到 ${FLOORS[to].name}`);
+}
+
+/* ---------- 牛馬小人（平面版） ---------- */
+export const AVATAR_SVG = `<div class="av-in"><svg viewBox="0 0 90 110"><ellipse cx="45" cy="106" rx="22" ry="4" fill="#000" opacity=".35"/>
+<rect x="31" y="78" width="11" height="26" rx="4" fill="#1d2640"/><rect x="48" y="78" width="11" height="26" rx="4" fill="#1d2640"/>
+<rect x="24" y="48" width="42" height="36" rx="10" fill="#f2f5fb"/><path d="M45 50 l-5 6 5 22 5-22z" fill="#ffc85a"/><rect x="52" y="60" width="9" height="6" rx="1.5" fill="#3ef2ff"/>
+<rect x="15" y="52" width="10" height="26" rx="5" fill="#e6ebf5"/><rect x="65" y="52" width="10" height="26" rx="5" fill="#e6ebf5"/>
+<path d="M22 18 q-12 -4 -14 -14 q10 4 18 8z" fill="#f4e3c0"/><path d="M68 18 q12 -4 14 -14 q-10 4 -18 8z" fill="#f4e3c0"/>
+<ellipse cx="16" cy="28" rx="8" ry="4" fill="#8a5a33"/><ellipse cx="74" cy="28" rx="8" ry="4" fill="#8a5a33"/>
+<rect x="20" y="10" width="50" height="40" rx="16" fill="#a8703f"/><rect x="28" y="32" width="34" height="18" rx="9" fill="#e9c49a"/>
+<circle cx="37" cy="41" r="2.4" fill="#5b3a1e"/><circle cx="53" cy="41" r="2.4" fill="#5b3a1e"/><circle cx="34" cy="25" r="3.6" fill="#111"/><circle cx="56" cy="25" r="3.6" fill="#111"/><circle cx="35" cy="24" r="1.2" fill="#fff"/><circle cx="57" cy="24" r="1.2" fill="#fff"/></svg></div>`;
+
+/* ---------- 平面版世界（2.5D，功能與樓層和立體版相同） ---------- */
+function createFlat() {
+  const root = $('#flat'), zonesEl = $('#flatZones'), av = $('#flatAvatar');
+  root.hidden = false; document.body.classList.add('flat');
+  root.querySelectorAll('[data-avatar]').forEach(a => a.innerHTML = AVATAR_SVG);
+  const draw = () => {
+    root.dataset.floor = floor;
+    $('#flatWallName').textContent = floor === 'lobby' ? '史塔科技大樓・交易大廳' : FLOORS[floor].name;
+    zonesEl.innerHTML = zonesOn(floor).map(z => { const [x, y] = SLOTS[z.flatSlot || z.slot]; return `<button class="fzone ${z.gold ? 'gold' : ''} ${z.lock ? 'locked' : ''} ${z.slot === 'H' ? 'lift' : ''}" data-zone="${z.id}" style="left:${x}%;top:${y}%">${ICON[z.id]}${z.name}${z.lock ? '<em>僅限自己人</em>' : ''}</button>`; }).join('');
+    zonesEl.querySelectorAll('.fzone').forEach(b => b.onclick = () => go(b.dataset.zone));
+    refreshHud();
+  };
+  let pos = { x: 50, y: 90 };
+  const place = p => { av.style.left = p.x + '%'; av.style.top = p.y + '%'; };
+  place(pos);
+  let busy = null;
+  function walk(to) {
+    return new Promise(res => {
+      av.classList.toggle('flip', to.x < pos.x);
+      const dist = Math.hypot((to.x - pos.x) * innerWidth / 100, (to.y - pos.y) * innerHeight / 100);
+      const dur = Math.max(.3, dist / 260);
+      av.style.transitionDuration = dur + 's'; av.classList.add('walking');
+      requestAnimationFrame(() => place(to)); pos = to;
+      setTimeout(() => { av.classList.remove('walking'); res(); }, dur * 1000);
+    });
+  }
+  const spot = z => { const [x, y] = SLOTS[z.slot]; return { x: x + (x < 50 ? 10 : x > 50 ? -10 : 0), y: y + (x === 50 ? 9 : 5) }; };
+  async function go(id) {
+    const z = ZONES.find(z => z.id === id); closePanel();
+    const tok = busy = {};
+    await walk({ x: 50, y: 58 }); if (busy !== tok) return;
+    await walk(spot(z)); if (busy !== tok) return;
+    openPanel(id);
+  }
+  draw();
+  return {
+    kind: 'flat', go,
+    idle() { root.classList.add('intro'); },
+    intro(caption) {
+      return new Promise(res => {
+        root.classList.add('intro'); requestAnimationFrame(() => root.classList.add('go'));
+        caption('走進史塔科技大樓…');
+        this._t = setTimeout(() => { this.enterDirect(); res(); }, 3000);
+      });
+    },
+    enterDirect() { clearTimeout(this._t); root.classList.remove('intro', 'go'); draw(); pos = { x: 50, y: 90 }; place(pos); setTimeout(() => walk({ x: 50, y: 62 }), 50); },
+    async ride(to, cb) {
+      const lift = zonesEl.querySelector('.lift');
+      const z = zonesOn(floor).find(z => z.slot === 'H');
+      busy = {}; await walk({ x: 50, y: 58 }); await walk(spot(z));
+      lift && lift.classList.add('closing'); await walk({ x: SLOTS.H[0], y: SLOTS.H[1] });
+      av.style.opacity = 0;
+      await cb.between();
+      draw(); const lift2 = zonesEl.querySelector('.lift'); lift2 && lift2.classList.add('opening');
+      pos = { x: SLOTS.H[0], y: SLOTS.H[1] }; av.style.transitionDuration = '0s'; place(pos);
+      cb.after(); await new Promise(r => setTimeout(r, 250)); av.style.opacity = 1;
+      await walk({ x: 50, y: 58 });
+    },
+    onPanel() {}, setRank() {}, celebrate() {},
+    dispose() { root.hidden = true; document.body.classList.remove('flat'); root.classList.remove('intro', 'go'); },
+  };
+}
+
+/* ---------- 模式判斷與切換 ---------- */
+const qs = new URLSearchParams(location.search);
+let world = null;
+function weakDevice() {
+  if (qs.has('force3d')) return false;
+  const mem = navigator.deviceMemory, cores = navigator.hardwareConcurrency;
+  if ((mem && mem <= 2) || (cores && cores <= 2)) return true;
+  try { const c = document.createElement('canvas'); if (!(c.getContext('webgl2') || c.getContext('webgl'))) return true; } catch { return true; }
+  return false;
+}
+function setModeLabel() {
+  const flat = world && world.kind === 'flat';
+  $('#modeLabel').textContent = flat ? '立體版' : '省電平面版';
+  $('#btnMode').setAttribute('aria-label', flat ? '切換立體版' : '切換省電平面版');
+}
+const hooks = {
+  go: id => world && world.go(id),
+  open: id => openPanel(id),
+  floor: () => floor,
+  fallback(reason) { toast(reason || '已自動切換為省電平面版'); switchTo('flat', true); },
+};
+async function make(kind) {
+  if (kind === 'flat') return createFlat();
+  const m = await import('./scene3d.js');
+  return m.create3D($('#gl'), { ...hooks, ZONES, ICON, autoFallback: !qs.has('force3d'), rank: () => [rankIndex(), RANKS[rankIndex()].name] });
+}
+let ready;
+async function switchTo(kind, inLobby) {
+  closePanel();
+  if (world) { world.dispose(); world = null; }
+  try { world = await make(kind); }
+  catch (e) { console.warn('立體版啟動失敗，改用平面版', e); world = createFlat(); if (kind !== 'flat') toast('這台裝置跑不動立體版，已切換為省電平面版'); }
+  setModeLabel(); buildDock();
+  if (inLobby) { world.enterDirect(); showLobbyUI(); } else world.idle();
+}
+function showLobbyUI() { $('#start').classList.add('hide'); $('#introBar').hidden = true; $('#hud').hidden = false; $('#dock').hidden = false; }
+const skip = async () => { await ready; world.skipIntro ? world.skipIntro() : world.enterDirect(); showLobbyUI(); };
+
+$('#btnStart').onclick = async () => {
+  await ready;
+  $('#start').classList.add('hide'); $('#introBar').hidden = false;
+  await world.intro(t => $('#introCaption').textContent = t);
+  showLobbyUI();
+};
+$('#btnDirect').onclick = skip;
+$('#btnSkip').onclick = skip;
+$('#btnMode').onclick = async () => {
+  await ready;
+  const toFlat = world.kind !== 'flat';
+  S.pref.flat = toFlat; save();
+  ready = switchTo(toFlat ? 'flat' : '3d', true);
+  toast(toFlat ? '已切換為省電平面版' : '已切換為立體版');
+};
+$('#btnMusic').onclick = () => { const on = toggleMusic(); $('#btnMusic').classList.toggle('on', on); $('#musicLabel').textContent = on ? '音樂開' : '音樂'; };
+
+const startFlat = qs.has('flat') || (!qs.has('force3d') && (S.pref.flat === true || (S.pref.flat == null && weakDevice())));
+window.__niuma = { get world() { return world; }, get floor() { return floor; }, openPanel, closePanel, ride, get ready() { return ready; } };
+ready = (async () => { await restoreInsider(); await switchTo(startFlat ? 'flat' : '3d', false); })();
+if (qs.has('lobby')) skip();

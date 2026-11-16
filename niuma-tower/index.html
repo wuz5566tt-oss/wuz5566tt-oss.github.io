@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="theme-color" content="#050a18">
+<title>牛馬交易上班日｜史塔科技大樓</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="./assets/style.css">
+<script type="importmap">{"imports":{"three":"./assets/vendor/three.module.js","three/addons/":"./assets/vendor/jsm/"}}</script>
+</head>
+<body>
+<canvas id="gl" aria-label="史塔科技大樓立體場景"></canvas>
+
+<!-- 平面版 -->
+<section id="flat" hidden aria-label="省電平面版大廳">
+  <div class="flat-intro" id="flatIntro">
+    <div class="fi-sky"></div>
+    <div class="fi-tower">
+      <div class="fi-crown"></div>
+      <div class="fi-body"><i></i><i></i><i></i></div>
+      <div class="fi-sign">史塔科技大樓</div>
+      <div class="fi-door"><b class="l"></b><b class="r"></b></div>
+    </div>
+    <div class="fi-avatar" data-avatar></div>
+  </div>
+  <div class="flat-lobby" id="flatLobby">
+    <div class="fl-floor"></div>
+    <div class="fl-motes" aria-hidden="true"><i style="left:33%;animation-delay:-6.5s;animation-duration:9.8s"></i><i style="left:80%;animation-delay:-5.2s;animation-duration:12.5s"></i><i style="left:80%;animation-delay:-0.1s;animation-duration:14.0s"></i><i style="left:36%;animation-delay:-6.1s;animation-duration:10.2s"></i><i style="left:94%;animation-delay:-5.2s;animation-duration:14.0s"></i><i style="left:63%;animation-delay:-4.4s;animation-duration:14.2s"></i><i style="left:32%;animation-delay:-7.0s;animation-duration:14.2s"></i><i style="left:69%;animation-delay:-4.3s;animation-duration:9.1s"></i><i style="left:11%;animation-delay:-1.8s;animation-duration:14.7s"></i><i style="left:8%;animation-delay:-3.3s;animation-duration:9.2s"></i><i style="left:37%;animation-delay:-5.2s;animation-duration:13.3s"></i><i style="left:52%;animation-delay:-7.9s;animation-duration:14.5s"></i></div>
+    <div class="fl-backwall"><span id="flatWallName">史塔科技大樓・交易大廳</span></div>
+    <div class="fl-zones" id="flatZones"></div>
+    <div class="fl-avatar" id="flatAvatar" data-avatar></div>
+  </div>
+</section>
+
+<!-- 立體版的區域標籤 -->
+<div id="labels" aria-hidden="false"></div>
+
+<!-- 開場 -->
+<section id="start" class="start" aria-label="開場">
+  <div class="start-card">
+    <p class="kicker">史塔科技大樓</p>
+    <h1>牛馬交易<br>上班日</h1>
+    <p class="sub">打卡領薪水・晨會猜盤勢・抽心法籤<br>每天上班，一起升職</p>
+    <button class="btn primary big" id="btnStart">開始上班</button>
+    <button class="btn ghost" id="btnDirect">直接進大廳</button>
+  </div>
+</section>
+<div id="introBar" class="intro-bar" hidden>
+  <span id="introCaption">準時上班中…</span>
+  <button class="btn ghost sm" id="btnSkip">略過動畫</button>
+</div>
+
+<!-- 上方資訊 -->
+<header id="hud" class="hud" hidden>
+  <div class="hud-left">
+    <div class="chip floor"><b id="hudFloor">1 樓・交易大廳</b></div>
+    <div class="chip coin" title="薪水"><span class="coin-ico"></span><b id="hudCoins">0</b><small>薪水</small></div>
+    <div class="chip rank"><small>職級</small><b id="hudRank">實習牛馬</b></div>
+    <div class="chip streak"><small>連續打卡</small><b id="hudStreak">0</b><small>天</small></div>
+  </div>
+  <div class="hud-right">
+    <button class="iconbtn" id="btnMusic" aria-label="背景音樂"><span>♪</span><em id="musicLabel">音樂</em></button>
+    <button class="iconbtn" id="btnMode" aria-label="切換省電平面版"><em id="modeLabel">省電平面版</em></button>
+  </div>
+</header>
+
+<!-- 底部選單 -->
+<nav id="dock" class="dock" hidden aria-label="大廳選單"><div class="dock-track" id="dockTrack"></div></nav>
+
+<!-- 面板 -->
+<aside id="panel" class="panel" aria-hidden="true" role="dialog" aria-labelledby="panelTitle">
+  <div class="panel-grip"></div>
+  <header class="panel-head">
+    <div><p class="panel-kicker" id="panelKicker"></p><h2 id="panelTitle"></h2></div>
+    <button class="iconbtn close" id="panelClose" aria-label="關閉">✕</button>
+  </header>
+  <div class="panel-body" id="panelBody"></div>
+</aside>
+
+<div id="ride" class="ride" hidden aria-live="polite">
+  <div class="ride-box"><div class="ride-arrow" id="rideArrow">▲</div><div class="ride-num"><b id="rideNum">1</b><small>樓</small></div><div class="ride-name" id="rideName"></div></div>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<footer class="disclaimer" id="disclaimer">不帶單、不喊單、不承諾獲利，內容非投資建議</footer>
+
+<script type="module" src="./assets/app.js"></script>
+</body>
+</html>

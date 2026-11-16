@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>資格碼驗證</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="./assets/style.css">
+<style>
+html,body{overflow:auto}
+.vwrap{max-width:560px;margin:0 auto;padding:28px 18px 60px}
+.vwrap h1{font-size:1.5rem;margin:0 0 4px;letter-spacing:.08em}
+textarea.code{width:100%;min-height:84px;font:inherit;font-family:ui-monospace,Menlo,monospace;font-size:1rem;color:var(--ink);background:rgba(255,255,255,.05);border:0;border-radius:12px;padding:12px;box-shadow:inset 0 0 0 1px var(--line)}
+.verdict{font-size:1.2rem;font-weight:900;padding:14px;border-radius:14px;text-align:center}
+.verdict.ok{background:rgba(47,211,138,.14);color:var(--down);box-shadow:inset 0 0 0 2px var(--down)}
+.verdict.bad{background:rgba(255,84,104,.14);color:var(--up);box-shadow:inset 0 0 0 2px var(--up)}
+table{width:100%;border-collapse:collapse;font-size:.92rem} td,th{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left} th{color:var(--mute);font-weight:600}
+.ok{color:var(--down)} .bad{color:var(--up)} .mute{color:var(--mute)}
+.restart{color:#e2c8ff} .verdict.restart{background:rgba(150,90,255,.16);color:#e2c8ff;box-shadow:inset 0 0 0 2px rgba(200,144,255,.7);margin-top:10px}
+tr.restart-row td{background:rgba(150,90,255,.1)}
+</style>
+</head>
+<body>
+<main class="vwrap">
+  <p class="kicker">史塔科技大樓・內部</p>
+  <h1>資格碼驗證</h1>
+  <p class="note">把訪客私訊貼來的資格碼貼在下面，就能看到他的打卡紀錄與各項資格到期日。</p>
+  <form id="gate" class="card gate" autocomplete="off">
+    <label class="note" for="pass">請輸入自己人暗號</label>
+    <div class="row" style="margin-top:6px"><input id="pass" class="passin" type="password" spellcheck="false" placeholder="暗號"><button class="btn primary" type="submit">進入</button></div>
+    <div class="err" id="gerr"></div>
+  </form>
+  <section id="tool" hidden>
+    <div class="card">
+      <label class="note" for="code">資格碼</label>
+      <textarea id="code" class="code" placeholder="例如 1234567-1234567-…"></textarea>
+      <button class="btn primary" id="go" style="width:100%;margin-top:8px">驗證</button>
+    </div>
+    <div id="out"></div>
+  </section>
+  <p class="note" style="margin-top:24px">說明：資格碼有數位簽章，數字被改過會顯示「被改過」。簽章金鑰放在網頁程式裡，只能擋一般人隨手改數字，懂技術的人仍可能偽造；重要獎勵請再人工核對。</p>
+</main>
+<script type="module" src="./assets/verify.js"></script>
+</body>
+</html>
