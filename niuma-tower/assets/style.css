@@ -84,11 +84,12 @@ body.flat #gl,body.flat #labels{display:none}
   .panel-grip{display:none}
 }
 .note{font-size:.78rem;color:var(--mute)}
-.tag{display:inline-block;font-size:.7rem;padding:2px 8px;border-radius:999px;background:rgba(255,200,90,.14);color:var(--gold);box-shadow:inset 0 0 0 1px rgba(255,200,90,.35);vertical-align:middle}
+.tag{display:inline-block;font-size:.7rem;padding:2px 8px;border-radius:999px;background:rgba(255,200,90,.14);color:var(--gold);box-shadow:inset 0 0 0 1px rgba(255,200,90,.35);vertical-align:middle;white-space:nowrap;flex-shrink:0}
 .tag.cyan{background:rgba(62,242,255,.12);color:var(--cyan);box-shadow:inset 0 0 0 1px rgba(62,242,255,.35)}
 .card{background:rgba(255,255,255,.04);box-shadow:inset 0 0 0 1px var(--line);border-radius:16px;padding:14px;margin:10px 0}
-.row{display:flex;gap:10px;align-items:center}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .row.between{justify-content:space-between}
+.row.between>b,.row.between>h3{flex:0 1 auto;min-width:min-content}
 .stat{font-size:1.9rem;font-weight:900;font-variant-numeric:tabular-nums;color:var(--gold)}
 
 /* 打卡 */
@@ -294,20 +295,29 @@ body[data-floor=insider] .chip.floor b{color:var(--gold)}
 #flat[data-floor=f4] .fl-floor{background:linear-gradient(90deg,transparent 42%,rgba(160,20,40,.7) 42% 58%,transparent 58%),radial-gradient(circle at 50% 30%,#3a1420,#120408 70%)}
 .rladder{margin-top:10px}
 .rladder ol{list-style:none;margin:10px 0 4px;padding:0;display:grid;gap:6px}
-.rladder li{display:grid;grid-template-columns:3.4rem 1fr auto;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.03)}
-.rladder li .w{font-size:.75rem;color:var(--mute);font-weight:800}
-.rladder li .n b{display:block;font-size:.95rem}.rladder li .n small{color:var(--mute);font-size:.74rem}
-.rladder li .s{font-size:.76rem;font-weight:800;color:var(--mute);white-space:nowrap}
+.rladder li{display:grid;grid-template-columns:3.4rem 1fr auto;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.03);overflow:visible}
+.rladder li .w{font-size:.75rem;color:var(--mute);font-weight:800;white-space:nowrap;flex-shrink:0}
+.rladder li .n{min-width:0;overflow:visible}
+.rladder li .n b{display:flex;flex-wrap:wrap;align-items:center;column-gap:6px;row-gap:4px;font-size:.95rem;overflow:visible}
+.rladder li .n .ttl{white-space:nowrap}
+.rladder li .n small{display:block;color:var(--mute);font-size:.74rem;line-height:1.45;overflow-wrap:break-word}
+.rladder li .s{font-size:.76rem;font-weight:800;color:var(--mute);white-space:nowrap;flex-shrink:0}
 .rladder li.ok{border-color:rgba(62,242,255,.45)}.rladder li.ok .s{color:var(--cyan)}
 .rladder li.ins{border-color:rgba(190,130,255,.45);background:rgba(150,90,255,.08)}.rladder li.ins .s{color:#c9a2ff}
 .rladder li.top{border-color:rgba(255,200,90,.6);background:linear-gradient(90deg,rgba(255,200,90,.14),rgba(255,200,90,.03))}.rladder li.top .n b{color:var(--gold)}
 #flat[data-floor=f5]{background:radial-gradient(120% 80% at 50% 0%,#1e2a66 0%,#0c1030 45%,#04060f 100%)}
 #flat[data-floor=f5] .fl-backwall{background:linear-gradient(180deg,#121a3e,#1c2050);border-bottom-color:#78aaff}
 #flat[data-floor=f5] .fl-floor{background:repeating-linear-gradient(60deg,rgba(120,170,255,.12) 0 2px,transparent 2px 40px),repeating-linear-gradient(-60deg,rgba(120,170,255,.12) 0 2px,transparent 2px 40px),radial-gradient(circle at 50% 30%,#1a2050,#060818 70%)}
-.rladder em.best,.rladder em.lastb{font-style:normal;font-size:.68rem;padding:1px 6px;border-radius:6px;margin-left:4px;vertical-align:2px}
+.rladder em.best,.rladder em.lastb{font-style:normal;font-size:.68rem;padding:1px 6px;border-radius:6px;line-height:1.4;white-space:nowrap;flex-shrink:0;overflow:visible;display:inline-block}
 .rladder em.best{background:var(--gold);color:#1a1200}
 .rladder em.lastb{background:rgba(200,144,255,.25);color:#e2c8ff;border:1px solid rgba(200,144,255,.6)}
 .rladder li.last{border-color:rgba(200,144,255,.55);background:rgba(150,90,255,.08)}
+@media (max-width:420px){
+  .rladder li{grid-template-columns:auto 1fr;grid-template-areas:"w s" "n n"}
+  .rladder li .w{grid-area:w}
+  .rladder li .s{grid-area:s;justify-self:end}
+  .rladder li .n{grid-area:n}
+}
 
 /* ===== 夢幻科技質感（只改外觀，不動功能） ===== */
 @font-face{font-family:"Clash Display";src:url(fonts/clash-600.woff2) format("woff2");font-weight:600;font-display:swap}

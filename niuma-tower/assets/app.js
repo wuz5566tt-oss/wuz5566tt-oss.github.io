@@ -441,7 +441,7 @@ function ladderBoardHTML() {
   const d = realDays();
   return `<div class="card rladder"><div class="row between"><b style="font-size:1.05rem">獎勵階梯</b><span class="tag">由下往上越來越強</span></div>
     <ol>${LADDER.slice().reverse().map(r => { const ok = d >= r.need;
-      return `<li class="${ok ? 'ok' : ''} ${r.best ? 'top' : ''} ${r.last ? 'last' : ''}"><span class="w">${r.where}</span><span class="n"><b>${r.name}${r.best ? ' <em class="best">最高獎勵</em>' : ''}${r.last ? ' <em class="lastb">最後一關</em>' : ''}</b><small>${r.rule}</small></span><span class="s">${ok ? '已解鎖' : `還差 ${r.need - d} 天`}</span></li>`; }).join('')}</ol>
+      return `<li class="${ok ? 'ok' : ''} ${r.best ? 'top' : ''} ${r.last ? 'last' : ''}"><span class="w">${r.where}</span><span class="n"><b><span class="ttl">${r.name}</span>${r.best ? '<em class="best">最高獎勵</em>' : ''}${r.last ? '<em class="lastb">最後一關</em>' : ''}</b><small>${r.rule}</small></span><span class="s">${ok ? '已解鎖' : `還差 ${r.need - d} 天`}</span></li>`; }).join('')}</ol>
     <p class="note">領取、續用與重新啟動的方式，見接引櫃台「我的資格」裡的「領取與續用規則」。</p></div>`;
 }
 function rulesCardHTML() {
