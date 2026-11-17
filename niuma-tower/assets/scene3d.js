@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { STAR_LOGO_UI, TOWER_NAME, EVENT_NAME, isCyber } from './brand.js';
+import { STAR_LOGO_UI, TOWER_NAME, EVENT_NAME, isCyber, logoStyle } from './brand.js';
 import { itemById } from './shop-catalog.js';
 
 /* 史塔金融大樓：低面數程序生成場景（無外部模型） */
@@ -231,10 +231,34 @@ export async function create3D(canvas, hooks) {
       loader.load(STAR_LOGO_UI, t => { t.colorSpace = THREE.SRGBColorSpace; keep(t); res(t); }, undefined, () => res(null));
     });
     if (tex) {
-      const halo = new THREE.Mesh(keep(new THREE.CircleGeometry(1.55, 28)), keep(new THREE.MeshBasicMaterial({ color: 0x3ef2ff, transparent: true, opacity: .22, blending: THREE.AdditiveBlending, depthWrite: false })));
-      halo.position.set(0, 11.15, 0.14); tower.add(halo);
-      logoMesh = new THREE.Mesh(keep(new THREE.PlaneGeometry(2.55, 2.55)), keep(new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false })));
-      logoMesh.position.set(0, 11.15, 0.22); tower.add(logoMesh);
+      const sealOn = logoStyle() === 'seal' || logoStyle() === 'crest' || logoStyle() === 'bars';
+      if (sealOn) {
+        // Soft dark vignette behind the gold mark — no cyan glow plate
+        const vig = canvasTex(256, 256, (ctx, w, h) => {
+          const g = ctx.createRadialGradient(w / 2, h / 2, w * 0.16, w / 2, h / 2, w * 0.5);
+          g.addColorStop(0, 'rgba(4,8,18,0.94)');
+          g.addColorStop(0.42, 'rgba(4,8,18,0.80)');
+          g.addColorStop(0.70, 'rgba(4,8,18,0.28)');
+          g.addColorStop(1, 'rgba(4,8,18,0)');
+          ctx.fillStyle = g;
+          ctx.fillRect(0, 0, w, h);
+        });
+        const halo = new THREE.Mesh(
+          keep(new THREE.PlaneGeometry(4.2, 4.2)),
+          keep(new THREE.MeshBasicMaterial({ map: vig, transparent: true, depthWrite: false }))
+        );
+        halo.position.set(0, 11.15, 0.14); tower.add(halo);
+        logoMesh = new THREE.Mesh(
+          keep(new THREE.PlaneGeometry(3.15, 3.15)),
+          keep(new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }))
+        );
+        logoMesh.position.set(0, 11.15, 0.22); tower.add(logoMesh);
+      } else {
+        const halo = new THREE.Mesh(keep(new THREE.CircleGeometry(1.55, 28)), keep(new THREE.MeshBasicMaterial({ color: 0x3ef2ff, transparent: true, opacity: .22, blending: THREE.AdditiveBlending, depthWrite: false })));
+        halo.position.set(0, 11.15, 0.14); tower.add(halo);
+        logoMesh = new THREE.Mesh(keep(new THREE.PlaneGeometry(2.55, 2.55)), keep(new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false })));
+        logoMesh.position.set(0, 11.15, 0.22); tower.add(logoMesh);
+      }
     }
   }
 
