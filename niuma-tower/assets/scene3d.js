@@ -186,7 +186,18 @@ export async function create3D(canvas, hooks) {
   tiers.forEach(([y0, y1, w, d], i) => {
     const h = y1 - y0, wt = windowsTex(10, 24, 11 + i * 5, .5); wt.wrapS = wt.wrapT = THREE.RepeatWrapping; wt.repeat.set(w / 9, h / 11);
     const glass = std(0x0b1630, { metalness: .7, roughness: .22, envMapIntensity: .8, emissive: 0xffffff, emissiveMap: wt, emissiveIntensity: .75 });
-    box(w, h, d, glass, 0, y0 + h / 2, -d / 2 - (16.4 - d) / 2, tower);
+    const tz = -d / 2 - (16.4 - d) / 2;
+    if (i === 0) {
+      // 第一層外牆底面與大廳天花板同在 y=H，拿掉底面，避免窗外燈光從天花閃出來
+      const geo = keep(new THREE.BoxGeometry(1, 1, 1));
+      const src = geo.getIndex().array, dst = [];
+      for (let k = 0; k < src.length; k++) if (k < 18 || k >= 24) dst.push(src[k]); // 略過 ny 底面
+      geo.setIndex(dst);
+      const shell = new THREE.Mesh(geo, glass);
+      shell.scale.set(w, h, d); shell.position.set(0, y0 + h / 2, tz); tower.add(shell);
+    } else {
+      box(w, h, d, glass, 0, y0 + h / 2, tz, tower);
+    }
     const cz = -8.2;
     // 轉角裝甲柱
     [-1, 1].forEach(sx => [-1, 1].forEach(sz => {
@@ -446,6 +457,7 @@ export async function create3D(canvas, hooks) {
   const floorMat = std(0xffffff, { map: floorTexs.lobby, roughness: .34, metalness: .45, envMapIntensity: .6 });
   const fl = new THREE.Mesh(keep(new THREE.PlaneGeometry(W * 2, D)), floorMat); fl.rotation.x = -Math.PI / 2; fl.position.set(0, .03, -D / 2); hall.add(fl);
   const wallMat = std(0x111a2e, { roughness: .55, metalness: .5 });
+  // 天花燈略降，避免與天花板共面閃爍（各樓層與 GM 共用 hall）
   const ceilMat = std(0x0a1020, { roughness: .8 });
   box(W * 2 + .8, .3, D + .4, ceilMat, 0, H + .15, -D / 2, hall);
   box(.4, H, D, wallMat, -W - .2, H / 2, -D / 2, hall); box(.4, H, D, wallMat, W + .2, H / 2, -D / 2, hall);
@@ -456,15 +468,17 @@ export async function create3D(canvas, hooks) {
   const accent = glow(C.cyan, 1.8); // 換樓層時換色
   for (let z = -1.5; z > -D; z -= 3) { box(.06, H - .6, .06, accent, -W + .02, H / 2, z, hall); box(.06, H - .6, .06, accent, W - .02, H / 2, z, hall); }
   box(W * 2, .08, .08, accent, 0, H - .1, -D + .05, hall);
-  const ring = new THREE.Mesh(keep(new THREE.TorusGeometry(3, .07, 6, 64)), accent); ring.rotation.x = Math.PI / 2; ring.position.set(0, H - .05, -7.5); hall.add(ring);
-  const ring2 = new THREE.Mesh(keep(new THREE.TorusGeometry(4.2, .04, 6, 64)), goldGlow); ring2.rotation.x = Math.PI / 2; ring2.position.set(0, H - .05, -7.5); hall.add(ring2);
-  [-5.5, 5.5].forEach(x => box(.25, .05, 13, glow(0xdfefff, 1.2), x, H - .02, -8, hall));
+  const ring = new THREE.Mesh(keep(new THREE.TorusGeometry(3, .07, 6, 64)), accent); ring.rotation.x = Math.PI / 2; ring.position.set(0, H - .16, -7.5); hall.add(ring);
+  const ring2 = new THREE.Mesh(keep(new THREE.TorusGeometry(4.2, .04, 6, 64)), goldGlow); ring2.rotation.x = Math.PI / 2; ring2.position.set(0, H - .16, -7.5); hall.add(ring2);
+  const ceilLamp = glow(0xdfefff, 1.2);
+  ceilLamp.polygonOffset = true; ceilLamp.polygonOffsetFactor = -1; ceilLamp.polygonOffsetUnits = -1;
+  [-5.5, 5.5].forEach(x => box(.25, .05, 13, ceilLamp, x, H - .08, -8, hall));
   // 電梯車廂
   const cab = new THREE.Group(); hall.add(cab);
   const cabMat = std(0x2a2416, { metalness: .9, roughness: .3, envMapIntensity: .9 });
   box(2.4, .1, 2.2, cabMat, 7.2, 0, -17.4, cab); box(2.4, .1, 2.2, cabMat, 7.2, 3.3, -17.4, cab);
   box(.1, 3.3, 2.2, cabMat, 6.0, 1.65, -17.4, cab); box(.1, 3.3, 2.2, cabMat, 8.4, 1.65, -17.4, cab); box(2.4, 3.3, .1, cabMat, 7.2, 1.65, -18.5, cab);
-  box(2, .05, .05, glow(0xfff1cf, 2), 7.2, 3.22, -17.4, cab);
+  box(2, .05, .05, glow(0xfff1cf, 2), 7.2, 3.16, -17.4, cab);
   // 電梯門與框
   box(2.5, .14, .2, goldGlow, 7.2, 3.25, -15.95, hall); [-1, 1].forEach(s => box(.14, 3.3, .2, goldGlow, 7.2 + s * 1.18, 1.65, -15.95, hall));
   const doorMat = std(0x9aa6bf, { metalness: 1, roughness: .2, envMapIntensity: 1 });
