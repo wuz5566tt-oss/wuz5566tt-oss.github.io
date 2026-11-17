@@ -1,7 +1,11 @@
 // 程序生成的環境音樂（無外部音檔）
 // 正式預設為 H 遊戲大廳（大調、有鼓點）；舊抒情預設改以 ?music=classic 聽
 // ?music=a|b|c|d|e|f|g|h|classic 可切換；GM（?gm=1）沒有另外的配樂，與正式同一首 H
+// 整段循環先算成 AudioBuffer，再用 looping BufferSource 播放，避免主執行緒
+// （3D 繪製、手機分頁節流）來不及排程而卡頓。預設 H 帶 assets/audio 裡的小 mp3，
+// 其他 ?music= 主題則用 OfflineAudioContext 預先算好。
 let ctx = null, master = null, timer = null, on = false, gestureHook = null, nextT = 0, phrase = 0;
+let loopBuf = null, loopSrc = null, bakePromise = null;
 
 const BPM = 76;
 const BEAT = 60 / BPM;
@@ -564,17 +568,33 @@ function shimmer(midi, t, dur) {
   voice(midi + 31, t + dur * 0.15, dur * 0.85, 0.006, 'sine', 2.4, 0.997);
 }
 
-function scheduleCycle(t0) {
+function scheduleClassicAt(ac, dest, t0, phraseIdx) {
   const hold = BAR * 2 + 1.6;
   CHORDS.forEach((chord, i) => {
     const t = t0 + i * BAR * 2;
-    chord.forEach((m, k) => padNote(m, t, hold, k ? 0.028 : 0.036));
-    voice(BASS[i], t, hold, 0.05, 'sine', 1.2);
-    shimmer(chord[chord.length - 1], t, hold);
+    chord.forEach((m, k) => {
+      const g = k ? 0.028 : 0.036;
+      tone(ac, dest, m, t, hold, g, 'sine', 1.35);
+      tone(ac, dest, m, t, hold, g * 0.32, 'triangle', 1.5, 1.002);
+      tone(ac, dest, m - 12, t, hold, g * 0.22, 'sine', 1.6);
+    });
+    tone(ac, dest, BASS[i], t, hold, 0.05, 'sine', 1.2);
+    const top = chord[chord.length - 1];
+    tone(ac, dest, top + 24, t, hold, 0.009, 'sine', 2.2, 1.003);
+    tone(ac, dest, top + 31, t + hold * 0.15, hold * 0.85, 0.006, 'sine', 2.4, 0.997);
   });
-  PHRASES[phrase % PHRASES.length].forEach(([beat, midi, len]) => {
-    piano(midi, t0 + beat * BEAT, len);
+  PHRASES[phraseIdx % PHRASES.length].forEach(([beat, midi, len]) => {
+    const dur = len * BEAT * 0.96;
+    const g = 0.072;
+    const tt = t0 + beat * BEAT;
+    tone(ac, dest, midi, tt, dur, g, 'sine', 0.028);
+    tone(ac, dest, midi, tt, dur, g * 0.28, 'triangle', 0.04, 1.0015);
+    tone(ac, dest, midi + 12, tt, dur * 0.75, g * 0.07, 'sine', 0.06);
   });
+}
+
+function scheduleCycle(t0) {
+  scheduleClassicAt(ctx, master, t0, phrase);
   phrase++;
 }
 
@@ -1189,42 +1209,84 @@ function tick() {
 function ensureCtx() {
   if (ctx) return ctx;
   ctx = new (window.AudioContext || window.webkitAudioContext)();
-  master = buildLiveGraph(ctx, activeTheme);
+  master = ctx.createGain();
+  master.gain.value = 0;
+  master.connect(ctx.destination);
   return ctx;
 }
-function clearHook() {
-  if (!gestureHook) return;
-  window.removeEventListener('pointerdown', gestureHook, true);
-  window.removeEventListener('keydown', gestureHook, true);
-  window.removeEventListener('touchstart', gestureHook, true);
-  gestureHook = null;
+
+function stopLoop() {
+  if (!loopSrc) return;
+  try { loopSrc.stop(); } catch (_) {}
+  try { loopSrc.disconnect(); } catch (_) {}
+  loopSrc = null;
 }
+
+function startLoop() {
+  stopLoop();
+  if (!ctx || !loopBuf) return false;
+  const src = ctx.createBufferSource();
+  src.buffer = loopBuf;
+  src.loop = true;
+  src.loopStart = 0;
+  src.loopEnd = loopBuf.duration;
+  src.connect(master);
+  src.start();
+  loopSrc = src;
+  return true;
+}
+
+function fadeTo(target, timeConst) {
+  if (!master || !ctx) return;
+  const now = ctx.currentTime;
+  master.gain.cancelScheduledValues(now);
+  master.gain.setValueAtTime(master.gain.value || 0, now);
+  master.gain.setTargetAtTime(target, now, timeConst);
+}
+
+function startFallback() {
+  if (!ctx) return;
+  phrase = 0;
+  nextT = ctx.currentTime + 0.12;
+  // fallback still needs the live instrument graph
+  if (master) try { master.disconnect(); } catch (_) {}
+  master = buildLiveGraph(ctx, activeTheme);
+  fadeTo(activeTheme ? activeTheme.masterGain : 0.4, 1.15);
+  tick();
+  clearInterval(timer);
+  timer = setInterval(tick, 500);
+}
+
 function startGraph() {
   if (on) return true;
   if (!ctx || ctx.state !== 'running') return false;
   on = true;
-  phrase = 0;
-  nextT = ctx.currentTime + 0.12;
-  master.gain.cancelScheduledValues(ctx.currentTime);
-  master.gain.setValueAtTime(master.gain.value || 0, ctx.currentTime);
-  master.gain.setTargetAtTime(activeTheme ? activeTheme.masterGain : 0.4, ctx.currentTime, 1.15);
-  tick();
-  clearInterval(timer);
-  timer = setInterval(tick, 500);
+  const play = () => {
+    if (!on) return;
+    clearInterval(timer); timer = null;
+    if (loopBuf) {
+      fadeTo(1, 1.15);
+      startLoop();
+    } else {
+      startFallback();
+    }
+  };
+  if (loopBuf) play();
+  else beginBake().then(play).catch(() => { loopBuf = null; play(); });
   return true;
 }
+
 export function isMusicOn() { return on; }
 export function setMusic(wantOn) {
   ensureCtx();
+  beginBake();
   if (!wantOn) {
     clearHook();
-    if (master) {
-      master.gain.cancelScheduledValues(ctx.currentTime);
-      master.gain.setValueAtTime(master.gain.value, ctx.currentTime);
-      master.gain.setTargetAtTime(0, ctx.currentTime, 0.45);
-    }
+    fadeTo(0, 0.45);
     on = false;
     clearInterval(timer); timer = null;
+    const src = loopSrc;
+    if (src) setTimeout(() => { if (!on && loopSrc === src) stopLoop(); }, 1400);
     return false;
   }
   if (ctx.state === 'running') return startGraph();
@@ -1248,6 +1310,31 @@ export function blip(freq = 659) {
   const t = ctx.currentTime;
   voice(69, t, 0.28, 0.04, 'sine', 0.02);
   voice(72, t + 0.05, 0.32, 0.025, 'sine', 0.03);
+}
+
+export function musicDebug() {
+  return {
+    themeId,
+    on,
+    usingLoop: !!(loopSrc && loopBuf),
+    loopReady: !!loopBuf,
+    duration: loopBuf ? loopBuf.duration : 0,
+    sampleRate: loopBuf ? loopBuf.sampleRate : 0,
+    channels: loopBuf ? loopBuf.numberOfChannels : 0,
+    ctxState: ctx ? ctx.state : 'none',
+    ctx,
+    master,
+    loopBuf,
+    loopSrc,
+  };
+}
+
+function clearHook() {
+  if (!gestureHook) return;
+  window.removeEventListener('pointerdown', gestureHook, true);
+  window.removeEventListener('keydown', gestureHook, true);
+  window.removeEventListener('touchstart', gestureHook, true);
+  gestureHook = null;
 }
 
 function encodeWav(buffer) {
@@ -1275,19 +1362,36 @@ function encodeWav(buffer) {
   return out;
 }
 
-export async function renderMusicTheme(id, { sampleRate = 44100, peakDb = -8 } = {}) {
-  const th = THEMES[id];
-  if (!th) throw new Error('unknown theme: ' + id);
+function makeAudioBuffer(sampleRate, copies) {
+  const length = copies[0].length, nCh = copies.length;
+  if (typeof AudioBuffer === 'function') {
+    try {
+      const buf = new AudioBuffer({ length, numberOfChannels: nCh, sampleRate });
+      copies.forEach((ch, i) => buf.copyToChannel(ch, i));
+      return buf;
+    } catch (_) {}
+  }
   const Offline = window.OfflineAudioContext || window.webkitOfflineAudioContext;
-  const cycle = themeCycleLen(th);
-  const nPhrases = th.phrases.length;
+  const tmp = new Offline(nCh, length, sampleRate);
+  const buf = tmp.createBuffer(nCh, length, sampleRate);
+  copies.forEach((ch, i) => buf.getChannelData(i).set(ch));
+  return buf;
+}
+
+async function bakeThemeBuffer(id, { sampleRate = 44100, peakDb = -8 } = {}) {
+  const isClassic = id === 'classic' || id === 'orig' || id === 'legacy' || id == null;
+  const th = isClassic ? null : (THEMES[id] || null);
+  if (!isClassic && !th) throw new Error('unknown theme: ' + id);
+  const Offline = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+  const cycle = th ? themeCycleLen(th) : CYCLE;
+  const nPhrases = th ? th.phrases.length : PHRASES.length;
   const loopLen = cycle * nPhrases;
-  const warmup = th.groove ? cycle : loopLen;
+  const warmup = (th && th.groove) ? cycle : loopLen;
   const tail = 4;
   const total = warmup + loopLen + tail;
   const ac = new Offline(2, Math.ceil(sampleRate * total), sampleRate);
   let drumNorm = null, drumFill = null;
-  if (th.groove) {
+  if (th && th.groove) {
     const beatSec = 60 / th.bpm;
     const bar2 = beatSec * 8;
     async function bake(fill) {
@@ -1304,8 +1408,8 @@ export async function renderMusicTheme(id, { sampleRate = 44100, peakDb = -8 } =
     drumFill = await bake(true);
   }
   const dest = buildLiveGraph(ac, th);
-  dest.gain.setValueAtTime(th.masterGain, 0);
-  if (th.groove) sharedNoise(ac);
+  dest.gain.setValueAtTime(th ? th.masterGain : 0.4, 0);
+  if (th && th.groove) sharedNoise(ac);
   const stampDrums = (t0, phraseIdx) => {
     if (!drumNorm) return;
     const beatSec = 60 / th.bpm;
@@ -1318,14 +1422,15 @@ export async function renderMusicTheme(id, { sampleRate = 44100, peakDb = -8 } =
     }
   };
   const sched = (t0, phraseIdx) => {
-    if (th.groove) {
+    if (!th) scheduleClassicAt(ac, dest, t0, phraseIdx);
+    else if (th.groove) {
       stampDrums(t0, phraseIdx);
       scheduleGrooveAt(ac, dest, th, t0, phraseIdx, { skipDrums: true, fill: phraseIdx % 4 === 3 });
     } else {
       scheduleThemeAt(ac, dest, th, t0, phraseIdx);
     }
   };
-  if (th.groove) {
+  if (th && th.groove) {
     sched(0, nPhrases - 1);
   } else {
     for (let i = 0; i < nPhrases; i++) sched(i * cycle, i);
@@ -1363,25 +1468,90 @@ export async function renderMusicTheme(id, { sampleRate = 44100, peakDb = -8 } =
   for (const ch of copies) {
     for (let i = 0; i < ch.length; i++) ch[i] *= mul;
   }
-  // Build a temporary AudioBuffer-like object for encodeWav
-  const buffer = {
-    numberOfChannels: nCh,
-    sampleRate,
-    length: loopSamples,
-    getChannelData(c) { return copies[c]; },
-  };
-  const wav = encodeWav(buffer);
-  const meta = MUSIC_OPTIONS[id];
   return {
-    wav,
+    buffer: makeAudioBuffer(sampleRate, copies),
     duration: loopLen,
     sampleRate,
     channels: nCh,
-    id,
+    id: isClassic ? 'classic' : id,
     peak,
     gain: mul,
-    name: meta ? meta.name : id,
+  };
+}
+
+const BUNDLED = {
+  h: { file: 'h-game-lobby.mp3', samples: 2822400, sampleRate: 44100 },
+};
+
+function trimToLoop(buf, expect) {
+  if (!buf || !expect || buf.length === expect) return buf;
+  if (buf.length < expect) return buf;
+  const extra = buf.length - expect;
+  const ch0 = buf.getChannelData(0);
+  let bestOff = 0, best = Infinity;
+  for (let off = 0; off <= extra; off++) {
+    const s = Math.abs(ch0[off] - ch0[off + expect - 1]);
+    if (s < best) { best = s; bestOff = off; }
+  }
+  const copies = [];
+  for (let c = 0; c < buf.numberOfChannels; c++) {
+    copies.push(buf.getChannelData(c).slice(bestOff, bestOff + expect));
+  }
+  return makeAudioBuffer(buf.sampleRate, copies);
+}
+
+async function loadBundledBuffer() {
+  const spec = BUNDLED[themeId];
+  if (!spec) return null;
+  const url = new URL('./audio/' + spec.file, import.meta.url).href;
+  const res = await fetch(url);
+  if (!res.ok) return null;
+  const ab = await res.arrayBuffer();
+  ensureCtx();
+  const decoded = await ctx.decodeAudioData(ab.slice(0));
+  const expect = Math.round(spec.samples * (decoded.sampleRate / spec.sampleRate));
+  return trimToLoop(decoded, expect);
+}
+
+function beginBake(sampleRate) {
+  if (loopBuf) return Promise.resolve(loopBuf);
+  if (bakePromise) return bakePromise;
+  bakePromise = (async () => {
+    try {
+      const bundled = await loadBundledBuffer();
+      if (bundled && bundled.length) {
+        loopBuf = bundled;
+        return loopBuf;
+      }
+    } catch (_) {}
+    const rate = sampleRate || (ctx && ctx.sampleRate) || 44100;
+    const baked = await bakeThemeBuffer(themeId, { sampleRate: rate });
+    loopBuf = baked.buffer;
+    return loopBuf;
+  })().catch(err => {
+    bakePromise = null;
+    loopBuf = null;
+    throw err;
+  });
+  return bakePromise;
+}
+
+export async function renderMusicTheme(id, { sampleRate = 44100, peakDb = -8 } = {}) {
+  const baked = await bakeThemeBuffer(id, { sampleRate, peakDb });
+  const wav = encodeWav(baked.buffer);
+  const meta = MUSIC_OPTIONS[id];
+  return {
+    wav,
+    duration: baked.duration,
+    sampleRate: baked.sampleRate,
+    channels: baked.channels,
+    id: baked.id,
+    peak: baked.peak,
+    gain: baked.gain,
+    name: meta ? meta.name : (baked.id === 'classic' ? '經典' : id),
     filename: meta ? meta.filename : id,
     feel: meta ? meta.feel : '',
   };
 }
+
+try { beginBake(); } catch (_) {}
