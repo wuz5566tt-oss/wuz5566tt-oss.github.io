@@ -472,17 +472,18 @@ function maybeRemind() {
 
 const RENDER = {
   checkin(el) {
-    const done = checkedToday(), st = streakNow();
+    const done = checkedToday(), st = streakNow(), total = realDays();
+    const broke = !done && S.last && S.last !== yesterday() && S.streak > 0;
     const cycle = done ? ((st - 1) % 7) + 1 : (st % 7) + 1;
     const days = Array.from({ length: 7 }, (_, i) => {
       const n = i + 1, isDone = done ? n <= cycle : n < cycle, isToday = n === cycle;
       return `<div class="day ${isDone ? 'done' : ''} ${isToday ? 'today' : ''} ${n === 7 ? 'big' : ''}"><b>第${n}天</b><div class="gift"></div><span style="font-size:.7rem">即將公開</span></div>`;
     }).join('');
     el.innerHTML = `
-      <div class="card row between"><div><div class="note">連續打卡</div><div class="stat">${st}<small style="font-size:.9rem"> 天</small></div></div>
+      <div class="card row between"><div><div class="note">連續打卡</div><div class="stat">${st}<small style="font-size:.9rem"> 天</small></div><div class="note" style="margin-top:2px">累積打卡 ${total} 天</div></div>
       <div style="text-align:right"><div class="note">累積薪水</div><div class="stat">${isGM() ? '∞' : S.coins.toLocaleString('zh-TW')}</div></div></div>
       <div class="punch"><button class="btn primary big" id="punch" ${done ? 'disabled' : ''}>${done ? '今天已打卡' : '上班打卡'}</button><div class="stamp ${done ? 'show' : ''}" id="stamp">已上班</div></div>
-      <p class="note" style="text-align:center;margin:4px 0 0">${done ? '明天記得回來，斷簽就要重新累積喔' : '每天打卡領薪水，連續七天有大禮'}</p>
+      <p class="note" style="text-align:center;margin:4px 0 0">${done ? '明天記得回來，斷簽就要重新累積喔' : broke ? `上次打卡是 ${S.last.slice(5).replace('-', '/')}，中間斷簽，連續天數已重新計算；累積天數和薪水都保留` : '每天打卡領薪水，連續七天有大禮'}</p>
       <h3 style="margin:16px 0 0;font-size:1rem">七日打卡獎勵 <span class="tag">即將公開</span></h3>
       <div class="track">${days}</div>
       <p class="note">薪水是站內虛擬點數，可在服裝店兌換裝扮；其他兌換內容即將公開。不能換現金。</p>`;
@@ -490,12 +491,12 @@ const RENDER = {
     b && (b.onclick = () => {
       if (blockGmProgress()) return;
       const before = ['f2', 'f3'].filter(f => floorOpen(f));
-      const y = S.last === yesterday(); S.streak = y ? S.streak + 1 : 1; S.last = today(); S.days = [...S.days.slice(-60), today()];
+      const y = S.last === yesterday(), wasBroke = !!S.last && !y && S.streak > 0; S.streak = y ? S.streak + 1 : 1; S.last = today(); S.days = [...S.days.slice(-60), today()];
       const c = ((S.streak - 1) % 7) + 1;
       el.querySelector('#stamp').classList.add('show'); blip(1046);
       addXP(10 + Math.min(S.streak, 7) * 2, 100 + c * 20, b);
       world && world.celebrate && world.celebrate('checkin');
-      toast(`打卡成功！薪水 +${100 + c * 20}`);
+      toast(wasBroke ? `打卡成功！薪水 +${100 + c * 20}（中間斷簽，連續天數重新計算）` : `打卡成功！薪水 +${100 + c * 20}`);
       const opened = ['f2', 'f3'].filter(f => floorOpen(f) && !before.includes(f));
       if (opened.length) setTimeout(() => toast(`恭喜！${FLOORS[opened[0]].name} 解鎖了`), 2700);
       setTimeout(() => RENDER.checkin(el), 700);
