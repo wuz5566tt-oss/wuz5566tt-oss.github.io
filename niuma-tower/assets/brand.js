@@ -72,7 +72,13 @@ export function applyBrand() {
     if (typ) el.type = typ;
   };
   setIcon('link[rel="icon"]', icon);
-  setIcon('link[rel="apple-touch-icon"]', icon);
+  let apple = icon;
+  try {
+    apple = new URLSearchParams(location.search).get('gm') === '1'
+      ? './assets/img/apple-touch-icon-gm.png'
+      : './assets/img/apple-touch-icon.png';
+  } catch {}
+  setIcon('link[rel="apple-touch-icon"]', apple);
   document.querySelectorAll('[data-star-logo]').forEach(img => {
     // HUD / small badges use the contrast icon; start & tip keep the transparent mark
     img.src = img.classList.contains('hud-logo') ? icon : ui;

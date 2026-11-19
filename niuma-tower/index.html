@@ -4,9 +4,30 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
 <meta name="theme-color" content="#050a18">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="牛馬交易上班日">
 <title>牛馬交易上班日｜史塔金融大樓</title>
 <link rel="icon" type="image/png" href="./assets/img/star-seal-192.png">
-<link rel="apple-touch-icon" href="./assets/img/star-seal-192.png">
+<link rel="apple-touch-icon" href="./assets/img/apple-touch-icon.png">
+<link rel="manifest" href="./manifest.webmanifest">
+<script>
+(function () {
+  var gm = new URLSearchParams(location.search).get('gm') === '1';
+  if (gm) {
+    var man = document.querySelector('link[rel="manifest"]');
+    if (man) man.href = './manifest-gm.webmanifest';
+    var title = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+    if (title) title.content = '牛馬上班日 GM';
+    var apple = document.querySelector('link[rel="apple-touch-icon"]');
+    if (apple) apple.href = './assets/img/apple-touch-icon-gm.png';
+  }
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js');
+  }
+})();
+</script>
 <link rel="stylesheet" href="./assets/style.css">
 <script type="importmap">{"imports":{"three":"./assets/vendor/three.module.js","three/addons/":"./assets/vendor/jsm/"}}</script>
 </head>
