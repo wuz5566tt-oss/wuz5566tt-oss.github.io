@@ -3,6 +3,7 @@ import { applyBrand, STAR_LOGO_UI, TOWER_NAME, EVENT_NAME, isCyber } from './bra
 import { encodeBackup, decodeBackup, applySnapshot, hasProgress } from './backup.js';
 import { GM_HASH } from './gm.js';
 import { SHOP, TABS, itemById, itemsInTab, cssHex } from './shop-catalog.js';
+import { FIN_PANELS, FIN_ICON, RENDER_FIN, normFin, finTodos, initFin, finSync } from './fin.js';
 import { NPCS, npcsOn, questById, normQuests, pruneQuests, evalQuest, markClaimed, rewardText } from './quests.js';
 export { SHOP };
 
@@ -119,6 +120,7 @@ ICON.cta5 = ICON.guide;
 ICON.shop = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 8 5 21h14L18 8M4 8h16"/><path d="M9 8a3 3 0 0 1 6 0" stroke="#ffc85a"/><path d="M9 13h3"/></svg>';
 ICON.backup = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5" stroke="#3ef2ff"/></svg>';
 Object.keys(FLOORS).forEach(f => ICON['lift_' + f] = ICON.elevator);
+Object.assign(ICON, FIN_ICON);
 ICON.quests = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M17 4v6M17 13v.5" stroke="#ffc85a" stroke-width="2.2"/></svg>';
 
 
@@ -203,12 +205,13 @@ const dstr = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate()
 const today = () => dstr(new Date());
 const yesterday = () => { const d = new Date(); d.setDate(d.getDate() - 1); return dstr(d); };
 const hash = s => { let h = 2166136261; for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return h >>> 0; };
-const fresh = () => ({ coins: 0, xp: 0, streak: 0, last: null, days: [], guesses: {}, fortune: null, reviews: {}, pref: {}, week: {}, claims: {}, vid: null, games: {}, shop: { owned: [], eq: {} }, bak: { seen: false, last: null, snooze: null, remindDays: 0 }, quests: normQuests() });
+const fresh = () => ({ coins: 0, xp: 0, streak: 0, last: null, days: [], guesses: {}, fortune: null, reviews: {}, pref: {}, week: {}, claims: {}, vid: null, games: {}, shop: { owned: [], eq: {} }, bak: { seen: false, last: null, snooze: null, remindDays: 0 }, quests: normQuests(), fin: normFin() });
 let S; try { S = Object.assign(fresh(), JSON.parse(localStorage.getItem(KEY) || '{}')); } catch { S = fresh(); }
 const save = () => { if (isGM()) return; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
 if (!S.vid) { S.vid = String(100000 + Math.floor(Math.random() * 900000)); save(); }
 const fixQuests = () => { S.quests = pruneQuests(normQuests(S.quests), today()); return S.quests; };
 fixQuests();
+S.fin = normFin(S.fin);
 const QS = new URLSearchParams(location.search);
 const realDays = () => new Set(S.days).size;
 const effDays = () => Math.max(realDays(), QS.has('days') ? (+QS.get('days') || 0) : 0); // 隱藏測試參數 ?days=7
@@ -249,6 +252,7 @@ const todos = () => ({
   fortune: !(S.fortune && S.fortune.date === today()),
   review: !S.reviews[today()],
   quests: questReadyCount(floor) > 0,
+  ...finTodos(floor),
 });
 
 /* ---------- 每層樓 NPC 任務 ---------- */
@@ -265,6 +269,12 @@ function questLog(key, val, mode = 'max') {
   d[key] = mode === 'add' ? (d[key] | 0) + val : Math.max(d[key] | 0, val);
 }
 const claiming = new Set();
+// 給 3D 場景的 NPC 清單：ready＝有可領任務（GM 只預覽，不顯示可領）
+function npcView(f) {
+  const c = questCtx();
+  return npcsOn(f).map(n => ({ id: n.id, name: n.name, avatar: n.avatar, pose: n.pose, gender: n.gender, outfit: n.outfit, ready: !isGM() && evalQuest(n.quest, c).ready }));
+}
+let questFocus = null; // 點 3D NPC 時只顯示那一位的任務卡
 let floor = 'lobby';
 export const zonesOn = f => ZONES.filter(z => z.floor === f);
 
@@ -312,9 +322,8 @@ function coinBurst(from) {
   }
 }
 function buildDock() {
-  $('#dockTrack').innerHTML = `<button data-zone="quests">${ICON.quests}<span>任務</span></button>` + zonesOn(floor).map(z => `<button data-zone="${z.id}">${ICON[z.id]}<span>${z.name}</span></button>`).join('');
-  $('#dockTrack').querySelectorAll('button').forEach(b => b.onclick = () => b.dataset.zone === 'quests' ? openPanel('quests') : world && world.go(b.dataset.zone));
-  world && world.setNpcs && world.setNpcs(floor, npcsOn(floor)); // 3D NPC 模型掛點（之後交給 UI BOT）
+  $('#dockTrack').innerHTML = `<button data-zone="quests">${ICON.quests}<span>任務</span></button>` + FIN_PANELS.filter(p => p.floor === floor).map(p => `<button data-zone="${p.id}" data-direct="1">${ICON[p.id]}<span>${p.name}</span></button>`).join('') + zonesOn(floor).map(z => `<button data-zone="${z.id}">${ICON[z.id]}<span>${z.name}</span></button>`).join('');
+  $('#dockTrack').querySelectorAll('button').forEach(b => b.onclick = () => (b.dataset.zone === 'quests' || b.dataset.direct) ? openPanel(b.dataset.zone) : world && world.go(b.dataset.zone));
   $('#hudFloor').textContent = FLOORS[floor].name;
   document.body.dataset.floor = floor;
   refreshHud();
@@ -334,6 +343,8 @@ function refreshHud() {
   });
   world && world.setRank && world.setRank(rankIndex(), RANKS[rankIndex()].name);
   world && world.refresh && world.refresh({ floors: floorInfo(), board: boardRows(), rank: rankIndex() });
+  world && world.setNpcs && world.setNpcs(floor, npcView(floor)); // 3D 場景裡的任務 NPC（含可領標記）
+  finSync(); // 排行榜同步（防抖、GM 不送、連不上也不影響）
 }
 function addXP(n, coins = 0, el) {
   if (isGM()) return;
@@ -347,7 +358,9 @@ function addXP(n, coins = 0, el) {
 /* ---------- 面板 ---------- */
 const panel = $('#panel');
 export function openPanel(id) {
-  const z = ZONES.find(z => z.id === id) || (id === 'quests' ? { id, name: 'NPC 任務', kicker: FLOORS[floor].name } : null);
+  const npcFocus = typeof id === 'string' && id.startsWith('npc:') ? NPCS.find(n => n.id === id.slice(4)) : null;
+  questFocus = npcFocus ? npcFocus.id : null;
+  const z = (npcFocus ? { id, type: 'quests', name: npcFocus.name, kicker: FLOORS[npcFocus.floor].name + '・任務 NPC' } : null) || ZONES.find(z => z.id === id) || (id === 'quests' ? { id, name: 'NPC 任務', kicker: FLOORS[floor].name } : null) || FIN_PANELS.find(p => p.id === id);
   if (!z) return;
   $('#panelKicker').textContent = z.kicker; $('#panelTitle').textContent = z.name;
   RENDER[z.type || id]($('#panelBody'));
@@ -384,8 +397,9 @@ function renderQuests(el) {
   const gmv = isGM();
   const order = FLOOR_ORDER.slice().reverse();
   if (!gmv || !questTab || !FLOORS[questTab]) questTab = floor;
-  const f = questTab, c = questCtx(), list = npcsOn(f);
-  const tabs = gmv ? `<div class="shop-tabs" role="tablist">${order.map(id => `<button type="button" class="shop-tab${id === f ? ' on' : ''}" data-qf="${id}">${FLOORS[id].num}F</button>`).join('')}</div>` : '';
+  const focusN = questFocus ? NPCS.find(n => n.id === questFocus) : null;
+  const f = focusN ? focusN.floor : questTab, c = questCtx(), list = focusN ? [focusN] : npcsOn(f);
+  const tabs = gmv && !focusN ? `<div class="shop-tabs" role="tablist">${order.map(id => `<button type="button" class="shop-tab${id === f ? ' on' : ''}" data-qf="${id}">${FLOORS[id].num}F</button>`).join('')}</div>` : '';
   const cards = list.map(n => {
     const q = n.quest, r = evalQuest(q, c), daily = q.kind === 'daily';
     const pct = Math.round((r.prog / r.target) * 100);
@@ -401,11 +415,13 @@ function renderQuests(el) {
       <div class="bar"><i style="width:${pct}%"></i></div>
       <div class="row between" style="margin-top:10px"><span class="note">獎勵：${rewardText(q.reward)}</span>${btn}</div></div>`;
   }).join('');
-  el.innerHTML = `<div class="card"><div class="row between"><b>${FLOORS[f].name}</b><span class="tag">${gmv ? 'GM 預覽' : '站內薪水'}</span></div>
-    <p class="note" style="margin:8px 0 0">${gmv ? 'GM 模式可以預覽每一層的任務，不會記錄進度、也不會發薪水。' : '找這層樓的 NPC 接任務，完成就能領站內薪水。每日任務每天換日重置，成就任務只能領一次。'}</p></div>
+  el.innerHTML = `${focusN ? (gmv ? '<p class="note" style="margin:0 0 4px">GM 預覽：可以看任務，不會記錄進度、也不會發薪水。</p>' : '') : `<div class="card"><div class="row between"><b>${FLOORS[f].name}</b><span class="tag">${gmv ? 'GM 預覽' : '站內薪水'}</span></div>
+    <p class="note" style="margin:8px 0 0">${gmv ? 'GM 模式可以預覽每一層的任務，不會記錄進度、也不會發薪水。' : '找這層樓的 NPC 接任務，完成就能領站內薪水。每日任務每天換日重置，成就任務只能領一次。'}</p></div>`}
     ${tabs}${cards || '<p class="note">這層樓的 NPC 還在路上。</p>'}
+    ${focusN ? '<button class="btn ghost sm" id="qAll" style="width:100%">看這層全部任務</button>' : ''}
     <p class="note">薪水是站內虛擬點數，可在服裝店兌換裝扮；其他兌換內容即將公開。不能換現金。</p>`;
   el.querySelectorAll('[data-qf]').forEach(b => b.onclick = () => { questTab = b.dataset.qf; renderQuests(el); });
+  const qa = el.querySelector('#qAll'); qa && (qa.onclick = () => { questFocus = null; questTab = f; $('#panelTitle').textContent = 'NPC 任務'; $('#panelKicker').textContent = FLOORS[f].name; renderQuests(el); });
   el.querySelectorAll('[data-claim]').forEach(b => b.onclick = () => {
     if (b.disabled) return;
     if (blockGmProgress('GM 模式只能預覽任務，不會發薪水')) return;
@@ -535,7 +551,7 @@ function renderBackup(el) {
   el.querySelector('#bakNo').onclick = () => { pending = null; ask.hidden = true; say('已取消還原', true); };
 }
 function doRestore(data, say) {
-  applySnapshot(S, data); fixQuests(); save(); markBakDone(); refreshHud(); buildDock(); wearAll();
+  applySnapshot(S, data); fixQuests(); S.fin = normFin(S.fin); save(); markBakDone(); refreshHud(); buildDock(); wearAll();
   say('進度已還原', true); toast('進度已還原');
 }
 function maybeRemind() {
@@ -651,6 +667,7 @@ const RENDER = {
   },
   shop(el) { renderShop(el); },
   quests(el) { renderQuests(el); },
+  ...RENDER_FIN,
   backup(el) { renderBackup(el); },
   kline(el) { klineGame(el); },
   fakeout(el) { fakeoutGame(el); },
@@ -1090,6 +1107,7 @@ function setModeLabel() {
 const hooks = {
   go: id => world && world.go(id),
   open: id => openPanel(id),
+  openNpc: id => openPanel('npc:' + id),
   floor: () => floor,
   outfit: () => equipped(),
   nearZone(z) {
@@ -1200,6 +1218,7 @@ function logoutGm() {
   writeGm(null);
   try { S = Object.assign(fresh(), JSON.parse(localStorage.getItem(KEY) || '{}')); } catch {}
   fixQuests();
+  S.fin = normFin(S.fin);
   syncGmUi();
   toast('已離開 GM 模式');
   if (here !== 'lobby' && !floorOpen(here)) {
@@ -1247,6 +1266,8 @@ function maybeGmGate() {
   if (q.get('gm') === '1' && !isGM()) showGmPrompt();
 }
 
+initFin({ get S() { return S; }, save, addXP, toast, blip, isGM, block: blockGmProgress, esc, refreshHud, PUBLIC_REPORTS,
+  rankName: () => RANKS[rankIndex()].name, insider: () => insiderLinks });
 window.__niuma = { get world() { return world; }, get floor() { return floor; }, openPanel, closePanel, ride, get ready() { return ready; }, SHOP, encodeBackup, decodeBackup, applySnapshot, maybeRemind, get isGM() { return isGM(); } };
 ready = (async () => { await restoreInsider(); await switchTo(startFlat ? 'flat' : '3d', false); maybeGmGate(); })();
 if (qs.has('lobby')) skip();
