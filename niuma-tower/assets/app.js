@@ -3,6 +3,7 @@ import { applyBrand, STAR_LOGO_UI, TOWER_NAME, EVENT_NAME, isCyber } from './bra
 import { encodeBackup, decodeBackup, applySnapshot, hasProgress } from './backup.js';
 import { GM_HASH } from './gm.js';
 import { SHOP, TABS, itemById, itemsInTab, cssHex } from './shop-catalog.js';
+import { NPCS, npcsOn, questById, normQuests, pruneQuests, evalQuest, markClaimed, rewardText } from './quests.js';
 export { SHOP };
 
 /* ---------- 基本資料 ---------- */
@@ -118,6 +119,7 @@ ICON.cta5 = ICON.guide;
 ICON.shop = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 8 5 21h14L18 8M4 8h16"/><path d="M9 8a3 3 0 0 1 6 0" stroke="#ffc85a"/><path d="M9 13h3"/></svg>';
 ICON.backup = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5" stroke="#3ef2ff"/></svg>';
 Object.keys(FLOORS).forEach(f => ICON['lift_' + f] = ICON.elevator);
+ICON.quests = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M17 4v6M17 13v.5" stroke="#ffc85a" stroke-width="2.2"/></svg>';
 
 
 /* ---------- GM 模式（?gm=1 + 通行證，進度與正式資料分開） ---------- */
@@ -201,10 +203,12 @@ const dstr = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate()
 const today = () => dstr(new Date());
 const yesterday = () => { const d = new Date(); d.setDate(d.getDate() - 1); return dstr(d); };
 const hash = s => { let h = 2166136261; for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return h >>> 0; };
-const fresh = () => ({ coins: 0, xp: 0, streak: 0, last: null, days: [], guesses: {}, fortune: null, reviews: {}, pref: {}, week: {}, claims: {}, vid: null, games: {}, shop: { owned: [], eq: {} }, bak: { seen: false, last: null, snooze: null, remindDays: 0 } });
+const fresh = () => ({ coins: 0, xp: 0, streak: 0, last: null, days: [], guesses: {}, fortune: null, reviews: {}, pref: {}, week: {}, claims: {}, vid: null, games: {}, shop: { owned: [], eq: {} }, bak: { seen: false, last: null, snooze: null, remindDays: 0 }, quests: normQuests() });
 let S; try { S = Object.assign(fresh(), JSON.parse(localStorage.getItem(KEY) || '{}')); } catch { S = fresh(); }
 const save = () => { if (isGM()) return; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
 if (!S.vid) { S.vid = String(100000 + Math.floor(Math.random() * 900000)); save(); }
+const fixQuests = () => { S.quests = pruneQuests(normQuests(S.quests), today()); return S.quests; };
+fixQuests();
 const QS = new URLSearchParams(location.search);
 const realDays = () => new Set(S.days).size;
 const effDays = () => Math.max(realDays(), QS.has('days') ? (+QS.get('days') || 0) : 0); // 隱藏測試參數 ?days=7
@@ -244,7 +248,23 @@ const todos = () => ({
   guess: MARKETS.some(m => !(S.guesses[today()] || {})[m.id]),
   fortune: !(S.fortune && S.fortune.date === today()),
   review: !S.reviews[today()],
+  quests: questReadyCount(floor) > 0,
 });
+
+/* ---------- 每層樓 NPC 任務 ---------- */
+const paidItems = () => shopState().owned.filter(id => { const it = itemById(id); return it && it.price > 0; }).length;
+const questCtx = () => ({ S, today: today(), days: realDays(), streak: streakNow(), rank: rankIndex(), paidItems: paidItems() });
+function questReadyCount(f) {
+  if (isGM() || !f) return 0;
+  const c = questCtx();
+  return npcsOn(f).filter(n => evalQuest(n.quest, c).ready).length;
+}
+// 小遊戲當日紀錄（每日任務用）
+function questLog(key, val, mode = 'max') {
+  const q = fixQuests(), d = q.day[today()] || (q.day[today()] = {});
+  d[key] = mode === 'add' ? (d[key] | 0) + val : Math.max(d[key] | 0, val);
+}
+const claiming = new Set();
 let floor = 'lobby';
 export const zonesOn = f => ZONES.filter(z => z.floor === f);
 
@@ -292,8 +312,9 @@ function coinBurst(from) {
   }
 }
 function buildDock() {
-  $('#dockTrack').innerHTML = zonesOn(floor).map(z => `<button data-zone="${z.id}">${ICON[z.id]}<span>${z.name}</span></button>`).join('');
-  $('#dockTrack').querySelectorAll('button').forEach(b => b.onclick = () => world && world.go(b.dataset.zone));
+  $('#dockTrack').innerHTML = `<button data-zone="quests">${ICON.quests}<span>任務</span></button>` + zonesOn(floor).map(z => `<button data-zone="${z.id}">${ICON[z.id]}<span>${z.name}</span></button>`).join('');
+  $('#dockTrack').querySelectorAll('button').forEach(b => b.onclick = () => b.dataset.zone === 'quests' ? openPanel('quests') : world && world.go(b.dataset.zone));
+  world && world.setNpcs && world.setNpcs(floor, npcsOn(floor)); // 3D NPC 模型掛點（之後交給 UI BOT）
   $('#hudFloor').textContent = FLOORS[floor].name;
   document.body.dataset.floor = floor;
   refreshHud();
@@ -326,7 +347,8 @@ function addXP(n, coins = 0, el) {
 /* ---------- 面板 ---------- */
 const panel = $('#panel');
 export function openPanel(id) {
-  const z = ZONES.find(z => z.id === id);
+  const z = ZONES.find(z => z.id === id) || (id === 'quests' ? { id, name: 'NPC 任務', kicker: FLOORS[floor].name } : null);
+  if (!z) return;
   $('#panelKicker').textContent = z.kicker; $('#panelTitle').textContent = z.name;
   RENDER[z.type || id]($('#panelBody'));
   panel.classList.add('open'); panel.setAttribute('aria-hidden', 'false');
@@ -356,6 +378,53 @@ const ladderHTML = () => {
     <p class="note">升職方式：上班打卡 +10 起（連續越久越多）、晨會猜盤 +3、抽心法籤 +2、寫下班複盤 +5。猜中加分與各職級福利即將公開。</p>`;
 };
 
+
+let questTab = null;
+function renderQuests(el) {
+  const gmv = isGM();
+  const order = FLOOR_ORDER.slice().reverse();
+  if (!gmv || !questTab || !FLOORS[questTab]) questTab = floor;
+  const f = questTab, c = questCtx(), list = npcsOn(f);
+  const tabs = gmv ? `<div class="shop-tabs" role="tablist">${order.map(id => `<button type="button" class="shop-tab${id === f ? ' on' : ''}" data-qf="${id}">${FLOORS[id].num}F</button>`).join('')}</div>` : '';
+  const cards = list.map(n => {
+    const q = n.quest, r = evalQuest(q, c), daily = q.kind === 'daily';
+    const pct = Math.round((r.prog / r.target) * 100);
+    const btn = r.got ? `<button class="btn ghost sm" disabled>${daily ? '今天已領' : '已領取'}</button>`
+      : r.ready ? `<button class="btn primary sm" data-claim="${q.id}">領取</button>`
+      : `<button class="btn ghost sm" disabled>進行中</button>`;
+    return `<div class="card" data-npc="${n.id}">
+      <div class="row" style="align-items:flex-start;flex-wrap:nowrap">
+        <div aria-hidden="true" style="flex:0 0 44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:1.6rem;background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px var(--line)">${n.avatar}</div>
+        <div style="flex:1;min-width:0"><div class="row between"><b>${n.name}</b><span class="tag${daily ? ' cyan' : ''}">${daily ? '每日任務' : '成就任務'}</span></div>
+        <p class="note" style="margin:4px 0 0">「${n.line}」</p></div></div>
+      <div class="row between" style="margin:10px 0 6px;flex-wrap:nowrap"><span>${q.title}</span><b style="color:var(--gold);white-space:nowrap">${r.prog}/${r.target}</b></div>
+      <div class="bar"><i style="width:${pct}%"></i></div>
+      <div class="row between" style="margin-top:10px"><span class="note">獎勵：${rewardText(q.reward)}</span>${btn}</div></div>`;
+  }).join('');
+  el.innerHTML = `<div class="card"><div class="row between"><b>${FLOORS[f].name}</b><span class="tag">${gmv ? 'GM 預覽' : '站內薪水'}</span></div>
+    <p class="note" style="margin:8px 0 0">${gmv ? 'GM 模式可以預覽每一層的任務，不會記錄進度、也不會發薪水。' : '找這層樓的 NPC 接任務，完成就能領站內薪水。每日任務每天換日重置，成就任務只能領一次。'}</p></div>
+    ${tabs}${cards || '<p class="note">這層樓的 NPC 還在路上。</p>'}
+    <p class="note">薪水是站內虛擬點數，可在服裝店兌換裝扮；其他兌換內容即將公開。不能換現金。</p>`;
+  el.querySelectorAll('[data-qf]').forEach(b => b.onclick = () => { questTab = b.dataset.qf; renderQuests(el); });
+  el.querySelectorAll('[data-claim]').forEach(b => b.onclick = () => {
+    if (b.disabled) return;
+    if (blockGmProgress('GM 模式只能預覽任務，不會發薪水')) return;
+    const q = questById(b.dataset.claim);
+    if (!q || claiming.has(q.id)) return;
+    b.disabled = true; claiming.add(q.id);
+    try {
+      const qs = fixQuests(), r = evalQuest(q, questCtx());
+      if (!r.ready) { toast(r.got ? '這個任務已經領過了' : '任務還沒完成'); return; }
+      markClaimed(qs, q, today());
+      const rw = q.reward || {};
+      addXP(rw.xp | 0, rw.coins | 0, b); // 內含 save()
+      blip(1046);
+      toast(`任務完成！${rewardText(rw)}`);
+    } finally {
+      setTimeout(() => { claiming.delete(q.id); if (el.isConnected && panel.classList.contains('open')) renderQuests(el); }, 600);
+    }
+  });
+}
 
 function renderShop(el) {
   const st = shopView();
@@ -466,7 +535,7 @@ function renderBackup(el) {
   el.querySelector('#bakNo').onclick = () => { pending = null; ask.hidden = true; say('已取消還原', true); };
 }
 function doRestore(data, say) {
-  applySnapshot(S, data); save(); markBakDone(); refreshHud(); buildDock(); wearAll();
+  applySnapshot(S, data); fixQuests(); save(); markBakDone(); refreshHud(); buildDock(); wearAll();
   say('進度已還原', true); toast('進度已還原');
 }
 function maybeRemind() {
@@ -581,6 +650,7 @@ const RENDER = {
     el.querySelector('#toCta5').onclick = () => world ? world.go('cta5') : openPanel('cta5');
   },
   shop(el) { renderShop(el); },
+  quests(el) { renderQuests(el); },
   backup(el) { renderBackup(el); },
   kline(el) { klineGame(el); },
   fakeout(el) { fakeoutGame(el); },
@@ -789,7 +859,7 @@ function klineGame(el) {
     el.querySelector('#kscore').textContent = `第 ${Math.min(round + 1, ROUNDS)}／${ROUNDS} 題・答對 ${score}`;
     setTimeout(() => {
       if (round < ROUNDS) { el.querySelectorAll('[data-k]').forEach(x => x.disabled = false); draw(); el.querySelector('#kres').innerHTML = ''; return; }
-      const gain = score * 10; addXP(score, gain); S.games = S.games || {}; const kg = S.games.kline = S.games.kline || { plays: 0, best: 0, total: 0 }; kg.plays++; kg.total += score; kg.best = Math.max(kg.best, score); save();
+      const gain = score * 10; questLog('klinePlays', 1, 'add'); questLog('klineBest', score); addXP(score, gain); S.games = S.games || {}; const kg = S.games.kline = S.games.kline || { plays: 0, best: 0, total: 0 }; kg.plays++; kg.total += score; kg.best = Math.max(kg.best, score); save();
       el.querySelector('#kres').innerHTML = `<div class="card"><b>本局答對 ${score}／${ROUNDS}</b>　薪水 +${gain}<div class="note">隨機產生的 K 線本來就猜不準，這個遊戲練的是看圖習慣，不是預測。</div></div>${tipCard()}<button class="btn primary" id="again" style="width:100%">再玩一局</button>`;
       el.querySelector('#again').onclick = () => klineGame(el);
     }, 900);
@@ -834,7 +904,7 @@ function fakeoutGame(el) {
   function finish() {
     phase = 'done'; btn.textContent = '再玩一局';
     const avg = rts.length ? Math.round(rts.reduce((a, b) => a + b, 0) / rts.length) : 0, gain = dodged * 8;
-    addXP(dodged, gain); S.games = S.games || {}; const fg = S.games.fakeout = S.games.fakeout || { plays: 0, best: 0, dodged: 0 }; fg.plays++; fg.dodged += dodged; fg.best = Math.max(fg.best, dodged); save(); msg.textContent = '本局結束';
+    questLog('fakeBest', dodged); addXP(dodged, gain); S.games = S.games || {}; const fg = S.games.fakeout = S.games.fakeout || { plays: 0, best: 0, dodged: 0 }; fg.plays++; fg.dodged += dodged; fg.best = Math.max(fg.best, dodged); save(); msg.textContent = '本局結束';
     el.querySelector('#fres').innerHTML = `<div class="card"><b>躲過 ${dodged}・被騙 ${fooled}・誤躲 ${wrong}</b>${avg ? `　平均反應 ${avg} 毫秒` : ''}<div class="note">薪水 +${gain}。遊戲是隨機產生的，練的是「等收盤再判斷」的習慣。</div></div>${tipCard()}`;
   }
 }
@@ -1129,6 +1199,7 @@ function logoutGm() {
   const here = floor;
   writeGm(null);
   try { S = Object.assign(fresh(), JSON.parse(localStorage.getItem(KEY) || '{}')); } catch {}
+  fixQuests();
   syncGmUi();
   toast('已離開 GM 模式');
   if (here !== 'lobby' && !floorOpen(here)) {
