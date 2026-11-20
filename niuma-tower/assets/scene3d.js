@@ -1161,6 +1161,182 @@ export async function create3D(canvas, hooks) {
   const insDecor = [];
   { const t = textTex(['68', '自己人專區'], { w: 512, h: 512, size: 260, color: '#ffd68a' }); plane(1.7, 1.7, t, -7.2, 3.6, -D + .06, I); }
 
+
+  /* ---------- 任務 NPC（資料來自 quests.js，由 app.js 呼叫 api.setNpcs(floor, npcs)） ---------- */
+  // 站位避開各區域物件、電梯、走道與出電梯位置，都在預設鏡頭前方，面向大廳中央
+  const NPC_POS = [[-3.4, -10.0], [3.8, -11.2], [-2.8, -13.8]];
+  // 馬的毛色（[毛色, 鬃毛]）：女性偏柔和、男性偏深
+  const HORSE_F = [[0xd9b06a, 0xf6e7c1], [0xe9e2d8, 0xb9a9c9], [0xa85a2c, 0xf0d9a8], [0xc9a27a, 0x5a3420], [0x8a5236, 0x2b1a12]];
+  const HORSE_M = [[0x6b3a1e, 0x1a1210], [0x2e2724, 0x0e0c0b], [0xb08850, 0x3a2a18], [0x8b4a24, 0x4a2412], [0x8f8f94, 0x3a3a3f]];
+  // 服裝：top 上衣、sleeve 袖子、bottom 下身款式（pants/skirt/pencil/dress/shorts/robe）、bc 下身顏色、shoe 鞋、hair 女性髮型、extra 配件
+  const NPC_OUTFIT = {
+    reception: { top: 0x1a2744, bottom: 'pencil', bc: 0x1a2744, shoe: 0x111111, hair: 'bun', extra: ['blouseV', 'scarf', 'badge'] },
+    apron: { top: 0xe8d6c2, bottom: 'skirt', bc: 0x7a4a5a, shoe: 0x5a3a2a, hair: 'bun', extra: ['apron'] },
+    office: { top: 0xf4eef6, bottom: 'pencil', bc: 0x2a2d3e, shoe: 0x2a2d3e, hair: 'long', extra: ['collar', 'necklace'] },
+    tracksuit: { top: 0xd9466f, bottom: 'pants', bc: 0xd9466f, shoe: 0xf2f5fb, hair: 'ponytail', extra: ['stripes', 'whistle'] },
+    curator: { top: 0x15151c, bottom: 'pencil', bc: 0x15151c, shoe: 0x111111, hair: 'long', extra: ['blouseV', 'pin', 'gloves'] },
+    skirtsuit: { top: 0x5a2338, bottom: 'pencil', bc: 0x5a2338, shoe: 0x2a1018, hair: 'long', extra: ['blouseV', 'pearls'] },
+    blouse: { top: 0xbfd8ff, bottom: 'skirt', bc: 0x1f2a48, shoe: 0x1f2a48, hair: 'bob', extra: ['collar', 'glassesThin'] },
+    hanfu: { top: 0x2f6f6a, bottom: 'dress', bc: 0x2f6f6a, shoe: 0x1a1a1a, hair: 'bun', extra: ['crossCollar', 'sash'] },
+    traditional: { top: 0x5a2f1e, bottom: 'robe', bc: 0x5a2f1e, shoe: 0x111111, coat: [0x9a948c, 0xf2f0ea], extra: ['frogs', 'skullcap', 'glassesRound', 'beard'] },
+    tailor: { top: 0xf2f5fb, bottom: 'pants', bc: 0x3b3f4a, shoe: 0x3a2414, extra: ['vest', 'tape', 'pincushion'] },
+    suit: { top: 0x1a2744, bottom: 'pants', bc: 0x1a2744, shoe: 0x111111, extra: ['shirtTie', 'pocket'] },
+    polo: { top: 0x0f3b3a, bottom: 'pants', bc: 0x9c8a6a, shoe: 0x3a2414, extra: ['collar', 'candles', 'whistle'] },
+    sport: { top: 0xc0392b, sleeve: 'bare', bottom: 'shorts', bc: 0x15151c, shoe: 0xf2f5fb, big: true, extra: ['headband'] },
+    vest: { top: 0xcfe3f7, bottom: 'pants', bc: 0x3a3a44, shoe: 0x2a1a10, extra: ['vest', 'shirtTie', 'glassesThin', 'paper'] },
+    labcoat: { top: 0xf4f6f8, bottom: 'pants', bc: 0x2a2d3e, shoe: 0x111111, extra: ['shirtTie', 'labcoat', 'glassesThin', 'pen'] },
+    hoodie: { top: 0x2a2f45, bottom: 'pants', bc: 0x2c4a7a, shoe: 0xf2f5fb, extra: ['hood', 'strings', 'headphones'] },
+    robe: { top: 0x1c1c28, bottom: 'robe', bc: 0x1c1c28, shoe: 0x111111, extra: ['crossCollar', 'goldTrim', 'sashRed'] },
+    gi: { top: 0xf4f2ec, bottom: 'pants', bc: 0xf4f2ec, shoe: 0x1a1a1a, extra: ['crossCollar', 'blackBelt'] },
+  };
+  const NPC_TIES = [C.gold, C.cyan, C.up];
+  const npcHits = [], npcMap = {}, npcData = {};
+  const npcHash = t => { let h = 2166136261; for (const c of t) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return h >>> 0; };
+  const markTex = canvasTex(128, 128, g => {
+    const r = g.createRadialGradient(64, 64, 10, 64, 64, 62); r.addColorStop(0, 'rgba(255,200,90,.95)'); r.addColorStop(.62, 'rgba(255,170,40,.9)'); r.addColorStop(1, 'rgba(255,170,40,0)');
+    g.fillStyle = r; g.beginPath(); g.arc(64, 64, 62, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#2a1700'; g.font = `900 84px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('!', 64, 70);
+  });
+  const markMat = keep(new THREE.SpriteMaterial({ map: markTex, transparent: true, depthWrite: false, depthTest: false }));
+  const lighten = (hex, k) => new THREE.Color(hex).lerp(new THREE.Color(0xf4e6d4), k).getHex();
+  // 任務 NPC＝穿衣服的馬（和玩家的牛同一套積木風格）：長臉長嘴、直立尖耳、鬃毛、尾巴、沒有角
+  function buildNpc(n, i, parent) {
+    const h = npcHash(n.id), fem = n.gender === 'f';
+    const O = NPC_OUTFIT[n.outfit] || NPC_OUTFIT[fem ? 'office' : 'suit'];
+    const pair = O.coat || (fem ? HORSE_F : HORSE_M)[h % 5];
+    const coatM = std(pair[0], { roughness: .6, metalness: 0 }), maneM = std(pair[1], { roughness: .55, metalness: .05 });
+    const muzM = std(lighten(pair[0], .35), { roughness: .6, metalness: 0 });
+    const topM = std(O.top, { roughness: .55, metalness: .08 }), botM = std(O.bc, { roughness: .6, metalness: .05 }), shoeM = std(O.shoe, { roughness: .35, metalness: .2 });
+    const whiteM = std(0xf7f7f4, { roughness: .5, metalness: 0 }), goldM2 = std(C.gold, { metalness: .85, roughness: .25 });
+    const has = k => O.extra && O.extra.includes(k);
+    const root = new THREE.Group(); const [x, z] = NPC_POS[i % NPC_POS.length];
+    root.position.set(x, 0, z); root.rotation.y = Math.atan2(HUB.x - x, HUB.z - z); parent.add(root);
+    const bd = new THREE.Group(); root.add(bd); if (O.big) bd.scale.set(1.12, 1, 1.08);
+    const tw = fem ? .66 : .74; // 女性身形較窄
+    // 腿與鞋
+    const lowLeg = O.bottom === 'skirt' || O.bottom === 'pencil' || O.bottom === 'shorts';
+    [-1, 1].forEach(sg => {
+      const lg = new THREE.Group(); lg.position.set(sg * (fem ? .13 : .17), .78, 0); bd.add(lg);
+      if (lowLeg) {
+        if (O.bottom === 'shorts') box(.25, .3, .27, botM, 0, -.15, 0, lg);
+        box(fem ? .17 : .21, .7, fem ? .19 : .22, coatM, 0, -.35, 0, lg);
+      } else box(fem ? .2 : .24, .7, fem ? .22 : .26, botM, 0, -.35, 0, lg);
+      if (fem && lowLeg) { box(.2, .09, .3, shoeM, 0, -.72, .04, lg); box(.06, .12, .06, shoeM, 0, -.76, -.09, lg); }
+      else box(.27, .12, .38, shoeM, 0, -.72, .05, lg);
+      if (has('stripes')) box(.03, .7, .03, whiteM, sg * (fem ? .1 : .12), -.35, 0, lg);
+    });
+    // 下身：裙子／長袍
+    if (O.bottom === 'skirt') cyl(tw * .5, tw * .64, .5, 14, botM, 0, .6, 0, bd);
+    if (O.bottom === 'pencil') cyl(tw * .52, tw * .5, .5, 14, botM, 0, .6, 0, bd);
+    if (O.bottom === 'dress') cyl(tw * .52, tw * .78, .8, 16, botM, 0, .46, 0, bd);
+    if (O.bottom === 'robe') cyl(tw * .55, tw * .66, .66, 12, botM, 0, .52, 0, bd);
+    // 上身
+    rbox(tw, .78, .44, .14, topM, 0, 1.17, 0, bd);
+    if (has('blouseV')) { const v = box(.17, .17, .03, whiteM, 0, 1.46, .215, bd); v.rotation.z = Math.PI / 4; }
+    if (has('shirtTie')) { box(.26, .5, .03, whiteM, 0, 1.27, .215, bd); box(.1, .44, .04, glow(NPC_TIES[h % 3], .9), 0, 1.2, .235, bd); }
+    if (has('collar')) [-1, 1].forEach(sg => { const c = box(.16, .08, .05, has('candles') ? topM : whiteM, sg * .1, 1.53, .2, bd); c.rotation.z = sg * -.35; });
+    if (has('scarf')) { const s1 = box(.28, .14, .06, glow(C.gold, .8), 0, 1.52, .2, bd); s1.rotation.z = .2; box(.08, .2, .04, glow(C.gold, .8), .08, 1.38, .23, bd); }
+    if (has('badge')) box(.13, .07, .03, cyanGlow, -.2, 1.34, .225, bd);
+    if (has('pin')) box(.07, .07, .03, goldGlow, -.2, 1.36, .225, bd);
+    if (has('pearls')) for (let k = 0; k < 7; k++) { const a = (k / 6) * Math.PI; const b = new THREE.Mesh(keep(new THREE.SphereGeometry(.03, 6, 4)), whiteM); b.position.set(Math.cos(a) * .15, 1.5 - Math.sin(a) * .1, .22); bd.add(b); }
+    if (has('necklace')) { const r = cyl(.17, .17, .02, 16, goldM2, 0, 1.52, .05, bd); r.rotation.x = Math.PI / 2 - .3; }
+    if (has('apron')) { box(tw * .78, .62, .03, whiteM, 0, .95, .23, bd); box(.3, .3, .03, whiteM, 0, 1.32, .225, bd); box(.12, .06, .03, glow(C.gold, .6), 0, .98, .25, bd); }
+    if (has('vest')) { box(tw + .02, .5, .46, std(n.outfit === 'tailor' ? 0x3b2a18 : 0x3a3f5a, { roughness: .6 }), 0, 1.06, 0, bd); [1.16, 1.02, .9].forEach(y => box(.04, .04, .02, goldM2, 0, y, .24, bd)); }
+    if (has('tape')) [-1, 1].forEach(sg => { box(.06, .7, .02, std(0xffd84a, { roughness: .5 }), sg * .14, 1.2, .245, bd); for (let k = 0; k < 6; k++) box(.03, .01, .01, black, sg * .13, .9 + k * .11, .26, bd); });
+    if (has('labcoat')) { box(tw + .06, .45, .48, whiteM, 0, .68, 0, bd); [-1, 1].forEach(sg => box(.22, .74, .03, whiteM, sg * .26, 1.17, .235, bd)); }
+    if (has('pen')) box(.03, .14, .03, cyanGlow, -.22, 1.34, .24, bd);
+    if (has('candles')) [[-.08, 1, C.up], [0, .8, C.down], [.08, 1.2, C.up]].forEach(([cx, hh, c]) => box(.05, .14 * hh, .02, glow(c, 1), cx + .14, 1.3, .225, bd));
+    if (has('whistle')) { box(.01, .3, .01, black, 0, 1.4, .23, bd); cyl(.035, .035, .1, 8, goldM2, 0, 1.24, .25, bd).rotation.z = Math.PI / 2; }
+    if (has('hood')) rbox(.6, .2, .3, .08, topM, 0, 1.56, -.18, bd);
+    if (has('strings')) [-1, 1].forEach(sg => box(.02, .26, .02, cyanGlow, sg * .08, 1.38, .23, bd));
+    if (has('headphones')) { const hp = new THREE.Mesh(keep(new THREE.TorusGeometry(.2, .035, 6, 16, Math.PI)), std(0x111118, { metalness: .6, roughness: .3 })); hp.position.set(0, 1.56, .05); hp.rotation.x = Math.PI / 2 + .3; bd.add(hp); }
+    if (has('crossCollar')) { const lap = n.outfit === 'gi' ? whiteM : std(n.outfit === 'hanfu' ? 0xf0e6cc : 0x2c2c3c); [-1, 1].forEach(sg => { const l = box(.1, .5, .03, lap, sg * .08, 1.3, .225, bd); l.rotation.z = sg * -.55; }); }
+    if (has('goldTrim')) { box(.04, .74, .02, goldM2, .05, 1.17, .23, bd); }
+    if (has('frogs')) [1.4, 1.25, 1.1, .95].forEach(y => box(.1, .03, .02, goldM2, .05, y, .225, bd));
+    if (has('sash')) box(tw + .02, .1, .46, glow(C.gold, .7), 0, .92, 0, bd);
+    if (has('sashRed')) box(tw + .02, .1, .46, std(0x9b1c24, { roughness: .5 }), 0, .9, 0, bd);
+    if (has('blackBelt')) { box(tw + .02, .08, .46, black, 0, .86, 0, bd); box(.08, .2, .03, black, .1, .76, .24, bd); }
+    // 手臂
+    const armsN = [-1, 1].map(sg => {
+      const ag = new THREE.Group(); ag.position.set(sg * (tw / 2 + .1), 1.5, 0); bd.add(ag);
+      box(fem ? .16 : .19, .62, fem ? .19 : .22, O.sleeve === 'bare' ? coatM : (has('labcoat') ? whiteM : topM), 0, -.3, 0, ag);
+      if (has('stripes')) box(.03, .62, .03, whiteM, sg * .09, -.3, 0, ag);
+      const hn = new THREE.Mesh(keep(new THREE.SphereGeometry(.1, 8, 6)), has('gloves') ? whiteM : coatM); hn.position.y = -.66; ag.add(hn);
+      return ag;
+    });
+    if (has('pincushion')) { const pc = new THREE.Mesh(keep(new THREE.SphereGeometry(.08, 8, 6)), std(0xd03a3a)); pc.position.set(0, -.5, .1); armsN[0].add(pc); }
+    if (has('paper')) { const pp = box(.1, .32, .08, whiteM, 0, -.62, .14, armsN[1]); pp.rotation.x = .3; }
+    if (n.pose === 'desk') { armsN[1].rotation.x = -.9; const tab = box(.24, .17, .03, cyanGlow, 0, -.62, .14, armsN[1]); tab.rotation.x = 1.1; }
+    // 頭：馬臉（長臉＋往前伸的長嘴）
+    const hd = new THREE.Group(); hd.position.y = 1.98; bd.add(hd);
+    box(.3, .34, .3, coatM, 0, -.26, -.1, hd); // 脖子
+    rbox(.52, .56, .54, .16, coatM, 0, .1, -.06, hd); // 頭頂
+    const snout = new THREE.Group(); snout.position.set(0, -.04, .16); snout.rotation.x = .32; hd.add(snout); // 往前下方伸的長嘴
+    rbox(.4, .34, .5, .12, coatM, 0, 0, .16, snout);
+    rbox(.36, .3, .26, .1, muzM, 0, -.03, .4, snout);
+    if (h % 3 === 0) box(.1, .5, .02, whiteM, 0, .14, .21, hd); // 額頭白斑
+    [-1, 1].forEach(sg => {
+      box(.06, .05, .02, black, sg * .09, -.02, .535, snout); // 鼻孔
+      const e = new THREE.Mesh(keep(new THREE.SphereGeometry(fem ? .068 : .058, 8, 6)), black); e.position.set(sg * .25, .16, .1); hd.add(e);
+      const hl = new THREE.Mesh(keep(new THREE.SphereGeometry(.02, 6, 4)), glow(0xffffff)); hl.position.set(sg * .27, .19, .15); hd.add(hl);
+      const ear = cyl(.01, .085, .3, 4, coatM, sg * .17, .5, -.14, hd); ear.rotation.z = sg * -.15;
+      const inEar = cyl(.005, .048, .2, 4, std(0xe8a8a8, { roughness: .7 }), sg * .17, .48, -.1, hd); inEar.rotation.z = sg * -.15;
+      if (fem) [0, 1, 2].forEach(k => { const l = box(.016, .07, .016, black, sg * (.27 + k * .025), .24 + k * .005, .1 - k * .02, hd); l.rotation.z = sg * -(.35 + k * .3); }); // 睫毛
+      else box(.11, .025, .03, maneM, sg * .23, .27, .12, hd); // 眉毛
+    });
+    box(.22, .015, .02, std(0x2a1a12), 0, -.17, .5, snout); // 嘴
+    // 鬃毛
+    if (fem) {
+      box(.26, .14, .3, maneM, 0, .38, .22, hd); // 瀏海
+      const side = O.hair === 'bob' ? .4 : O.hair === 'long' ? .7 : .3;
+      [-1, 1].forEach(sg => box(.1, side, .24, maneM, sg * .3, .2 - side / 2, -.08, hd));
+      box(.5, .2, .42, maneM, 0, .38, -.12, hd);
+      if (O.hair === 'long') box(.5, .9, .14, maneM, 0, -.12, -.36, hd);
+      if (O.hair === 'bob') box(.52, .4, .14, maneM, 0, .1, -.34, hd);
+      if (O.hair === 'bun') { const bn = new THREE.Mesh(keep(new THREE.SphereGeometry(.17, 10, 8)), maneM); bn.position.set(0, .38, -.38); hd.add(bn); box(.46, .3, .12, maneM, 0, .2, -.33, hd); }
+      if (O.hair === 'ponytail') { box(.46, .3, .12, maneM, 0, .2, -.33, hd); const pt = box(.14, .5, .14, maneM, 0, .05, -.5, hd); pt.rotation.x = .5; box(.16, .06, .16, glow(C.cyan, .8), 0, .3, -.42, hd); }
+      const clip = box(.12, .06, .04, glow(n.outfit === 'hanfu' ? C.gold : 0xff8fb8, .9), .2, .44, .16, hd); clip.rotation.z = -.4; // 髮夾
+      [-1, 1].forEach(sg => { const er = new THREE.Mesh(keep(new THREE.SphereGeometry(.035, 8, 6)), goldM2); er.position.set(sg * .31, -.1, -.02); hd.add(er); }); // 耳環
+    } else if (!has('skullcap')) {
+      for (let k = 0; k < 5; k++) box(.12, .14, .14, maneM, 0, .38 - k * .1, .18 - k * .14, hd); // 短鬃
+      box(.12, .4, .12, maneM, 0, -.22, -.3, hd);
+    } else box(.12, .4, .12, maneM, 0, -.12, -.32, hd);
+    if (has('skullcap')) { cyl(.31, .32, .14, 14, black, 0, .38, -.04, hd); const bt = new THREE.Mesh(keep(new THREE.SphereGeometry(.04, 6, 4)), std(0x9b1c24)); bt.position.set(0, .47, -.04); hd.add(bt); }
+    if (has('beard')) box(.2, .14, .1, maneM, 0, -.2, .48, snout);
+    if (has('headband')) box(.62, .08, .62, std(0xf2f5fb, { roughness: .7 }), 0, .26, -.04, hd);
+    if (has('glassesThin') || has('glassesRound')) { const gm = std(0x1a1a22, { metalness: .9, roughness: .2 }); box(.36, .02, .02, gm, 0, .17, .24, hd); [-1, 1].forEach(sg => { const r = new THREE.Mesh(keep(new THREE.TorusGeometry(.075, .012, 6, 14)), gm); r.position.set(sg * .2, .16, .22); hd.add(r); }); }
+    // 尾巴
+    const tail = new THREE.Group(); tail.position.set(0, .9, -.24); bd.add(tail);
+    const tl = box(fem ? .14 : .12, fem ? .72 : .6, .12, maneM, 0, -.32, 0, tail); tail.rotation.x = .45;
+    const sh = new THREE.Mesh(shadow.geometry, shadow.material); sh.rotation.x = -Math.PI / 2; sh.position.y = .05; root.add(sh);
+    const ring = new THREE.Mesh(keep(new THREE.RingGeometry(.5, .6, 36)), keep(new THREE.MeshBasicMaterial({ color: C.gold, transparent: true, opacity: .35, depthWrite: false })));
+    ring.rotation.x = -Math.PI / 2; ring.position.y = .06; root.add(ring);
+    const mark = new THREE.Sprite(markMat); mark.scale.set(.55, .55, 1); mark.position.y = 2.85; mark.visible = false; root.add(mark);
+    const hit = new THREE.Mesh(boxGeo, hitMat); hit.scale.set(1.1, 2.7, 1.1); hit.position.y = 1.35; hit.userData.npc = n.id; hit.userData.fg = parent; root.add(hit); npcHits.push(hit);
+    const ph = (h % 628) / 100;
+    return { id: n.id, floor: null, root, bd, hd, tail, mark, ring, ph, data: n };
+  }
+  function npcSpot(o) {
+    const p = o.root.position, f = new THREE.Vector3(HUB.x - p.x, 0, HUB.z - p.z).normalize();
+    return { spot: p.clone().addScaledVector(f, 1.3), f };
+  }
+  function npcTick(dt) {
+    (npcData[floorNow] || []).forEach(d => {
+      const o = npcMap[d.id]; if (!o) return;
+      o.bd.position.y = Math.sin(tAll * 2 + o.ph) * .015; o.hd.rotation.y = Math.sin(tAll * .7 + o.ph) * .18; if (o.tail) o.tail.rotation.z = Math.sin(tAll * 1.6 + o.ph) * .18;
+      o.mark.visible = !!d.ready; if (d.ready) o.mark.position.y = 2.85 + Math.sin(tAll * 3 + o.ph) * .08;
+      o.ring.material.opacity = activeZone === 'npc:' + d.id ? .9 : d.ready ? .45 + Math.sin(tAll * 3) * .15 : .22;
+    });
+  }
+  function npcLabelHTML(d) { return `<i></i>${d.name}${d.ready ? '<span class="new">！</span>' : ''}`; }
+  function npcCam(o) {
+    const { spot, f } = npcSpot(o), mid = o.root.position.clone().add(spot).multiplyScalar(.5);
+    const side = new THREE.Vector3(-f.z, 0, f.x), portrait = camera.aspect < 0.8;
+    const sd = ((mid.x - HUB.x) * side.x + (mid.z - HUB.z) * side.z) > 0 ? -1 : 1; // 從靠大廳中央那一側看，兩個角色都入鏡
+    camPosT.copy(mid).addScaledVector(side, sd * (portrait ? 4.4 : 3.6)).addScaledVector(f, portrait ? 1.8 : 1.4).setY(portrait ? 3.2 : 2.7); clampHall(camPosT);
+    camLookT.copy(mid).setY(1.55); mode = 'zone'; camK = 2.6;
+  }
+
   /* ---------- 標籤（HTML） ---------- */
   const labelsEl = document.getElementById('labels');
   let labels = [];
@@ -1172,6 +1348,12 @@ export async function create3D(canvas, hooks) {
       const s = SLOT[z.slot]; const anchor = new THREE.Vector3(s.obj[0] * (s.f[0] ? .86 : 1), z.slot === 'G' ? 4.2 : 3.4, z.slot === 'G' ? -14.5 : s.obj[1]);
       if (z.slot === 'H') anchor.set(7.2, 4.6, -15.6);
       return { el: b, anchor, z };
+    });
+    (npcData[floorNow] || []).forEach(d => {
+      const o = npcMap[d.id]; if (!o) return;
+      const b = document.createElement('button'); b.className = 'zlabel gold'; b.dataset.npc = d.id;
+      b.innerHTML = npcLabelHTML(d); b.onclick = () => api.goNpc(d.id); labelsEl.appendChild(b);
+      labels.push({ el: b, anchor: o.root.position.clone().setY(3.3), z: { id: 'npc:' + d.id }, npc: d.id });
     });
   }
 
@@ -1308,6 +1490,34 @@ export async function create3D(canvas, hooks) {
         res();
       });
     },
+    // 任務 NPC：floor 的 NPC 清單（含 ready＝有可領任務）；同一樓層重複呼叫只更新標記
+    setNpcs(f, list) {
+      const g = floors[f]; if (!g || !Array.isArray(list)) return;
+      const ids = list.map(n => n.id).join('|'), prev = (npcData[f] || []).map(n => n.id).join('|');
+      list.forEach((n, i) => { if (!npcMap[n.id]) { npcMap[n.id] = buildNpc(n, i, g); npcMap[n.id].floor = f; } npcMap[n.id].data = n; });
+      npcData[f] = list.filter(n => npcMap[n.id]);
+      if (f !== floorNow) return;
+      if (ids !== prev) { buildLabels(); return; }
+      labels.forEach(l => { if (!l.npc) return; const d = npcData[f].find(n => n.id === l.npc); if (d) l.el.innerHTML = npcLabelHTML(d); });
+    },
+    goNpc(id) {
+      if (mode === 'intro' || mode === 'ride' || mode === 'orbit') return;
+      const o = npcMap[id]; if (!o || o.floor !== floorNow) return;
+      document.getElementById('panelClose').click();
+      const key = 'npc:' + id; activeZone = key;
+      const { spot } = npcSpot(o), np = o.root.position;
+      speed = 2.8; mode = 'follow'; camK = 2.2;
+      walkTo(routeTo(spot), () => {
+        faceTarget = Math.atan2(np.x - spot.x, np.z - spot.z);
+        npcCam(o);
+        setTimeout(() => { if (activeZone === key) hooks.openNpc && hooks.openNpc(id); }, 380);
+      });
+    },
+    npcScreen(id) { // 測試用：NPC 頭頂在畫面上的座標
+      const o = npcMap[id]; if (!o || o.floor !== floorNow) return null;
+      const v = o.root.position.clone().setY(1.3).project(camera);
+      return { x: (v.x * .5 + .5) * innerWidth, y: (-v.y * .5 + .5) * innerHeight, onScreen: v.z < 1 && Math.abs(v.x) < 1 && Math.abs(v.y) < 1 };
+    },
     onPanel(open, id) {
       panelOpen = open;
       if (!open) { activeZone = null; liftWant = 0; if (mode === 'zone') overview(); }
@@ -1385,8 +1595,9 @@ export async function create3D(canvas, hooks) {
     downAt = null; didDrag = false;
     if (!tap || mode === 'intro' || mode === 'ride' || mode === 'orbit') return;
     ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera);
-    const hit = ray.intersectObjects(hitBoxes.filter(h => h.userData.active), false)[0];
-    if (hit) return api.go(hit.object.userData.zone);
+    const cand = hitBoxes.filter(h => h.userData.active).concat(npcHits.filter(h => h.userData.fg === floors[floorNow]));
+    const hit = ray.intersectObjects(cand, false)[0];
+    if (hit) return hit.object.userData.npc ? api.goNpc(hit.object.userData.npc) : api.go(hit.object.userData.zone);
     const fh = ray.intersectObject(fl)[0];
     if (fh) { document.getElementById('panelClose').click(); mode = 'follow'; activeZone = null; const p = clampAvatar(fh.point.clone().setY(0)); walkTo([p], () => overview()); }
   };
@@ -1547,6 +1758,7 @@ export async function create3D(canvas, hooks) {
     const vsT = panelOpen && narrow ? .26 : 0, vxT = panelOpen && !narrow ? .14 : 0;
     viewShift += (vsT - viewShift) * k; viewShiftX += (vxT - viewShiftX) * k;
     if (Math.abs(viewShift) > .002 || Math.abs(viewShiftX) > .002) camera.setViewOffset(innerWidth, innerHeight, innerWidth * viewShiftX, innerHeight * viewShift, innerWidth, innerHeight); else camera.clearViewOffset();
+    npcTick(dt);
     // 標籤
     if (labelsEl.style.display !== 'none') {
       for (const l of labels) {
