@@ -7,7 +7,7 @@ export { SHOP };
 
 /* ---------- 基本資料 ---------- */
 import { GATE_HASH, SEALED } from './insider-data.js';
-import { modelStates, encodeQual, last7, RULE_MIN, VALID_DAYS, LADDER, TARGET_DAYS, MASTER_DAYS } from './qual.js';
+import { modelStates, encodeQual, last7, addDays, RULE_MIN, VALID_DAYS, LADDER, TARGET_DAYS, MASTER_DAYS } from './qual.js';
 applyBrand();
 const IG = 'https://instagram.com/wuz200200';
 const LINE_OA = 'https://page.line.me/803kongz';
@@ -220,7 +220,25 @@ function floorInfo() {
 }
 export const rankIndex = () => RANKS.reduce((a, r, i) => (S.xp >= r.xp ? i : a), 0);
 const checkedToday = () => S.last === today();
-const streakNow = () => (S.last === today() || S.last === yesterday()) ? S.streak : 0;
+const streakFromDays = () => {
+  const set = new Set((S.days || []).filter(Boolean));
+  const t = today(), y = yesterday();
+  let cur = set.has(t) ? t : set.has(y) ? y : null;
+  if (!cur) return 0;
+  let n = 0;
+  while (set.has(cur)) { n++; cur = addDays(cur, -1); }
+  return n;
+};
+const streakNow = () => {
+  const fromDays = streakFromDays();
+  const stored = (S.last === today() || S.last === yesterday()) ? S.streak : 0;
+  return Math.max(stored, fromDays);
+};
+if ((S.last === today() || S.last === yesterday()) && streakFromDays() > S.streak) {
+  S.streak = streakFromDays();
+  S.days = [...new Set((S.days || []).filter(Boolean))].sort().slice(-365);
+  save();
+}
 const todos = () => ({
   checkin: !checkedToday(),
   guess: MARKETS.some(m => !(S.guesses[today()] || {})[m.id]),
@@ -490,8 +508,15 @@ const RENDER = {
     const b = el.querySelector('#punch');
     b && (b.onclick = () => {
       if (blockGmProgress()) return;
+      if (checkedToday() || b.disabled) return;
+      b.disabled = true;
       const before = ['f2', 'f3'].filter(f => floorOpen(f));
-      const y = S.last === yesterday(), wasBroke = !!S.last && !y && S.streak > 0; S.streak = y ? S.streak + 1 : 1; S.last = today(); S.days = [...S.days.slice(-60), today()];
+      const prevStreak = streakNow();
+      const y = S.last === yesterday() || prevStreak > 0;
+      const wasBroke = !!S.last && !y && S.streak > 0;
+      S.streak = y ? prevStreak + 1 : 1;
+      S.last = today();
+      S.days = [...new Set([...(S.days || []).filter(Boolean), today()])].sort().slice(-365);
       const c = ((S.streak - 1) % 7) + 1;
       el.querySelector('#stamp').classList.add('show'); blip(1046);
       addXP(10 + Math.min(S.streak, 7) * 2, 100 + c * 20, b);
