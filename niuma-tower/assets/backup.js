@@ -77,6 +77,7 @@ function snapshot(S) {
     reviews: S.reviews || {},
     week: S.week || {},
     quests: S.quests || {},
+    fin: S.fin || {},
   };
 }
 
@@ -97,6 +98,7 @@ export function applySnapshot(S, data) {
   S.reviews = data.reviews || {};
   S.week = data.week || {};
   S.quests = data.quests && typeof data.quests === 'object' ? data.quests : { daily: {}, done: [], day: {} };
+  S.fin = data.fin && typeof data.fin === 'object' ? data.fin : {};
 }
 
 export async function encodeBackup(S) {
