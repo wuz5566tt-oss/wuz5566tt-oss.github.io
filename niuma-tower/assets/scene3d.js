@@ -434,9 +434,10 @@ export async function create3D(canvas, hooks) {
     f3: { acc: '140,255,90', hex: 0x8cff5a, base: '#08160f', emb: '訓練', fog: 0x0a1a12, bg: 0x04100a, back: 0x5aff8c, wall: 0x0f2219 },
     f4: { acc: '255,77,109', hex: 0xff4d6d, base: '#1a0a10', emb: '榮耀', fog: 0x1a0a12, bg: 0x10050a, back: 0xff4d6d, wall: 0x2a1018 },
     f5: { acc: '120,170,255', hex: 0x78aaff, base: '#0a0f22', emb: '目標', fog: 0x0a1028, bg: 0x050818, back: 0xc890ff, wall: 0x141a36 },
+    f6: { acc: '46,255,196', hex: 0x2effc4, base: '#03120f', emb: '實驗', fog: 0x03141a, bg: 0x020b0d, back: 0x2effc4, wall: 0x0a2024 },
     insider: { acc: '255,200,90', hex: C.gold, base: '#140f1e', emb: '自己人', fog: 0x120c1e, bg: 0x07060f, back: 0xb070ff, wall: 0x161226 },
   };
-  const FNUM = { lobby: 1, f2: 2, f3: 3, f4: 4, f5: 5, insider: 68 };
+  const FNUM = { lobby: 1, f2: 2, f3: 3, f4: 4, f5: 5, f6: 6, insider: 68 };
   const floorTex = f => canvasTex(1024, 1024, (g, w, h) => {
     const P = PAL[f], acc = P.acc;
     g.fillStyle = P.base; g.fillRect(0, 0, w, h);
@@ -448,6 +449,8 @@ export async function create3D(canvas, hooks) {
     if (f === 'f3') { g.strokeStyle = `rgba(${acc},.6)`; g.lineWidth = 8; g.strokeRect(120, 120, w - 240, h - 200); g.beginPath(); g.moveTo(120, h * .47); g.lineTo(w - 120, h * .47); g.stroke(); }
     if (f === 'f4') { const gr = g.createLinearGradient(w / 2 - 110, 0, w / 2 + 110, 0); gr.addColorStop(0, 'rgba(150,20,40,.0)'); gr.addColorStop(.15, 'rgba(150,20,40,.75)'); gr.addColorStop(.85, 'rgba(150,20,40,.75)'); gr.addColorStop(1, 'rgba(150,20,40,0)'); g.fillStyle = gr; g.fillRect(w / 2 - 110, 0, 220, h); g.strokeStyle = 'rgba(255,200,90,.6)'; g.lineWidth = 4; g.strokeRect(w / 2 - 96, -10, 192, h + 20); }
     if (f === 'f5') { g.strokeStyle = `rgba(${acc},.35)`; g.lineWidth = 2; const R = 46; for (let yy = 0; yy < h + R; yy += R * 1.5) for (let xx = 0; xx < w + R; xx += R * 1.732) { const ox = ((yy / (R * 1.5)) % 2) * R * .866; g.beginPath(); for (let k = 0; k < 6; k++) { const an = Math.PI / 6 + k * Math.PI / 3; g[k ? 'lineTo' : 'moveTo'](xx + ox + R * Math.cos(an), yy + R * Math.sin(an)); } g.closePath(); g.stroke(); } }
+    if (f === 'f6') { g.lineWidth = 3; [[.22, 'rgba(46,255,196,.32)', 9], [.78, 'rgba(255,200,90,.22)', 5]].forEach(([yy, col, fq]) => { g.strokeStyle = col; g.beginPath(); for (let x = 0; x <= w; x += 8) { const v = h * yy + Math.sin(x / w * Math.PI * fq) * 34 + Math.sin(x / w * Math.PI * fq * 3.1) * 12; x ? g.lineTo(x, v) : g.moveTo(x, v); } g.stroke(); });
+      g.fillStyle = 'rgba(46,255,196,.22)'; for (let y = 32; y < h; y += 64) for (let x = 32; x < w; x += 64) g.fillRect(x - 2, y - 2, 4, 4); }
     const cx = w / 2, cy = h * (7.5 / 16);
     g.strokeStyle = 'rgba(255,200,90,.75)'; g.lineWidth = 6; g.beginPath(); g.arc(cx, cy, 150, 0, 7); g.stroke();
     g.strokeStyle = `rgba(${acc},.55)`; g.lineWidth = 3; g.beginPath(); g.arc(cx, cy, 185, 0, 7); g.stroke();
@@ -920,7 +923,7 @@ export async function create3D(canvas, hooks) {
   const entL = new THREE.PointLight(0xffe2b0, 22, 14, 1.4); entL.position.set(0, 5, 3); scene.add(entL);
 
   /* ---------- 區域物件 ---------- */
-  const floors = { lobby: new THREE.Group(), f2: new THREE.Group(), f3: new THREE.Group(), f4: new THREE.Group(), f5: new THREE.Group(), insider: new THREE.Group() };
+  const floors = { lobby: new THREE.Group(), f2: new THREE.Group(), f3: new THREE.Group(), f4: new THREE.Group(), f5: new THREE.Group(), f6: new THREE.Group(), insider: new THREE.Group() };
   Object.values(floors).forEach(g => { hall.add(g); g.visible = false; });
   const zoneObj = {}; const hitBoxes = []; const publicScreens = [];
   const hitMat = keep(new THREE.MeshBasicMaterial({ visible: false }));
@@ -932,7 +935,7 @@ export async function create3D(canvas, hooks) {
     rg.rotation.x = -Math.PI / 2; rg.position.set(s.spot[0], .05, s.spot[1]); parent.add(rg); g.userData.ring = rg;
     return g;
   }
-  const L = floors.lobby, F2 = floors.f2, F3 = floors.f3, F4 = floors.f4, F5 = floors.f5, I = floors.insider;
+  const L = floors.lobby, F2 = floors.f2, F3 = floors.f3, F4 = floors.f4, F5 = floors.f5, F6 = floors.f6, I = floors.insider;
   const darkPanel = std(0x151d33, { metalness: .7, roughness: .35 });
   const goldM = std(0xd9a441, { metalness: 1, roughness: .28, envMapIntensity: 1.1 });
   const wood = std(0x3a2414, { roughness: .45, metalness: .1 });
@@ -953,7 +956,7 @@ export async function create3D(canvas, hooks) {
     const g = dirTex._g, w = 1024, h = 640; g.clearRect(0, 0, w, h); g.fillStyle = '#060c1c'; g.fillRect(0, 0, w, h);
     g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillStyle = '#ffe3a0'; g.font = `900 64px ${FONT}`; g.shadowColor = '#ffc85a'; g.shadowBlur = 16; g.fillText('樓層導覽', 48, 64); g.shadowBlur = 0;
     (info && info.floors || []).forEach((f, i) => {
-      const y = 146 + i * 82; g.fillStyle = f.here ? 'rgba(62,242,255,.16)' : 'rgba(255,255,255,.04)'; g.fillRect(40, y - 35, w - 80, 70);
+      const n = info.floors.length, step = Math.min(82, 500 / n), y = 146 + i * step; g.fillStyle = f.here ? 'rgba(62,242,255,.16)' : 'rgba(255,255,255,.04)'; g.fillRect(40, y - step * .43, w - 80, step * .86);
       g.fillStyle = '#ffd68a'; g.font = `900 46px ${FONT}`; g.fillText(f.num + 'F', 64, y);
       g.fillStyle = '#e9f3ff'; g.font = `800 40px ${FONT}`; g.fillText(f.name, 200, y);
       g.textAlign = 'right'; g.font = `700 32px ${FONT}`;
@@ -1105,8 +1108,66 @@ export async function create3D(canvas, hooks) {
   [[-6.6, -4.2], [-6.6, -11.6]].forEach(([x, z]) => { const p = new THREE.Mesh(keep(new THREE.CylinderGeometry(.35, .35, 2.4, 6)), keep(new THREE.MeshStandardMaterial({ color: 0x78aaff, transparent: true, opacity: .22, emissive: 0x2a3a88, emissiveIntensity: .8 }))); p.position.set(x, 1.2, z); F5.add(p); cyl(.4, .4, .1, 6, glow(0xc890ff, 1.6), x, .05, z, F5); });
   { const t = textTex(['目標值研究室', '最高獎勵在這裡'], { w: 1024, h: 300, size: 110, color: '#c9dcff', border: '#78aaff', glowC: '#78aaff', sub: '#ffd68a' }); plane(3.4, 1, t, -W + .05, 3.8, -11.8, F5, Math.PI / 2); }
 
+  // ---- 6 樓：交易實驗室（青綠示波器風・模擬驅動的大螢幕） ----
+  const labFX = { screens: [], knobs: [], holos: [], ring: null };
+  // 練習盤示意：隨機種子產生，不是真實行情
+  function labSeries(seed, n) { let s = seed, p = 160; const r = () => (s = (s * 16807) % 2147483647) / 2147483647; const out = []; for (let i = 0; i < n; i++) { const o = p, c = o + (Math.sin(i / 4 + seed) * 7) + (r() - .5) * 14; out.push({ o, c, h: Math.max(o, c) + r() * 8, l: Math.min(o, c) - r() * 8 }); p = Math.max(60, Math.min(260, c)); } return out; }
+  function drawLabScreen(t, k) {
+    const g = t._g, u = t.userData, w = t._c.width, h = t._c.height;
+    if ((u.n = (u.n || 0) + 1) % 2 === 0) { const L = u.bars[u.bars.length - 1], o = L.c, c = Math.max(70, Math.min(250, o + Math.sin(k * .9 + u.seed) * 6 + (Math.random() - .5) * 16)); u.bars.push({ o, c, h: Math.max(o, c) + Math.random() * 7, l: Math.min(o, c) - Math.random() * 7 }); u.bars.shift(); }
+    g.fillStyle = '#021014'; g.fillRect(0, 0, w, h);
+    g.strokeStyle = 'rgba(46,255,196,.10)'; g.lineWidth = 1; for (let x = 0; x < w; x += w / 16) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); } for (let y = 0; y < h; y += h / 8) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
+    const top = u.big ? 90 : 50, bot = h - 18, B = u.bars, hi = Math.max(...B.map(b => b.h)) + 6, lo = Math.min(...B.map(b => b.l)) - 6, Y = v => top + (hi - v) / (hi - lo) * (bot - top), cw = (w - 30) / B.length;
+    // 前高、前低流動性
+    let iH = 0, iL = 0; B.forEach((b, i) => { if (i < B.length - 4) { if (b.h > B[iH].h) iH = i; if (b.l < B[iL].l) iL = i; } });
+    g.setLineDash([10, 8]); g.lineWidth = 2; g.strokeStyle = 'rgba(255,200,90,.8)'; g.beginPath(); g.moveTo(15 + iH * cw, Y(B[iH].h)); g.lineTo(w - 15, Y(B[iH].h)); g.stroke();
+    g.strokeStyle = 'rgba(255,122,224,.8)'; g.beginPath(); g.moveTo(15 + iL * cw, Y(B[iL].l)); g.lineTo(w - 15, Y(B[iL].l)); g.stroke(); g.setLineDash([]);
+    B.forEach((b, i) => { const up = b.c >= b.o, col = up ? '#ff5468' : '#2fd38a', x = 15 + i * cw + cw / 2; g.strokeStyle = col; g.lineWidth = 2; g.beginPath(); g.moveTo(x, Y(b.h)); g.lineTo(x, Y(b.l)); g.stroke(); g.fillStyle = col; const t0 = Y(Math.max(b.o, b.c)); g.fillRect(x - cw * .32, t0, cw * .64, Math.max(3, Y(Math.min(b.o, b.c)) - t0)); });
+    g.font = `800 ${u.big ? 26 : 20}px ${FONT}`; g.textAlign = 'left'; g.textBaseline = 'middle';
+    g.fillStyle = '#ffd68a'; g.fillText('前高流動性', w - (u.big ? 190 : 140), Y(B[iH].h) - 16); g.fillStyle = '#ff9ae8'; g.fillText('前低流動性', w - (u.big ? 190 : 140), Y(B[iL].l) + 18);
+    const sx = (k * (u.big ? 120 : 90)) % w, sg = g.createLinearGradient(sx - 120, 0, sx, 0); sg.addColorStop(0, 'rgba(46,255,196,0)'); sg.addColorStop(1, 'rgba(46,255,196,.28)'); g.fillStyle = sg; g.fillRect(sx - 120, 0, 120, h);
+    if (u.big) {
+      g.fillStyle = 'rgba(2,16,20,.86)'; g.fillRect(0, 0, w, 70); g.fillStyle = '#7dffe0'; g.font = `900 40px ${FONT}`; g.textAlign = 'left'; g.fillText('模擬引擎', 24, 36);
+      const up = B[B.length - 1].c >= B[B.length - 12].c; const items = [['結構', up ? '多頭結構' : '空頭結構', up ? '#ff5468' : '#2fd38a'], ['波動度', String(4 + Math.round(Math.sin(k * .3) * 2 + 2)), '#9ff4ff'], ['掃單', String(1 + (Math.floor(k / 6) % 4)) + ' 次', '#ff9ae8']];
+      items.forEach(([a, b, col], i) => { const x = 250 + i * 250; g.font = `700 24px ${FONT}`; g.fillStyle = 'rgba(159,244,255,.7)'; g.fillText(a, x, 36); g.font = `900 30px ${FONT}`; g.fillStyle = col; g.fillText(b, x + 74, 36); });
+      g.font = `600 20px ${FONT}`; g.fillStyle = 'rgba(159,244,255,.55)'; g.textAlign = 'right'; g.fillText('隨機種子・練習盤', w - 20, h - 30);
+    } else { g.font = `800 24px ${FONT}`; g.fillStyle = '#7dffe0'; g.textAlign = 'left'; g.fillText(u.name, 16, 26); g.font = `600 16px ${FONT}`; g.fillStyle = 'rgba(159,244,255,.55)'; g.textAlign = 'right'; g.fillText('示意畫面', w - 12, 24);
+      if (u.lines) { const L = B[B.length - 1].c; [['進場', L, '#ffc85a'], ['停損', L + 28, '#ff8a4c'], ['目標', L - 56, '#2effc4']].forEach(([n, v, col]) => { const yy = Math.max(top, Math.min(bot, Y(v))); g.strokeStyle = col; g.lineWidth = 2; g.setLineDash(n === '進場' ? [] : [8, 6]); g.beginPath(); g.moveTo(w * .55, yy); g.lineTo(w - 10, yy); g.stroke(); g.setLineDash([]); g.fillStyle = col; g.font = `800 16px ${FONT}`; g.textAlign = 'right'; g.fillText(n, w - 14, yy - 10); }); } }
+    t.needsUpdate = true;
+  }
+  const tealGlow = glow(0x2effc4, 2);
+  { const g = zoneGroup('labsim', 'G', F6);
+    box(7.4, 3.7, .14, armor, 0, 3.05, .06, g); box(7.6, .08, .2, tealGlow, 0, 4.95, .08, g); box(7.6, .08, .2, tealGlow, 0, 1.15, .08, g);
+    const t = canvasTex(1280, 620, () => {}); t.userData = { big: true, seed: 3, bars: labSeries(3, 44) }; plane(7.2, 3.5, t, 0, 3.05, .15, g); labFX.screens.push(t); drawLabScreen(t, 0);
+    // 控制台：四個參數推桿
+    rbox(3.6, .95, 1.1, .1, darkPanel, 0, .48, 1.7, g); box(3.62, .05, 1.12, tealGlow, 0, .97, 1.7, g);
+    [-1.2, -.4, .4, 1.2].forEach((x, i) => { box(.06, .02, .8, glow(0x2effc4, .9), x, 1.0, 1.7, g); const kn = new THREE.Mesh(keep(new THREE.SphereGeometry(.09, 12, 10)), i % 2 ? goldGlow : tealGlow); kn.position.set(x, 1.06, 1.7); g.add(kn); labFX.knobs.push({ m: kn, ph: i * 1.7 }); });
+    const ban = textTex(['參數實驗台', '拖動參數・看市場結構即時變化'], { w: 1400, h: 300, size: 120, color: '#b8ffee', border: '#2effc4', glowC: '#2effc4', sub: '#ffd68a' });
+    plane(5.6, 1.2, ban, 0, 5.6, .14, g); }
+  { const g = zoneGroup('labdrill', 'D', F6);
+    rbox(1.3, .82, 3.4, .1, darkPanel, .2, .41, 0, g); box(1.32, .05, 3.42, goldGlow, .2, .84, 0, g);
+    [-.9, .9].forEach((z, i) => { box(.08, 1.2, 1.6, armor, .55, 1.62, z, g); const t = canvasTex(512, 384, () => {}); t.userData = { name: i ? '演練回放' : '實戰演練', seed: 11 + i * 5, bars: labSeries(11 + i * 5, 26), lines: true }; plane(1.5, 1.12, t, .5, 1.62, z, g, -Math.PI / 2); labFX.screens.push(t); drawLabScreen(t, 0); });
+    const holo = new THREE.Mesh(keep(new THREE.TorusGeometry(.32, .03, 8, 40)), goldGlow); holo.position.set(-.2, 1.5, 0); g.add(holo); labFX.holos.push(holo);
+    const dot = new THREE.Mesh(keep(new THREE.SphereGeometry(.08, 12, 10)), tealGlow); dot.position.set(-.2, 1.5, 0); g.add(dot);
+    wallSign('實戰演練', '進場・停損・目標評分', 'D', F6, true, 4.9); }
+  { const g = zoneGroup('labwiki', 'C', F6);
+    [['市場結構', 0xff5468, new THREE.OctahedronGeometry(.26)], ['流動性', 0xff7ae0, new THREE.TorusGeometry(.22, .07, 10, 28)], ['二次突破', C.gold, new THREE.IcosahedronGeometry(.25)]].forEach(([n, col, geo], i) => {
+      const z = (i - 1) * 1.15;
+      cyl(.34, .4, .16, 24, darkPanel, .3, .08, z, g); cyl(.36, .36, .03, 24, glow(col, 1.8), .3, .17, z, g);
+      const tube = new THREE.Mesh(keep(new THREE.CylinderGeometry(.3, .3, 1.8, 24, 1, true)), keep(new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: .12, depthWrite: false, side: THREE.DoubleSide }))); tube.position.set(.3, 1.08, z); g.add(tube);
+      const ic = new THREE.Mesh(keep(geo), glow(col, 1.8)); ic.position.set(.3, 1.2, z); g.add(ic); labFX.holos.push(ic);
+      const t = textTex(n, { w: 384, h: 128, size: 72, bg: null, border: null, color: '#e9fff8', glowC: '#' + col.toString(16).padStart(6, '0') }); plane(.9, .3, t, .32, 2.3, z, g, Math.PI / 2);
+    });
+    wallSign('概念圖鑑', '結構・流動性・二次突破', 'C', F6, false, 4.9); }
+  // 天花板下的全息 K 線環
+  { const ring = new THREE.Group(); ring.position.set(0, 4.4, -7.5); F6.add(ring); labFX.ring = ring;
+    for (let i = 0; i < 28; i++) { const a = i / 28 * Math.PI * 2, hgt = .25 + Math.abs(Math.sin(i * 1.7)) * .6, up = Math.sin(i * 2.3) > 0; const m = box(.12, hgt, .12, glow(up ? 0xff5468 : 0x2fd38a, 1.6), Math.cos(a) * 2.4, Math.sin(i * .9) * .25, Math.sin(a) * 2.4, ring); m.rotation.y = -a; }
+    const halo = new THREE.Mesh(keep(new THREE.TorusGeometry(2.4, .02, 6, 80)), tealGlow); halo.rotation.x = Math.PI / 2; ring.add(halo); }
+  [[-6.6, -4.2], [6.6, -4.2]].forEach(([x, z]) => { cyl(.32, .4, .9, 10, armor2, x, .45, z, F6); const c = new THREE.Mesh(keep(new THREE.OctahedronGeometry(.22)), tealGlow); c.position.set(x, 1.25, z); F6.add(c); labFX.holos.push(c); });
+  { const t = textTex(['交易實驗室', '模擬練習・非投資建議'], { w: 1024, h: 300, size: 110, color: '#b8ffee', border: '#2effc4', glowC: '#2effc4', sub: '#ffd68a' }); plane(3.4, 1, t, -W + .05, 3.8, -12.4, F6, Math.PI / 2); }
+
   // 每層都有電梯
-  [['lift_lobby', L], ['lift_f2', F2], ['lift_f3', F3], ['lift_f4', F4], ['lift_f5', F5], ['lift_insider', I]].forEach(([id, fg]) => { zoneGroup(id, 'H', fg); wallSign('電梯', '各樓層・職級', 'H', fg, true, 5.3); });
+  [['lift_lobby', L], ['lift_f2', F2], ['lift_f3', F3], ['lift_f4', F4], ['lift_f5', F5], ['lift_f6', F6], ['lift_insider', I]].forEach(([id, fg]) => { zoneGroup(id, 'H', fg); wallSign('電梯', '各樓層・職級', 'H', fg, true, 5.3); });
 
   // ---- 68 樓 ----
   { const g = zoneGroup('boss', 'A', I);
@@ -1187,6 +1248,7 @@ export async function create3D(canvas, hooks) {
     labcoat: { top: 0xf4f6f8, bottom: 'pants', bc: 0x2a2d3e, shoe: 0x111111, extra: ['shirtTie', 'labcoat', 'glassesThin', 'pen'] },
     hoodie: { top: 0x2a2f45, bottom: 'pants', bc: 0x2c4a7a, shoe: 0xf2f5fb, extra: ['hood', 'strings', 'headphones'] },
     robe: { top: 0x1c1c28, bottom: 'robe', bc: 0x1c1c28, shoe: 0x111111, extra: ['crossCollar', 'goldTrim', 'sashRed'] },
+    labcoatf: { top: 0xdfe9f7, bottom: 'pants', bc: 0x2a2d3e, shoe: 0x2a2d3e, hair: 'bun', extra: ['collar', 'labcoat', 'glassesThin', 'pen', 'badge'] },
     gi: { top: 0xf4f2ec, bottom: 'pants', bc: 0xf4f2ec, shoe: 0x1a1a1a, extra: ['crossCollar', 'blackBelt'] },
   };
   const NPC_TIES = [C.gold, C.cyan, C.up];
@@ -1719,13 +1781,18 @@ export async function create3D(canvas, hooks) {
     spine.color.setRGB(.4, 1.8 + Math.sin(tAll * 2) * .6, 2 + Math.sin(tAll * 2) * .6);
     ring.rotation.z += dt * .2;
     f5Rings.forEach((r, i) => { r.rotation.x = tAll * (.5 + i * .3); r.rotation.y = tAll * (.4 - i * .2); });
+    if (floorNow === 'f6') {
+      labFX.knobs.forEach(k => { k.m.position.z = 1.7 + Math.sin(tAll * .8 + k.ph) * .32; });
+      labFX.holos.forEach((h, i) => { h.rotation.y += dt * (.8 + i * .1); h.rotation.x += dt * .4; h.position.y += Math.sin(tAll * 2 + i) * .002; });
+      if (labFX.ring) labFX.ring.rotation.y += dt * .25;
+    }
     [zoneObj.guide, zoneObj.cta, zoneObj.cta5].forEach(gz => { gz.userData.spin.rotation.y += dt * 1.2; gz.userData.spin.position.y = 1.9 + Math.sin(tAll * 2) * .08; });
     zoneObj.guess.userData.arrows[0].position.y = 1.7 + Math.sin(tAll * 2) * .12; zoneObj.guess.userData.arrows[1].position.y = 1.5 - Math.sin(tAll * 2) * .12;
     zoneObj.guess.userData.arrows.forEach(a => a.rotation.y += dt);
     if (shakeT > 0) { shakeT -= dt; zoneObj.fortune.userData.shake.rotation.x = Math.sin(tAll * 50) * .05 * shakeT; }
     Object.entries(zoneObj).forEach(([id, g]) => { const r = g.userData.ring; if (r) { r.material.opacity = id === activeZone ? .9 : .28 + Math.sin(tAll * 3) * .12; r.scale.setScalar(id === activeZone ? 1 + Math.sin(tAll * 6) * .06 : 1); } });
     for (let i = coins.length - 1; i >= 0; i--) { const c = coins[i]; c.userData.t -= dt; c.userData.v.y -= 9 * dt; c.position.addScaledVector(c.userData.v, dt); c.rotation.x += dt * 8; if (c.userData.t <= 0) { scene.remove(c); coins.splice(i, 1); } }
-    screenT += dt; if (screenT > .25) { screenT = 0; (floorNow === 'insider' ? liveScreens : publicScreens).forEach(t => drawScreen(t, tAll)); }
+    screenT += dt; if (screenT > .25) { screenT = 0; if (floorNow === 'f6') labFX.screens.forEach(t => drawLabScreen(t, tAll)); else (floorNow === 'insider' ? liveScreens : publicScreens).forEach(t => drawScreen(t, tAll)); }
     // 鏡頭
     if (mode === 'orbit') {
       const a = tAll * .06; camPosT.set(Math.sin(a) * 30 + 4, 7 + Math.sin(tAll * .2) * 1.5, 44 + Math.cos(a) * 8); camLookT.set(0, 26, -8); camK = 1.5;
