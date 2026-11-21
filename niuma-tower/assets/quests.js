@@ -41,6 +41,11 @@ export const NPCS = [
     quest: { id: 'q_once_days60', kind: 'once', title: '累積打卡 60 天', check: 'days', target: 60, reward: { coins: 600, xp: 20 } } },
   { id: 'n_quant', floor: 'f5', gender: 'm', outfit: 'hoodie', avatar: '🎯', name: '量化助理 Rex', line: '反應快不夠，要等確認再動。', pose: 'stand',
     quest: { id: 'q_once_fake5', kind: 'once', title: '「躲假突破」單局躲過 5 次', check: 'fakeBest', target: 5, reward: { coins: 300, xp: 10 } } },
+  // 6 樓・交易實驗室
+  { id: 'n_labdir', floor: 'f6', gender: 'f', outfit: 'labcoatf', avatar: '🧪', name: '實驗室主任雅婷', line: '先想好停損，再談進場。', pose: 'desk',
+    quest: { id: 'q_daily_lab', kind: 'daily', title: '今天完成一局「實戰演練」', check: 'labPlaysToday', target: 1, reward: { coins: 40, xp: 2 } } },
+  { id: 'n_risk', floor: 'f6', gender: 'm', outfit: 'suit', avatar: '🛡️', name: '風控官阿凱', line: '風報比不到一比二，寧可不做。', pose: 'stand',
+    quest: { id: 'q_once_lab80', kind: 'once', title: '「實戰演練」單局拿到 80 分', check: 'labBest', target: 80, reward: { coins: 300, xp: 10 } } },
   // 68 樓・自己人專區
   { id: 'n_steward', floor: 'insider', gender: 'm', outfit: 'robe', avatar: '📝', name: '執事堂執事', line: '下班前寫複盤，是自己人的日常。', pose: 'desk',
     quest: { id: 'q_daily_review', kind: 'daily', title: '今天寫下班複盤', check: 'reviewToday', target: 1, reward: { coins: 40, xp: 2 } } },
@@ -89,6 +94,8 @@ const CHECKS = {
   reviews: c => Object.keys(c.S.reviews || {}).length,
   klineBest: c => (((c.S.games || {}).kline || {}).best | 0),
   fakeBest: c => (((c.S.games || {}).fakeout || {}).best | 0),
+  labPlaysToday: c => (dayLog(c).labPlays | 0),
+  labBest: c => (((c.S.games || {}).lab || {}).best | 0),
 };
 function dayLog(c) { const q = c.S.quests; return (q && q.day && q.day[c.today]) || {}; }
 
