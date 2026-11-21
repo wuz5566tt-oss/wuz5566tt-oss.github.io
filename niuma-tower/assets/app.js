@@ -4,6 +4,7 @@ import { encodeBackup, decodeBackup, applySnapshot, hasProgress } from './backup
 import { GM_HASH } from './gm.js';
 import { SHOP, TABS, itemById, itemsInTab, cssHex } from './shop-catalog.js';
 import { FIN_PANELS, FIN_ICON, RENDER_FIN, normFin, finTodos, initFin, finSync } from './fin.js';
+import { LAB_RENDER, LAB_ICON, initLab, labTodos } from './lab.js';
 import { NPCS, npcsOn, questById, normQuests, pruneQuests, evalQuest, markClaimed, rewardText } from './quests.js';
 export { SHOP };
 
@@ -47,9 +48,10 @@ export const FLOORS = {
   f3: { name: '3 樓・訓練場', num: 3, need: 7 },
   f4: { name: '4 樓・戰報與英雄榜', num: 4, need: 0 },
   f5: { name: '5 樓・目標值研究室', num: 5, need: TARGET_DAYS },
+  f6: { name: '6 樓・交易實驗室', num: 6, need: 0 },
   insider: { name: '68 樓・自己人專區', num: 68, pass: true },
 };
-const FLOOR_ORDER = ['insider', 'f5', 'f4', 'f3', 'f2', 'lobby'];
+const FLOOR_ORDER = ['insider', 'f6', 'f5', 'f4', 'f3', 'f2', 'lobby'];
 export const ZONES = [
   { id: 'checkin', floor: 'lobby', slot: 'A', name: '打卡櫃台', kicker: '每日上班', gold: true },
   { id: 'guide', floor: 'lobby', slot: 'B', name: '接引櫃台', kicker: '我的資格・新人報到', gold: true },
@@ -68,6 +70,9 @@ export const ZONES = [
   { id: 'cta', floor: 'f4', slot: 'B', name: '私訊『成長』', kicker: '我的資格・加入自己人', gold: true },
   { id: 'target', floor: 'f5', slot: 'G', name: '目標值系統', kicker: '最高獎勵', gold: true },
   { id: 'cta5', type: 'cta', floor: 'f5', slot: 'B', flatSlot: 'E', name: '私訊『成長』', kicker: '領取目標值系統', gold: true },
+  { id: 'labsim', floor: 'f6', slot: 'G', name: '參數實驗台', kicker: '拖動參數・看結構變化', gold: true },
+  { id: 'labdrill', floor: 'f6', slot: 'D', name: '實戰演練', kicker: '進場・停損・目標評分', gold: true },
+  { id: 'labwiki', floor: 'f6', slot: 'C', name: '概念圖鑑', kicker: '結構・流動性・二次突破' },
   { id: 'boss', floor: 'insider', slot: 'A', name: '掌門辦公室', kicker: '自己人專區', gold: true },
   { id: 'hall', floor: 'insider', slot: 'B', name: '執事堂', kicker: '公告與排程' },
   { id: 'library', floor: 'insider', slot: 'C', name: '藏經閣講義', kicker: '三卷九章', gold: true },
@@ -120,7 +125,7 @@ ICON.cta5 = ICON.guide;
 ICON.shop = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 8 5 21h14L18 8M4 8h16"/><path d="M9 8a3 3 0 0 1 6 0" stroke="#ffc85a"/><path d="M9 13h3"/></svg>';
 ICON.backup = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5" stroke="#3ef2ff"/></svg>';
 Object.keys(FLOORS).forEach(f => ICON['lift_' + f] = ICON.elevator);
-Object.assign(ICON, FIN_ICON);
+Object.assign(ICON, FIN_ICON, LAB_ICON);
 ICON.quests = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M17 4v6M17 13v.5" stroke="#ffc85a" stroke-width="2.2"/></svg>';
 
 
@@ -253,6 +258,7 @@ const todos = () => ({
   review: !S.reviews[today()],
   quests: questReadyCount(floor) > 0,
   ...finTodos(floor),
+  ...labTodos(floor),
 });
 
 /* ---------- 每層樓 NPC 任務 ---------- */
@@ -357,13 +363,13 @@ function addXP(n, coins = 0, el) {
 
 /* ---------- 面板 ---------- */
 const panel = $('#panel');
-export function openPanel(id) {
+export function openPanel(id, opt) {
   const npcFocus = typeof id === 'string' && id.startsWith('npc:') ? NPCS.find(n => n.id === id.slice(4)) : null;
   questFocus = npcFocus ? npcFocus.id : null;
   const z = (npcFocus ? { id, type: 'quests', name: npcFocus.name, kicker: FLOORS[npcFocus.floor].name + '・任務 NPC' } : null) || ZONES.find(z => z.id === id) || (id === 'quests' ? { id, name: 'NPC 任務', kicker: FLOORS[floor].name } : null) || FIN_PANELS.find(p => p.id === id);
   if (!z) return;
   $('#panelKicker').textContent = z.kicker; $('#panelTitle').textContent = z.name;
-  RENDER[z.type || id]($('#panelBody'));
+  RENDER[z.type || id]($('#panelBody'), opt);
   panel.classList.add('open'); panel.setAttribute('aria-hidden', 'false');
   const zp = document.getElementById('zonePrompt'); if (zp) zp.hidden = true;
   document.querySelectorAll('.dock button').forEach(b => b.classList.toggle('active', b.dataset.zone === id));
@@ -668,6 +674,7 @@ const RENDER = {
   shop(el) { renderShop(el); },
   quests(el) { renderQuests(el); },
   ...RENDER_FIN,
+  ...LAB_RENDER,
   backup(el) { renderBackup(el); },
   kline(el) { klineGame(el); },
   fakeout(el) { fakeoutGame(el); },
@@ -1268,6 +1275,7 @@ function maybeGmGate() {
 
 initFin({ get S() { return S; }, save, addXP, toast, blip, isGM, block: blockGmProgress, esc, refreshHud, PUBLIC_REPORTS,
   rankName: () => RANKS[rankIndex()].name, insider: () => insiderLinks });
+initLab({ get S() { return S; }, save, addXP, toast, blip, isGM, questLog, today, refreshHud, open: (id, opt) => openPanel(id, opt) });
 window.__niuma = { get world() { return world; }, get floor() { return floor; }, openPanel, closePanel, ride, get ready() { return ready; }, SHOP, encodeBackup, decodeBackup, applySnapshot, maybeRemind, get isGM() { return isGM(); } };
 ready = (async () => { await restoreInsider(); await switchTo(startFlat ? 'flat' : '3d', false); maybeGmGate(); })();
 if (qs.has('lobby')) skip();
