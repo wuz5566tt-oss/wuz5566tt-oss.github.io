@@ -567,10 +567,12 @@ function renderShop(el) {
       it.badge ? `<em class="shop-badge free">${it.badge}</em>` : '',
       it.series === 'kline' ? `<em class="shop-badge kline">K線系列</em>` : '',
       it.series === 'yageo' ? `<em class="shop-badge yageo">國巨 2327</em>` : '',
+      it.series === 'tsmc' ? `<em class="shop-badge tsmc">漲停 2330</em>` : '',
     ].join('');
     const sw = cssHex(it.look && it.look.color);
-    const preview = it.series === 'yageo' ? `<div class="shop-preview yageo"><strong>國巨 2327</strong><em>跌停</em></div>` : '';
-    return `<div class="shop-item${on ? ' on' : ''}${it.featured ? ' feat' : ''}${it.series === 'yageo' ? ' yageo' : ''}" data-id="${it.id}">
+    const preview = it.series === 'yageo' ? `<div class="shop-preview yageo"><strong>國巨 2327</strong><em>跌停</em></div>`
+      : it.series === 'tsmc' ? `<div class="shop-preview tsmc"><strong>台積電 2330</strong><em>漲停</em></div>` : '';
+    return `<div class="shop-item${on ? ' on' : ''}${it.featured ? ' feat' : ''}${it.series === 'yageo' ? ' yageo' : ''}${it.series === 'tsmc' ? ' tsmc' : ''}" data-id="${it.id}">
       ${preview}
       <div class="shop-item-top"><i class="shop-swatch" style="background:${sw}"></i><b>${it.name}</b></div>
       ${badges ? `<div class="shop-badges">${badges}</div>` : ''}
@@ -1068,11 +1070,11 @@ async function ride(to) {
 /* ---------- 牛馬小人（平面版） ---------- */
 function lookOf(slot, eq) { const it = itemById(eq[slot]); return it && it.look ? it.look : null; }
 function klineMarks(x, y, pattern, n = 5) {
-  if (!pattern || (pattern !== 'kline' && pattern !== 'kline-gold' && pattern !== 'green' && pattern !== 'yageo')) return '';
+  if (!pattern || (pattern !== 'kline' && pattern !== 'kline-gold' && pattern !== 'green' && pattern !== 'yageo' && pattern !== 'tsmc')) return '';
   let s = '';
   for (let i = 0; i < n; i++) {
-    const up = (pattern === 'green' || pattern === 'yageo') ? false : i % 3 !== 1;
-    const fill = (pattern === 'green' || pattern === 'yageo') ? '#2fd38a' : up ? '#ff5468' : '#2fd38a';
+    const up = (pattern === 'green' || pattern === 'yageo') ? false : (pattern === 'tsmc' ? true : i % 3 !== 1);
+    const fill = (pattern === 'green' || pattern === 'yageo') ? '#2fd38a' : (pattern === 'tsmc' || up) ? '#ff3a4c' : '#2fd38a';
     const h = 5 + (i % 3) * 3;
     s += `<rect x="${x + i * 4}" y="${y - (up ? h : 2)}" width="3" height="${h}" fill="${fill}"/>`;
   }
@@ -1093,7 +1095,10 @@ function avatarSVG(eq = {}) {
   if (hL) {
     const hc = cssHex(hL.color);
     const sh = hL.shape;
-    if (sh === 'cap') hat = `<rect x="18" y="2" width="54" height="12" rx="4" fill="${hc}"/><rect x="28" y="8" width="34" height="6" rx="2" fill="${hc}"/>`;
+    if (sh === 'candle') {
+      const wick = cssHex(hL.color2 || 0xffe3a0);
+      hat = `<rect x="41" y="-18" width="8" height="30" rx="1" fill="${hc}"/><rect x="43.5" y="-24" width="3" height="40" fill="${wick}"/>`;
+    } else if (sh === 'cap') hat = `<rect x="18" y="2" width="54" height="12" rx="4" fill="${hc}"/><rect x="28" y="8" width="34" height="6" rx="2" fill="${hc}"/>`;
     else if (sh === 'beanie') hat = `<rect x="22" y="0" width="46" height="16" rx="8" fill="${hc}"/>`;
     else if (sh === 'beret') hat = `<ellipse cx="48" cy="8" rx="28" ry="9" fill="${hc}"/>`;
     else if (sh === 'bucket') hat = `<rect x="20" y="4" width="50" height="10" rx="3" fill="${hc}"/><rect x="14" y="12" width="62" height="5" rx="2" fill="${hc}"/>`;
@@ -1115,13 +1120,16 @@ function avatarSVG(eq = {}) {
   const ear = eL ? `<circle cx="16" cy="28" r="2.2" fill="${cssHex(eL.color)}"/><circle cx="74" cy="28" r="2.2" fill="${cssHex(eL.color)}"/>` : '';
   const patJ = jL && jL.pattern ? (jL.pattern === 'yageo'
     ? `<text x="45" y="66" text-anchor="middle" font-size="10" font-weight="800" fill="#e9ffe9">國巨</text><text x="45" y="76" text-anchor="middle" font-size="9" font-weight="800" fill="#c8ffd8">2327</text><rect x="32" y="78" width="26" height="9" rx="3" fill="#2fd38a"/><text x="45" y="85" text-anchor="middle" font-size="6" font-weight="800" fill="#04180f">跌停</text>`
+    : jL.pattern === 'tsmc'
+    ? `<text x="45" y="66" text-anchor="middle" font-size="9" font-weight="800" fill="#fff6e8">台積電</text><text x="45" y="76" text-anchor="middle" font-size="8" font-weight="800" fill="#ffd68a">2330</text><rect x="32" y="78" width="26" height="9" rx="3" fill="#ff3a4c"/><text x="45" y="85" text-anchor="middle" font-size="6" font-weight="800" fill="#fff6e8">漲停</text>`
     : klineMarks(34, 66, jL.pattern)) : '';
   const patP = pL && pL.pattern ? klineMarks(32, 90, pL.pattern, 3) + klineMarks(49, 90, pL.pattern, 3) : '';
   const patS = sL && sL.pattern ? klineMarks(29, 102, sL.pattern, 3) + klineMarks(48, 102, sL.pattern, 3) : '';
   const patG = gL && gL.pattern ? klineMarks(28, 26, gL.pattern, 3) + klineMarks(52, 26, gL.pattern, 3) : '';
   const patW = wL && wL.pattern ? klineMarks(12, 72, wL.pattern, 2) : '';
   const tieShape = tL && tL.shape === 'bow' ? `<rect x="36" y="50" width="18" height="7" rx="2" fill="${tie}"/>` : `<path d="M45 50 l-5 6 5 22 5-22z" fill="${tie}"/>`;
-  return `<div class="av-in"><svg viewBox="0 0 90 110"><ellipse cx="45" cy="106" rx="22" ry="4" fill="#000" opacity=".35"/>
+  const vb = hL && hL.shape === 'candle' ? '0 -24 90 134' : '0 0 90 110';
+  return `<div class="av-in"><svg viewBox="${vb}"><ellipse cx="45" cy="106" rx="22" ry="4" fill="#000" opacity=".35"/>
 ${cape ? `<path d="M22 52 q23 40 46 0 v36 q-23 16 -46 0z" fill="${cape}" opacity=".9"/>` : ''}
 <rect x="31" y="78" width="11" height="22" rx="4" fill="${pants}"/><rect x="48" y="78" width="11" height="22" rx="4" fill="${pants}"/>
 <rect x="29" y="98" width="15" height="8" rx="2" fill="${shoes}"/><rect x="46" y="98" width="15" height="8" rx="2" fill="${shoes}"/>
