@@ -1021,6 +1021,7 @@ export async function create3D(canvas, hooks) {
   { const g = new THREE.Group(); g.position.set(7.4, 0, -3.2); F2.add(g); rbox(1.2, 1.05, 3, .1, wood, 0, .52, 0, g); box(1.24, .05, 3.04, glow(0xff9a3c, 1.4), 0, 1.06, 0, g);
     rbox(.5, .7, .5, .08, armor2, 0, 1.4, -.8, g); [0, .3, .6].forEach(k => cyl(.1, .08, .2, 10, std(0xf2f5fb), 0, 1.16, .3 + k, g));
     wallSign('咖啡吧', '晨會前來一杯', 'B', F2, false, 4.6); }
+  zoneGroup('tea', 'B', F2);
   { const wb = textTex(['今日晨會', '一 打卡　二 猜盤　三 看戰報'], { w: 1024, h: 560, size: 120, color: '#ffcf8a', border: '#ff9a3c', glowC: '#ff9a3c', sub: '#fff' }); plane(3.2, 1.75, wb, -W + .05, 2.8, -12.2, F2, Math.PI / 2); }
   [[-3, -11], [3, -11], [-3, -4.5]].forEach(([x, z]) => rbox(.55, .5, .55, .1, std(0x5a3a22, { roughness: .6 }), x, .25, z, F2));
 
@@ -1045,6 +1046,7 @@ export async function create3D(canvas, hooks) {
   [[-4, -4], [4, -4], [-4, -11], [4, -11]].forEach(([x, z]) => { const c = new THREE.Mesh(keep(new THREE.ConeGeometry(.25, .6, 8)), glow(0xffa63c, 1.2)); c.position.set(x, .3, z); F3.add(c); });
   [-1, 1].forEach(s => { const hb = new THREE.Group(); hb.position.set(s * 6.6, 0, -3.2); F3.add(hb); [-.8, .8].forEach(z => box(.08, 1, .08, armor2, 0, .5, z, hb)); box(.08, .08, 1.7, glow(0x8cff5a, 1.6), 0, 1, 0, hb); });
   { const bag = cyl(.4, .4, 1.4, 10, std(0x3a1414, { roughness: .6 }), -7.4, 2.2, -12.4, F3); cyl(.03, .03, 2, 4, armor, -7.4, 4.6, -12.4, F3); }
+  zoneGroup('bag', 'E', F3);
   { const t = textTex(['訓練場', '練盤感，不練運氣'], { w: 1024, h: 300, size: 120, color: '#bfffa0', border: '#8cff5a', glowC: '#8cff5a', sub: '#fff' }); plane(3.4, 1, t, W - .05, 3.8, -11.8, F3, -Math.PI / 2); }
 
   // ---- 4 樓：戰報與英雄榜（紅金殿堂） ----
@@ -1224,8 +1226,28 @@ export async function create3D(canvas, hooks) {
 
 
   /* ---------- 任務 NPC（資料來自 quests.js，由 app.js 呼叫 api.setNpcs(floor, npcs)） ---------- */
-  // 站位避開各區域物件、電梯、走道與出電梯位置，都在預設鏡頭前方，面向大廳中央
+  // 有 station／slot 的 NPC 站在自己的櫃檯／機台前；其餘才用大廳備位
   const NPC_POS = [[-3.4, -10.0], [3.8, -11.2], [-2.8, -13.8]];
+  function clerkStand(slotKey, idx, count) {
+    const s = SLOT[slotKey]; if (!s) return null;
+    const ox = s.obj[0], oz = s.obj[1], sx = s.spot[0], sz = s.spot[1];
+    const dx = sx - ox, dz = sz - oz, len = Math.hypot(dx, dz) || 1;
+    const ux = dx / len, uz = dz / len, px = -uz, pz = ux;
+    const spread = count > 1 ? (idx - (count - 1) / 2) * 1.15 : 0;
+    const x = ox + ux * 1.05 + px * spread, z = oz + uz * 1.05 + pz * spread;
+    return { x, z, rot: Math.atan2(sx - x, sz - z) };
+  }
+  function standFor(n, i, peers) {
+    const z = n.station && (hooks.ZONES || []).find(x => x.id === n.station);
+    const slotKey = (z && z.slot) || n.slot;
+    if (slotKey && SLOT[slotKey]) {
+      const mates = (peers || []).filter(p => n.station ? p.station === n.station : (!p.station && p.slot === n.slot));
+      const idx = Math.max(0, mates.findIndex(p => p.id === n.id));
+      return clerkStand(slotKey, idx, Math.max(1, mates.length));
+    }
+    const [px, pz] = NPC_POS[i % NPC_POS.length];
+    return { x: px, z: pz, rot: Math.atan2(HUB.x - px, HUB.z - pz) };
+  }
   // 馬的毛色（[毛色, 鬃毛]）：女性偏柔和、男性偏深
   const HORSE_F = [[0xd9b06a, 0xf6e7c1], [0xe9e2d8, 0xb9a9c9], [0xa85a2c, 0xf0d9a8], [0xc9a27a, 0x5a3420], [0x8a5236, 0x2b1a12]];
   const HORSE_M = [[0x6b3a1e, 0x1a1210], [0x2e2724, 0x0e0c0b], [0xb08850, 0x3a2a18], [0x8b4a24, 0x4a2412], [0x8f8f94, 0x3a3a3f]];
@@ -1275,7 +1297,7 @@ export async function create3D(canvas, hooks) {
   const markMatReady = keep(new THREE.SpriteMaterial({ map: bangTex(true), transparent: true, depthWrite: false, depthTest: false, sizeAttenuation: true }));
   const lighten = (hex, k) => new THREE.Color(hex).lerp(new THREE.Color(0xf4e6d4), k).getHex();
   // 任務 NPC＝穿衣服的馬（和玩家的牛同一套積木風格）：長臉長嘴、直立尖耳、鬃毛、尾巴、沒有角
-  function buildNpc(n, i, parent) {
+  function buildNpc(n, i, parent, peers) {
     const h = npcHash(n.id), fem = n.gender === 'f';
     const O = NPC_OUTFIT[n.outfit] || NPC_OUTFIT[fem ? 'office' : 'suit'];
     const pair = O.coat || (fem ? HORSE_F : HORSE_M)[h % 5];
@@ -1284,8 +1306,8 @@ export async function create3D(canvas, hooks) {
     const topM = std(O.top, { roughness: .55, metalness: .08 }), botM = std(O.bc, { roughness: .6, metalness: .05 }), shoeM = std(O.shoe, { roughness: .35, metalness: .2 });
     const whiteM = std(0xf7f7f4, { roughness: .5, metalness: 0 }), goldM2 = std(C.gold, { metalness: .85, roughness: .25 });
     const has = k => O.extra && O.extra.includes(k);
-    const root = new THREE.Group(); const [x, z] = NPC_POS[i % NPC_POS.length];
-    root.position.set(x, 0, z); root.rotation.y = Math.atan2(HUB.x - x, HUB.z - z); parent.add(root);
+    const root = new THREE.Group(); const st = standFor(n, i, peers) || { x: 0, z: -10, rot: 0 };
+    root.position.set(st.x, 0, st.z); root.rotation.y = st.rot; parent.add(root);
     const bd = new THREE.Group(); root.add(bd); if (O.big) bd.scale.set(1.12, 1, 1.08);
     const tw = fem ? .66 : .74; // 女性身形較窄
     // 腿與鞋
@@ -1426,7 +1448,7 @@ export async function create3D(canvas, hooks) {
   let labels = [];
   function buildLabels() {
     labelsEl.innerHTML = '';
-    labels = hooks.ZONES.filter(z => z.floor === floorNow).map(z => {
+    labels = hooks.ZONES.filter(z => z.floor === floorNow && !z.hidden && !(hooks.stationNpc && hooks.stationNpc(z.id))).map(z => {
       const b = document.createElement('button'); b.className = 'zlabel' + (z.gold ? ' gold' : ''); b.dataset.zone = z.id;
       b.innerHTML = `<i></i>${z.name}${z.lock ? '・鎖' : ''}`; b.onclick = () => api.go(z.id); labelsEl.appendChild(b);
       const s = SLOT[z.slot]; const anchor = new THREE.Vector3(s.obj[0] * (s.f[0] ? .86 : 1), z.slot === 'G' ? 4.2 : 3.4, z.slot === 'G' ? -14.5 : s.obj[1]);
@@ -1551,6 +1573,8 @@ export async function create3D(canvas, hooks) {
     },
     go(id) {
       if (mode === 'intro' || mode === 'ride') return;
+      const nid = hooks.stationNpc && hooks.stationNpc(id);
+      if (nid) return this.goNpc(nid);
       const z = hooks.ZONES.find(z => z.id === id); if (!z || z.floor !== floorNow) return;
       document.getElementById('panelClose').click();
       walkTargetId = null; activeZone = id; const s = SLOT[z.slot];
@@ -1585,7 +1609,7 @@ export async function create3D(canvas, hooks) {
     setNpcs(f, list) {
       const g = floors[f]; if (!g || !Array.isArray(list)) return;
       const ids = list.map(n => n.id).join('|'), prev = (npcData[f] || []).map(n => n.id).join('|');
-      list.forEach((n, i) => { if (!npcMap[n.id]) { npcMap[n.id] = buildNpc(n, i, g); npcMap[n.id].floor = f; } npcMap[n.id].data = n; });
+      list.forEach((n, i) => { if (!npcMap[n.id]) { npcMap[n.id] = buildNpc(n, i, g, list); npcMap[n.id].floor = f; } npcMap[n.id].data = n; });
       npcData[f] = list.filter(n => npcMap[n.id]);
       if (f !== floorNow) return;
       if (ids !== prev) { buildLabels(); return; }
