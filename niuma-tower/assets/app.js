@@ -60,9 +60,11 @@ export const ZONES = [
   { id: 'directory', floor: 'lobby', slot: 'G', name: '樓層導覽', kicker: '各樓層開放狀態' },
   { id: 'backup', floor: '_ui', slot: 'A', name: '備份進度', kicker: '換機還原' },
   { id: 'guess', floor: 'f2', slot: 'D', name: '猜盤桌', kicker: '台股・美股猜漲跌' },
+  { id: 'tea', floor: 'f2', slot: 'B', name: '咖啡吧', kicker: '晨會前來一杯', hidden: true },
   { id: 'leader', floor: 'f2', slot: 'G', name: '本週排行榜', kicker: '猜盤積分', gold: true },
   { id: 'kline', floor: 'f3', slot: 'C', name: '看K線猜下一根', kicker: '小遊戲' },
   { id: 'fakeout', floor: 'f3', slot: 'D', name: '躲假突破', kicker: '反應小遊戲', gold: true },
+  { id: 'bag', floor: 'f3', slot: 'E', name: '訓練沙包', kicker: '連續來就對了', hidden: true },
   { id: 'tips', floor: 'f3', slot: 'G', name: '心法小提醒', kicker: '練完記一句' },
   { id: 'reports', floor: 'f4', slot: 'G', name: '戰報牆', kicker: '台股・美股每日戰報' },
   { id: 'heroes', floor: 'f4', slot: 'F', name: '英雄榜', kicker: '榮譽牆', gold: true },
@@ -82,6 +84,14 @@ export const ZONES = [
   { id: 'ireports', floor: 'insider', slot: 'G', name: '三市戰報室', kicker: 'A股戰報與總控台' },
   ...Object.keys(FLOORS).map(f => ({ id: 'lift_' + f, type: 'lift', floor: f, slot: 'H', name: '電梯', kicker: '各樓層' })),
 ];
+const STATION_EXTRA = {
+  reports: { title: '看戰報牆', close: '收起戰報牆', render: 'reports' },
+  honor: { title: '看職級榮譽牆', close: '收起榮譽牆', render: 'honor' },
+  cta: { title: '看我的資格', close: '收起資格說明', render: 'cta' },
+  target: { title: '看目標值系統', close: '收起目標值系統', render: 'target' },
+  library: { title: '看藏經閣講義', close: '收起講義', render: 'library' },
+  arena: { title: '看演武場', close: '收起演武場', render: 'arena' },
+};
 const QUOTES = [
   '真正好用的東西，往往簡單到讓人不想承認',
   '多週期共振，才是真正敢下重注的時刻',
@@ -280,12 +290,13 @@ function npcView(f) {
   const c = questCtx();
   return npcsOn(f).map(n => {
     const r = evalQuest(n.quest, c);
-    return { id: n.id, name: n.name, avatar: n.avatar, pose: n.pose, gender: n.gender, outfit: n.outfit, pending: isGM() || !r.got, ready: !isGM() && r.ready };
+    return { id: n.id, name: n.name, avatar: n.avatar, pose: n.pose, gender: n.gender, outfit: n.outfit, station: n.station || '', slot: n.slot || '', pending: isGM() || !r.got, ready: !isGM() && r.ready };
   });
 }
 let questFocus = null; // 點 3D NPC 時只顯示那一位的任務卡
 let floor = 'lobby';
-export const zonesOn = f => ZONES.filter(z => z.floor === f);
+export const zonesOn = f => ZONES.filter(z => z.floor === f && !z.hidden);
+const stationNpc = id => { const n = NPCS.find(x => x.station === id); return n ? n.id : null; };
 
 /* ---------- 自己人暗號（只比對 SHA-256；連結用暗號加密，解得開才看得到） ---------- */
 const GATE_SESSION = 'niuma-insider';
@@ -368,6 +379,10 @@ function addXP(n, coins = 0, el) {
 /* ---------- 面板 ---------- */
 const panel = $('#panel');
 export function openPanel(id, opt) {
+  if (typeof id === 'string' && !id.startsWith('npc:') && !(opt && opt.raw)) {
+    const sid = stationNpc(id);
+    if (sid) { openPanel('npc:' + sid, opt); return; }
+  }
   const npcFocus = typeof id === 'string' && id.startsWith('npc:') ? NPCS.find(n => n.id === id.slice(4)) : null;
   questFocus = npcFocus ? npcFocus.id : null;
   const z = (npcFocus ? { id, type: 'quests', name: npcFocus.name, kicker: FLOORS[npcFocus.floor].name + '・在這裡完成' } : null) || ZONES.find(z => z.id === id) || (id === 'quests' ? { id, name: 'NPC 任務', kicker: FLOORS[floor].name } : null) || FIN_PANELS.find(p => p.id === id);
@@ -461,7 +476,7 @@ function maybeClaimFocused({ refreshCard = true, force = false } = {}) {
   setTimeout(() => claiming.delete(q.id), 600);
   return true;
 }
-function mountNpcAction(host, n) {
+function mountNpcAction(host, n, opt) {
   const act = (n.quest && n.quest.action) || '';
   host.dataset.action = act;
   if (act === 'rank') {
@@ -470,8 +485,23 @@ function mountNpcAction(host, n) {
     return;
   }
   const fn = RENDER[act];
-  if (fn) fn(host);
+  if (fn) fn(host, opt);
   else host.innerHTML = '<p class="note">這項任務會隨著日常累積，達標後在這裡領取。</p>';
+  const extra = STATION_EXTRA[n.station];
+  if (extra && extra.render !== act && typeof RENDER[extra.render] === 'function') {
+    const wrap = document.createElement('div');
+    wrap.className = 'npc-station-extra';
+    wrap.innerHTML = `<button type="button" class="btn ghost sm" data-station-extra="${extra.render}" style="width:100%;margin-top:8px">${extra.title}</button><div class="npc-station-body" hidden></div>`;
+    host.appendChild(wrap);
+    const btn = wrap.querySelector('[data-station-extra]'), body = wrap.querySelector('.npc-station-body');
+    btn.onclick = ev => {
+      ev.stopPropagation();
+      const on = body.hidden;
+      if (on && !body.dataset.ready) { RENDER[extra.render](body); body.dataset.ready = '1'; }
+      body.hidden = !on;
+      btn.textContent = on ? extra.close : extra.title;
+    };
+  }
 }
 function bindQuestButtons(el) {
   el.querySelectorAll('[data-qf]').forEach(b => b.onclick = ev => { ev.stopPropagation(); questTab = b.dataset.qf; renderQuests(el); });
@@ -500,7 +530,7 @@ function bindQuestButtons(el) {
     }
   });
 }
-function renderQuests(el) {
+function renderQuests(el, opt) {
   const gmv = isGM();
   const order = FLOOR_ORDER.slice().reverse();
   if (!gmv || !questTab || !FLOORS[questTab]) questTab = floor;
@@ -512,12 +542,12 @@ function renderQuests(el) {
   const intro = focusN
     ? (gmv ? '<p class="note" style="margin:0 0 4px">GM 預覽：可以在這裡看任務、試做動作，不會記錄進度、也不會發薪水。</p>' : '')
     : `<div class="card"><div class="row between"><b>${FLOORS[f].name}</b><span class="tag">${gmv ? 'GM 預覽' : '站內薪水'}</span></div>
-    <p class="note" style="margin:8px 0 0">${gmv ? 'GM 模式可以預覽每一層的任務，點「前往」會走到 NPC，在對話裡直接做任務。不會記錄進度、也不會發薪水。' : '點任務或「前往」，角色會走到對應的 NPC／櫃檯，在對話裡直接完成任務並自動領薪水。每日任務每天換日重置，成就任務只能領一次。'}</p></div>`;
+    <p class="note" style="margin:8px 0 0">${gmv ? 'GM 模式可以預覽每一層的任務，點「前往」會走到站在櫃檯的 NPC，在對話裡直接做任務。不會記錄進度、也不會發薪水。' : '點任務或「前往」，角色會走到該任務的 NPC（就站在自己的櫃檯／機台），在對話裡直接完成並自動領薪水。每日任務每天換日重置，成就任務只能領一次。'}</p></div>`;
   el.innerHTML = `${intro}
     ${tabs}${cards || '<p class="note">這層樓的 NPC 還在路上。</p>'}
     ${focusN ? '<button class="btn ghost sm" id="qAll" style="width:100%">看這層全部任務</button><div id="npcAction" class="npc-action"></div>' : ''}
     <p class="note">薪水是站內虛擬點數，可在服裝店兌換裝扮；其他兌換內容即將公開。不能換現金。</p>`;
-  if (focusN) mountNpcAction(el.querySelector('#npcAction'), focusN);
+  if (focusN) mountNpcAction(el.querySelector('#npcAction'), focusN, opt);
   bindQuestButtons(el);
 }
 
@@ -745,7 +775,7 @@ const RENDER = {
     el.querySelector('#toCta5').onclick = () => world ? world.go('cta5') : openPanel('cta5');
   },
   shop(el) { renderShop(el); },
-  quests(el) { renderQuests(el); },
+  quests(el, opt) { renderQuests(el, opt); },
   ...RENDER_FIN,
   ...LAB_RENDER,
   backup(el) { renderBackup(el); },
@@ -1199,6 +1229,7 @@ const hooks = {
   go: id => world && world.go(id),
   open: id => openPanel(id),
   openNpc: id => openPanel('npc:' + id),
+  stationNpc,
   floor: () => floor,
   outfit: () => equipped(),
   nearZone(z) {
