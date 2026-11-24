@@ -617,7 +617,7 @@ export async function create3D(canvas, hooks) {
   }
   function lookMat(look, extra = {}) {
     const pat = look && look.pattern;
-    const map = pat === 'kline' ? klineTex('mix') : pat === 'kline-gold' ? klineTex('gold') : pat === 'green' ? klineTex('green') : (pat === 'yageo' && look.type === 'pants') ? resistorTex() : null;
+    const map = pat === 'kline' ? klineTex('mix') : pat === 'kline-gold' ? klineTex('gold') : pat === 'green' ? klineTex('green') : (pat === 'yageo' && look.type === 'pants') ? resistorTex() : (pat === 'tsmc' && look.type === 'pants') ? tsmcStripeTex() : null;
     return std(look.color, { roughness: look.rough ?? .45, metalness: look.metal ?? .3, map, ...extra });
   }
   const yageoCache = {};
@@ -673,6 +673,67 @@ export async function create3D(canvas, hooks) {
     });
     yageoCache.watch = t; return t;
   }
+  const tsmcCache = {};
+  function tsmcChestTex() {
+    if (tsmcCache.chest) return tsmcCache.chest;
+    const t = canvasTex(1024, 1024, (g, w, h) => {
+      g.fillStyle = '#180408'; g.fillRect(0, 0, w, h);
+      const candle = (x, y, bh, bw) => { g.fillStyle = '#ff3a4c'; g.fillRect(x, y, bw, bh); g.fillStyle = '#ffe3a0'; g.fillRect(x + bw * .4, y - 20, Math.max(2, bw * .15), bh + 40); };
+      for (let i = 0; i < 12; i++) {
+        const bh = 40 + (i * 41) % 130;
+        candle(28 + (i % 2) * 30, 80 + i * 72, bh, 16);
+        candle(w - 62 - (i % 2) * 30, 70 + i * 74, bh, 16);
+      }
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.shadowColor = '#ff3a4c'; g.shadowBlur = 36;
+      g.fillStyle = '#fff6e8'; g.font = `900 210px ${FONT}`;
+      g.fillText('台積電', w / 2, h * 0.36);
+      g.fillStyle = '#ffd68a'; g.font = `900 180px ${FONT}`;
+      g.fillText('2330', w / 2, h * 0.58);
+      g.shadowBlur = 0;
+      const tw = 320, th = 96, tx = w / 2 - tw / 2, ty = h * 0.73, r = 22;
+      g.fillStyle = '#ff3a4c';
+      g.beginPath();
+      g.moveTo(tx + r, ty); g.arcTo(tx + tw, ty, tx + tw, ty + th, r);
+      g.arcTo(tx + tw, ty + th, tx, ty + th, r); g.arcTo(tx, ty + th, tx, ty, r);
+      g.arcTo(tx, ty, tx + tw, ty, r); g.closePath(); g.fill();
+      g.fillStyle = '#fff6e8'; g.font = `900 76px ${FONT}`;
+      g.fillText('漲停', w / 2, ty + th / 2 + 2);
+    });
+    tsmcCache.chest = t; return t;
+  }
+  function tsmcStripeTex() {
+    if (tsmcCache.stripe) return tsmcCache.stripe;
+    const t = canvasTex(256, 256, (g, w, h) => {
+      g.fillStyle = '#3a1014'; g.fillRect(0, 0, w, h);
+      const bands = ['#180408', '#ff3a4c', '#3a1014', '#ff5468', '#3a1014', '#ffd68a', '#3a1014', '#6a1820', '#ff3a4c'];
+      let y = 12;
+      bands.forEach((c, i) => { const bh = i % 2 === 0 ? 26 : 16; g.fillStyle = c; g.fillRect(0, y, w, bh); y += bh + 6; });
+    });
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    tsmcCache.stripe = t; return t;
+  }
+  function tsmcWatchTex() {
+    if (tsmcCache.watch) return tsmcCache.watch;
+    const t = canvasTex(512, 512, (g, w, h) => {
+      g.fillStyle = '#180408'; g.beginPath(); g.arc(w / 2, h / 2, w / 2 - 2, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = '#ff3a4c'; g.lineWidth = 22; g.stroke();
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillStyle = '#fff6e8'; g.font = `900 150px ${FONT}`;
+      g.fillText('2330', w / 2, h * 0.44);
+      g.fillStyle = '#ffd68a'; g.font = `900 92px ${FONT}`;
+      g.fillText('漲停', w / 2, h * 0.68);
+    });
+    tsmcCache.watch = t; return t;
+  }
+  function addLimitBar(parent, x, y, z, scale = 1) {
+    const bodyH = 0.90 * scale, bodyW = 0.22 * scale, wick = 0.20 * scale;
+    const red = std(0xff3a4c, { roughness: .32, metalness: .18, emissive: 0xff1e30, emissiveIntensity: .25 });
+    const gold = std(0xffe3a0, { metalness: .55, roughness: .28 });
+    box(bodyW, bodyH, bodyW, red, x, y, z, parent);
+    box(bodyW * .18, bodyH + wick * 2, bodyW * .18, gold, x, y, z + .01, parent);
+    return { bodyH };
+  }
   function addResistor(parent, x, y, z, len, rad, axis = 'x') {
     const g = new THREE.Group(); g.position.set(x, y, z);
     if (axis === 'z') g.rotation.x = Math.PI / 2;
@@ -696,11 +757,11 @@ export async function create3D(canvas, hooks) {
     box(.05 * scale, .125 * scale, .09 * scale, cap, x + .135 * scale, y, z, parent);
   }
   function addCandles(parent, x, y, z, scale, pattern, n = 5, along = 'x') {
-    if (!pattern || (pattern !== 'kline' && pattern !== 'kline-gold' && pattern !== 'green' && pattern !== 'yageo')) return;
-    const wickC = pattern === 'kline-gold' ? 0xffd56a : 0xeeeeee;
+    if (!pattern || (pattern !== 'kline' && pattern !== 'kline-gold' && pattern !== 'green' && pattern !== 'yageo' && pattern !== 'tsmc')) return;
+    const wickC = pattern === 'kline-gold' ? 0xffd56a : pattern === 'tsmc' ? 0xffe3a0 : 0xeeeeee;
     for (let i = 0; i < n; i++) {
-      const up = (pattern === 'green' || pattern === 'yageo') ? false : (i % 3 !== 1);
-      const c = (pattern === 'green' || pattern === 'yageo') ? 0x2fd38a : up ? 0xff5468 : 0x2fd38a;
+      const up = (pattern === 'green' || pattern === 'yageo') ? false : (pattern === 'tsmc' ? true : (i % 3 !== 1));
+      const c = (pattern === 'green' || pattern === 'yageo') ? 0x2fd38a : (pattern === 'tsmc' || up) ? 0xff3a4c : 0x2fd38a;
       const bh = (0.07 + (i % 3) * 0.03) * scale;
       const off = (i - (n - 1) / 2) * 0.08 * scale;
       const px = along === 'x' ? x + off : x;
@@ -726,11 +787,17 @@ export async function create3D(canvas, hooks) {
       const look = jacket.look || {}, m = lookMat(look);
       const shape = look.shape || 'suit';
       const yageo = look.pattern === 'yageo';
+      const tsmc = look.pattern === 'tsmc';
       if (yageo) {
         rbox(.88, .88, .56, .12, m, 0, 1.2, 0, wearRoot);
         plane(.74, .66, yageoChestTex(), 0, 1.16, .305, wearRoot);
         addCandles(wearRoot, -.34, 1.28, .36, .9, 'yageo', 4);
         addCandles(wearRoot, .34, 1.28, .36, .9, 'yageo', 4);
+      } else if (tsmc) {
+        rbox(.88, .88, .56, .12, m, 0, 1.2, 0, wearRoot);
+        plane(.86, .70, tsmcChestTex(), 0, 1.16, .305, wearRoot);
+        addCandles(wearRoot, -.36, 1.28, .36, .9, 'tsmc', 4);
+        addCandles(wearRoot, .36, 1.28, .36, .9, 'tsmc', 4);
       } else if (shape === 'hoodie') {
         rbox(.9, .9, .58, .14, m, 0, 1.18, 0, wearRoot);
         box(.62, .22, .5, m, 0, 1.68, -.06, wearRoot);
@@ -742,7 +809,7 @@ export async function create3D(canvas, hooks) {
         rbox(.86, .86, .56, .12, m, 0, 1.2, 0, wearRoot);
         box(.16, .7, .06, std(look.color2 || 0xe8eef6, { roughness: .6, metalness: look.color2 ? (look.metal || .4) : 0 }), 0, 1.18, .28, wearRoot);
       }
-      if (!yageo) addCandles(wearRoot, 0, 1.25, .36, 1.15, look.pattern, 6);
+      if (!yageo && !tsmc) addCandles(wearRoot, 0, 1.25, .36, 1.15, look.pattern, 6);
     }
 
     const tie = it('tie');
@@ -765,6 +832,10 @@ export async function create3D(canvas, hooks) {
         const ring = cyl(.2, .2, .035, 18, std(0x9ee6c4, { metalness: .7, roughness: .3 }), 0, 1.58, .04, wearRoot);
         ring.rotation.x = Math.PI / 2;
         addChipCap(wearRoot, 0, 1.52, .22, 1);
+      } else if (look.pattern === 'tsmc' || look.shape === 'candle') {
+        const ring = cyl(.2, .2, .035, 18, std(0xffe3a0, { metalness: .8, roughness: .25 }), 0, 1.58, .04, wearRoot);
+        ring.rotation.x = Math.PI / 2;
+        addLimitBar(wearRoot, 0, 1.38, .22, .22);
       } else {
         const thick = look.shape === 'thick';
         const ring = cyl(thick ? .23 : .2, thick ? .23 : .2, thick ? .07 : .035, 18, nm, 0, 1.58, .04, wearRoot);
@@ -781,6 +852,9 @@ export async function create3D(canvas, hooks) {
         if (look.pattern === 'yageo') {
           const bands = [0x7dffc4, 0x0a3d28, 0x2fd38a, 0x145c3a, 0xb8ff9a];
           bands.forEach((c, k) => box(.27, .07, .29, std(c, { roughness: .4, metalness: k === 4 ? .35 : .15 }), 0, -.08 - k * .11, 0, w));
+        } else if (look.pattern === 'tsmc') {
+          const bands = [0xff5468, 0x3a1014, 0xff3a4c, 0x180408, 0xffd68a];
+          bands.forEach((c, k) => box(.27, .07, .29, std(c, { roughness: .4, metalness: k === 4 ? .45 : .15 }), 0, -.08 - k * .11, 0, w));
         } else {
           if (look.color2 && look.pattern === 'stripe') box(.03, .68, .28, std(look.color2, { roughness: .5 }), 0, -.35, .01, w);
           if (look.color2 && look.pattern !== 'stripe' && look.pattern !== 'kline' && look.pattern !== 'kline-gold' && look.pattern !== 'green')
@@ -806,6 +880,8 @@ export async function create3D(canvas, hooks) {
         if (shape === 'sneaker') box(.3, .04, .44, std(look.color2 || 0xf2f5fb, { roughness: .7 }), 0, -.8, .06, w);
         if (look.pattern === 'yageo') {
           [0x7dffc4, 0x2fd38a, 0xb8ff9a].forEach((c, k) => box(.29, .03, .4, std(c, { roughness: .4 }), 0, -.66 - k * .05, .05, w));
+        } else if (look.pattern === 'tsmc') {
+          [0xff5468, 0xff3a4c, 0xffd68a].forEach((c, k) => box(.29, .03, .4, std(c, { roughness: .4 }), 0, -.66 - k * .05, .05, w));
         } else addCandles(w, 0, -.7, .28, .55, look.pattern, 3, 'x');
       });
     }
@@ -814,7 +890,10 @@ export async function create3D(canvas, hooks) {
     if (hat) {
       const look = hat.look || {}, hm = lookMat(look);
       const sh = look.shape || 'bowler';
-      if (sh === 'cap') { box(.7, .16, .7, hm, 0, .47, 0, wearHead); box(.5, .06, .36, hm, 0, .41, .42, wearHead); }
+      if (sh === 'candle' || look.pattern === 'tsmc' && sh === 'candle') {
+        const bodyH = 0.90;
+        addLimitBar(wearHead, 0, .50 + bodyH / 2, 0, 1);
+      } else if (sh === 'cap') { box(.7, .16, .7, hm, 0, .47, 0, wearHead); box(.5, .06, .36, hm, 0, .41, .42, wearHead); }
       else if (sh === 'beanie') { cyl(.4, .44, .32, 16, hm, 0, .5, 0, wearHead); }
       else if (sh === 'beret') { cyl(.5, .5, .1, 18, hm, .06, .44, 0, wearHead); }
       else if (sh === 'bucket') { cyl(.4, .5, .22, 16, hm, 0, .42, 0, wearHead); cyl(.52, .52, .05, 16, hm, 0, .32, 0, wearHead); }
@@ -828,9 +907,9 @@ export async function create3D(canvas, hooks) {
           box(.08, .22, .08, hm, Math.cos(a) * .34, .62, Math.sin(a) * .34, wearHead);
         }
       } else { cyl(.42, .4, .22, 16, hm, 0, .51, 0, wearHead); cyl(.62, .62, .05, 20, hm, 0, .4, 0, wearHead); }
-      if (look.color2 && sh !== 'crown' && look.pattern !== 'yageo') cyl(.46, .46, .03, 16, std(look.color2, { metalness: .8, roughness: .3 }), 0, .38, 0, wearHead);
+      if (look.color2 && sh !== 'crown' && look.pattern !== 'yageo' && sh !== 'candle') cyl(.46, .46, .03, 16, std(look.color2, { metalness: .8, roughness: .3 }), 0, .38, 0, wearHead);
       if (look.pattern === 'yageo') addResistor(wearHead, 0, .56, .38, .55, .045, 'x');
-      else addCandles(wearHead, 0, .5, .4, .7, look.pattern, 4);
+      else if (sh !== 'candle') addCandles(wearHead, 0, .5, .4, .7, look.pattern, 4);
     }
 
     const glasses = it('glasses');
@@ -843,6 +922,11 @@ export async function create3D(canvas, hooks) {
         [-1, 1].forEach(s => {
           const l = new THREE.Mesh(keep(new THREE.CircleGeometry(.1, 12)), lens); l.position.set(s * .16, .07, .4); wearHead.add(l);
           addResistor(wearHead, s * .28, .07, .12, .52, .028, 'z');
+        });
+      } else if (look.pattern === 'tsmc') {
+        [-1, 1].forEach(s => {
+          const l = new THREE.Mesh(keep(new THREE.CircleGeometry(.1, 12)), lens); l.position.set(s * .16, .07, .4); wearHead.add(l);
+          const r = new THREE.Mesh(keep(new THREE.TorusGeometry(.1, .016, 6, 14)), gm); r.position.set(s * .16, .07, .4); wearHead.add(r);
         });
       } else
       [-1, 1].forEach(s => {
@@ -863,7 +947,7 @@ export async function create3D(canvas, hooks) {
           const l = new THREE.Mesh(keep(new THREE.CircleGeometry(.1, 12)), lens); l.position.set(s * .16, .07, .4); wearHead.add(l);
         }
       });
-      if (look.pattern !== 'yageo') addCandles(wearHead, 0, .07, .46, .45, look.pattern, 4);
+      if (look.pattern !== 'yageo' && look.pattern !== 'tsmc') addCandles(wearHead, 0, .07, .46, .45, look.pattern, 4);
     }
 
     const horns = it('horns');
@@ -886,6 +970,10 @@ export async function create3D(canvas, hooks) {
         cyl(.1, .1, .05, 20, wm, 0, -.56, .11, wearArms[0]).rotation.x = Math.PI / 2;
         const face = keep(new THREE.MeshBasicMaterial({ map: yageoWatchTex() }));
         cyl(.085, .085, .02, 20, face, 0, -.56, .145, wearArms[0]).rotation.x = Math.PI / 2;
+      } else if (look.pattern === 'tsmc') {
+        cyl(.1, .1, .05, 20, wm, 0, -.56, .11, wearArms[0]).rotation.x = Math.PI / 2;
+        const face = keep(new THREE.MeshBasicMaterial({ map: tsmcWatchTex() }));
+        cyl(.085, .085, .02, 20, face, 0, -.56, .145, wearArms[0]).rotation.x = Math.PI / 2;
       } else {
         cyl(.07, .07, .04, 16, wm, 0, -.56, .1, wearArms[0]).rotation.x = Math.PI / 2;
         const face = std(look.color2 || 0x111111, { roughness: .3, metalness: .4, map: look.pattern ? klineTex(look.pattern === 'kline-gold' ? 'gold' : look.pattern === 'green' ? 'green' : 'mix') : null });
@@ -907,6 +995,7 @@ export async function create3D(canvas, hooks) {
     document.fonts.load('900 80px "Noto Sans CJK TC"').catch(() => {});
     document.fonts.ready.then(() => {
       yageoCache.chest = yageoCache.watch = null;
+      tsmcCache.chest = tsmcCache.watch = tsmcCache.stripe = null;
       if (hooks.outfit) applyOutfit(hooks.outfit());
     });
   }
