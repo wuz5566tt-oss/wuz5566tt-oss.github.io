@@ -73,6 +73,8 @@ body.flat #gl,body.flat #labels{display:none}
 .card[data-npc]{cursor:pointer}
 .card[data-npc]:hover{box-shadow:inset 0 0 0 1px rgba(255,200,90,.45)}
 .npc-action{margin-top:10px}
+.npc-station-extra{margin-top:6px}
+.npc-station-body{margin-top:8px}
 #npcQuestCard{margin-bottom:2px}
 
 /* 面板 */
