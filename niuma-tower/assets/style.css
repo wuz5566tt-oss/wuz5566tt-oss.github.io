@@ -502,6 +502,11 @@ body.cyber .fi-sky{background:linear-gradient(180deg,#1a0840,#3a1868 40%,#12061c
 .shop-preview.yageo em{font-style:normal;font-weight:800;font-size:.68rem;letter-spacing:.12em;padding:2px 7px;border-radius:999px;background:#2fd38a;color:#04180f}
 .shop-badge.yageo{background:rgba(47,211,138,.18);color:#7dffc4;box-shadow:inset 0 0 0 1px rgba(47,211,138,.45)}
 .shop-item.yageo{box-shadow:inset 0 0 0 1px rgba(47,211,138,.28)}
+.shop-preview.tsmc{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 9px;border-radius:10px;background:linear-gradient(90deg,#180408,#3a1014 55%,#2a080c);box-shadow:inset 0 0 0 1px rgba(255,58,76,.5),0 0 12px rgba(255,58,76,.22)}
+.shop-preview.tsmc strong{color:#fff6e8;font-size:.92rem;letter-spacing:.12em}
+.shop-preview.tsmc em{font-style:normal;font-weight:800;font-size:.68rem;letter-spacing:.12em;padding:2px 7px;border-radius:999px;background:#ff3a4c;color:#fff6e8}
+.shop-badge.tsmc{background:rgba(255,58,76,.18);color:#ffd68a;box-shadow:inset 0 0 0 1px rgba(255,58,76,.5)}
+.shop-item.tsmc{box-shadow:inset 0 0 0 1px rgba(255,58,76,.32)}
 .chip.gm-badge{background:linear-gradient(90deg,rgba(255,200,90,.2),rgba(217,164,65,.12));box-shadow:inset 0 0 0 1px var(--gold),0 0 14px rgba(255,200,90,.28);gap:6px;align-items:center}
 .chip.gm-badge b{color:#ffe9b0;letter-spacing:.08em}
 .chip.gm-badge small{color:#ffe3a0;opacity:.9}
