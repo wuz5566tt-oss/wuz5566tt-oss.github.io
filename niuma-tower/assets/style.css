@@ -69,6 +69,9 @@ body.flat #gl,body.flat #labels{display:none}
 .zlabel.gold i{background:var(--gold);box-shadow:0 0 8px var(--gold)}
 .zlabel.hidden{opacity:0;pointer-events:none}
 .zlabel .new{color:var(--up);font-size:.68rem}
+.zlabel .bang{color:var(--gold);font-size:.95rem;font-weight:900;line-height:1;text-shadow:0 0 10px rgba(255,200,90,.95),0 0 2px #2a1700}
+.card[data-npc]{cursor:pointer}
+.card[data-npc]:hover{box-shadow:inset 0 0 0 1px rgba(255,200,90,.45)}
 
 /* 面板 */
 .panel{position:fixed;z-index:40;left:0;right:0;bottom:0;max-height:min(74vh,680px);display:flex;flex-direction:column;background:linear-gradient(180deg,rgba(14,26,52,.94),rgba(6,12,28,.97));border-radius:22px 22px 0 0;box-shadow:0 -1px 0 rgba(120,220,255,.35),0 -20px 60px rgba(0,0,0,.5);transform:translateY(105%);transition:transform .42s var(--ease-out);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);padding-bottom:var(--safe-b)}
