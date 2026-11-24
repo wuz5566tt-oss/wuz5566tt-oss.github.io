@@ -275,10 +275,13 @@ function questLog(key, val, mode = 'max') {
   d[key] = mode === 'add' ? (d[key] | 0) + val : Math.max(d[key] | 0, val);
 }
 const claiming = new Set();
-// 給 3D 場景的 NPC 清單：ready＝有可領任務（GM 只預覽，不顯示可領）
+// 給 3D 場景的 NPC 清單：pending＝還有未領任務（含 GM 預覽），ready＝可領取
 function npcView(f) {
   const c = questCtx();
-  return npcsOn(f).map(n => ({ id: n.id, name: n.name, avatar: n.avatar, pose: n.pose, gender: n.gender, outfit: n.outfit, ready: !isGM() && evalQuest(n.quest, c).ready }));
+  return npcsOn(f).map(n => {
+    const r = evalQuest(n.quest, c);
+    return { id: n.id, name: n.name, avatar: n.avatar, pose: n.pose, gender: n.gender, outfit: n.outfit, pending: isGM() || !r.got, ready: !isGM() && r.ready };
+  });
 }
 let questFocus = null; // 點 3D NPC 時只顯示那一位的任務卡
 let floor = 'lobby';
@@ -399,6 +402,21 @@ const ladderHTML = () => {
 
 
 let questTab = null;
+let guiding = false;
+async function goToQuestNpc(id) {
+  const n = NPCS.find(x => x.id === id);
+  if (!n || guiding) return;
+  guiding = true;
+  try {
+    closePanel();
+    if (n.floor !== floor) {
+      if (!floorOpen(n.floor)) { toast('這層樓還沒解鎖'); return; }
+      await ride(n.floor);
+    }
+    if (world && world.goNpc) world.goNpc(id);
+    else openPanel('npc:' + id);
+  } finally { guiding = false; }
+}
 function renderQuests(el) {
   const gmv = isGM();
   const order = FLOOR_ORDER.slice().reverse();
@@ -412,6 +430,7 @@ function renderQuests(el) {
     const btn = r.got ? `<button class="btn ghost sm" disabled>${daily ? '今天已領' : '已領取'}</button>`
       : r.ready ? `<button class="btn primary sm" data-claim="${q.id}">領取</button>`
       : `<button class="btn ghost sm" disabled>進行中</button>`;
+    const goBtn = focusN ? '' : `<button type="button" class="btn cyan sm" data-go-npc="${n.id}">前往</button>`;
     return `<div class="card" data-npc="${n.id}">
       <div class="row" style="align-items:flex-start;flex-wrap:nowrap">
         <div aria-hidden="true" style="flex:0 0 44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:1.6rem;background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px var(--line)">${n.avatar}</div>
@@ -419,15 +438,19 @@ function renderQuests(el) {
         <p class="note" style="margin:4px 0 0">「${n.line}」</p></div></div>
       <div class="row between" style="margin:10px 0 6px;flex-wrap:nowrap"><span>${q.title}</span><b style="color:var(--gold);white-space:nowrap">${r.prog}/${r.target}</b></div>
       <div class="bar"><i style="width:${pct}%"></i></div>
-      <div class="row between" style="margin-top:10px"><span class="note">獎勵：${rewardText(q.reward)}</span>${btn}</div></div>`;
+      <div class="row between" style="margin-top:10px"><span class="note">獎勵：${rewardText(q.reward)}</span><span class="row" style="gap:6px;flex-shrink:0">${goBtn}${btn}</span></div></div>`;
   }).join('');
   el.innerHTML = `${focusN ? (gmv ? '<p class="note" style="margin:0 0 4px">GM 預覽：可以看任務，不會記錄進度、也不會發薪水。</p>' : '') : `<div class="card"><div class="row between"><b>${FLOORS[f].name}</b><span class="tag">${gmv ? 'GM 預覽' : '站內薪水'}</span></div>
-    <p class="note" style="margin:8px 0 0">${gmv ? 'GM 模式可以預覽每一層的任務，不會記錄進度、也不會發薪水。' : '找這層樓的 NPC 接任務，完成就能領站內薪水。每日任務每天換日重置，成就任務只能領一次。'}</p></div>`}
+    <p class="note" style="margin:8px 0 0">${gmv ? 'GM 模式可以預覽每一層的任務，不會記錄進度、也不會發薪水。點任務或「前往」，角色會走到對應的 NPC。' : '點任務或「前往」，角色會走到對應的 NPC。完成就能領站內薪水。每日任務每天換日重置，成就任務只能領一次。'}</p></div>`}
     ${tabs}${cards || '<p class="note">這層樓的 NPC 還在路上。</p>'}
     ${focusN ? '<button class="btn ghost sm" id="qAll" style="width:100%">看這層全部任務</button>' : ''}
     <p class="note">薪水是站內虛擬點數，可在服裝店兌換裝扮；其他兌換內容即將公開。不能換現金。</p>`;
-  el.querySelectorAll('[data-qf]').forEach(b => b.onclick = () => { questTab = b.dataset.qf; renderQuests(el); });
+  el.querySelectorAll('[data-qf]').forEach(b => b.onclick = ev => { ev.stopPropagation(); questTab = b.dataset.qf; renderQuests(el); });
   const qa = el.querySelector('#qAll'); qa && (qa.onclick = () => { questFocus = null; questTab = f; $('#panelTitle').textContent = 'NPC 任務'; $('#panelKicker').textContent = FLOORS[f].name; renderQuests(el); });
+  el.querySelectorAll('[data-go-npc]').forEach(b => b.onclick = ev => { ev.stopPropagation(); goToQuestNpc(b.dataset.goNpc); });
+  el.querySelectorAll('.card[data-npc]').forEach(card => {
+    card.onclick = ev => { if (ev.target.closest('button')) return; goToQuestNpc(card.dataset.npc); };
+  });
   el.querySelectorAll('[data-claim]').forEach(b => b.onclick = () => {
     if (b.disabled) return;
     if (blockGmProgress('GM 模式只能預覽任務，不會發薪水')) return;
@@ -1068,8 +1091,19 @@ function createFlat() {
     openPanel(id);
   }
   draw();
+  const NPC_FLAT = [[28, 48], [72, 52], [36, 40]];
+  async function goNpc(id) {
+    const list = npcsOn(floor);
+    const i = Math.max(0, list.findIndex(n => n.id === id));
+    closePanel();
+    const tok = busy = {};
+    await walk({ x: 50, y: 58 }); if (busy !== tok) return;
+    const [x, y] = NPC_FLAT[i % NPC_FLAT.length];
+    await walk({ x, y }); if (busy !== tok) return;
+    openPanel('npc:' + id);
+  }
   return {
-    kind: 'flat', go,
+    kind: 'flat', go, goNpc,
     idle() { root.classList.add('intro'); },
     intro(caption) {
       return new Promise(res => {
@@ -1276,6 +1310,6 @@ function maybeGmGate() {
 initFin({ get S() { return S; }, save, addXP, toast, blip, isGM, block: blockGmProgress, esc, refreshHud, PUBLIC_REPORTS,
   rankName: () => RANKS[rankIndex()].name, insider: () => insiderLinks });
 initLab({ get S() { return S; }, save, addXP, toast, blip, isGM, questLog, today, refreshHud, open: (id, opt) => openPanel(id, opt) });
-window.__niuma = { get world() { return world; }, get floor() { return floor; }, openPanel, closePanel, ride, get ready() { return ready; }, SHOP, encodeBackup, decodeBackup, applySnapshot, maybeRemind, get isGM() { return isGM(); } };
+window.__niuma = { get world() { return world; }, get floor() { return floor; }, openPanel, closePanel, ride, goToQuestNpc, get ready() { return ready; }, SHOP, encodeBackup, decodeBackup, applySnapshot, maybeRemind, get isGM() { return isGM(); } };
 ready = (async () => { await restoreInsider(); await switchTo(startFlat ? 'flat' : '3d', false); maybeGmGate(); })();
 if (qs.has('lobby')) skip();
