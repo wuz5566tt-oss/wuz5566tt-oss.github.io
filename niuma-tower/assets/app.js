@@ -362,6 +362,7 @@ function addXP(n, coins = 0, el) {
   if (coins) coinBurst(el);
   if (rankIndex() > before) setTimeout(() => toast(`恭喜升職！你現在是「${RANKS[rankIndex()].name}」`), 900);
   refreshHud();
+  maybeClaimFocused();
 }
 
 /* ---------- 面板 ---------- */
@@ -369,7 +370,7 @@ const panel = $('#panel');
 export function openPanel(id, opt) {
   const npcFocus = typeof id === 'string' && id.startsWith('npc:') ? NPCS.find(n => n.id === id.slice(4)) : null;
   questFocus = npcFocus ? npcFocus.id : null;
-  const z = (npcFocus ? { id, type: 'quests', name: npcFocus.name, kicker: FLOORS[npcFocus.floor].name + '・任務 NPC' } : null) || ZONES.find(z => z.id === id) || (id === 'quests' ? { id, name: 'NPC 任務', kicker: FLOORS[floor].name } : null) || FIN_PANELS.find(p => p.id === id);
+  const z = (npcFocus ? { id, type: 'quests', name: npcFocus.name, kicker: FLOORS[npcFocus.floor].name + '・在這裡完成' } : null) || ZONES.find(z => z.id === id) || (id === 'quests' ? { id, name: 'NPC 任務', kicker: FLOORS[floor].name } : null) || FIN_PANELS.find(p => p.id === id);
   if (!z) return;
   $('#panelKicker').textContent = z.kicker; $('#panelTitle').textContent = z.name;
   RENDER[z.type || id]($('#panelBody'), opt);
@@ -417,21 +418,14 @@ async function goToQuestNpc(id) {
     else openPanel('npc:' + id);
   } finally { guiding = false; }
 }
-function renderQuests(el) {
-  const gmv = isGM();
-  const order = FLOOR_ORDER.slice().reverse();
-  if (!gmv || !questTab || !FLOORS[questTab]) questTab = floor;
-  const focusN = questFocus ? NPCS.find(n => n.id === questFocus) : null;
-  const f = focusN ? focusN.floor : questTab, c = questCtx(), list = focusN ? [focusN] : npcsOn(f);
-  const tabs = gmv && !focusN ? `<div class="shop-tabs" role="tablist">${order.map(id => `<button type="button" class="shop-tab${id === f ? ' on' : ''}" data-qf="${id}">${FLOORS[id].num}F</button>`).join('')}</div>` : '';
-  const cards = list.map(n => {
-    const q = n.quest, r = evalQuest(q, c), daily = q.kind === 'daily';
-    const pct = Math.round((r.prog / r.target) * 100);
-    const btn = r.got ? `<button class="btn ghost sm" disabled>${daily ? '今天已領' : '已領取'}</button>`
-      : r.ready ? `<button class="btn primary sm" data-claim="${q.id}">領取</button>`
-      : `<button class="btn ghost sm" disabled>進行中</button>`;
-    const goBtn = focusN ? '' : `<button type="button" class="btn cyan sm" data-go-npc="${n.id}">前往</button>`;
-    return `<div class="card" data-npc="${n.id}">
+function questCardHTML(n, r, { go = false, idAttr = '' } = {}) {
+  const q = n.quest, daily = q.kind === 'daily';
+  const pct = Math.round((r.prog / r.target) * 100);
+  const btn = r.got ? `<button class="btn ghost sm" disabled>${daily ? '今天已領' : '已領取'}</button>`
+    : r.ready ? `<button class="btn primary sm" data-claim="${q.id}">領取</button>`
+    : (go ? `<button class="btn ghost sm" disabled>進行中</button>` : '');
+  const goBtn = go ? `<button type="button" class="btn cyan sm" data-go-npc="${n.id}">前往</button>` : '';
+  return `<div class="card" data-npc="${n.id}" data-action="${q.action || ''}"${idAttr}>
       <div class="row" style="align-items:flex-start;flex-wrap:nowrap">
         <div aria-hidden="true" style="flex:0 0 44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:1.6rem;background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px var(--line)">${n.avatar}</div>
         <div style="flex:1;min-width:0"><div class="row between"><b>${n.name}</b><span class="tag${daily ? ' cyan' : ''}">${daily ? '每日任務' : '成就任務'}</span></div>
@@ -439,36 +433,92 @@ function renderQuests(el) {
       <div class="row between" style="margin:10px 0 6px;flex-wrap:nowrap"><span>${q.title}</span><b style="color:var(--gold);white-space:nowrap">${r.prog}/${r.target}</b></div>
       <div class="bar"><i style="width:${pct}%"></i></div>
       <div class="row between" style="margin-top:10px"><span class="note">獎勵：${rewardText(q.reward)}</span><span class="row" style="gap:6px;flex-shrink:0">${goBtn}${btn}</span></div></div>`;
-  }).join('');
-  el.innerHTML = `${focusN ? (gmv ? '<p class="note" style="margin:0 0 4px">GM 預覽：可以看任務，不會記錄進度、也不會發薪水。</p>' : '') : `<div class="card"><div class="row between"><b>${FLOORS[f].name}</b><span class="tag">${gmv ? 'GM 預覽' : '站內薪水'}</span></div>
-    <p class="note" style="margin:8px 0 0">${gmv ? 'GM 模式可以預覽每一層的任務，不會記錄進度、也不會發薪水。點任務或「前往」，角色會走到對應的 NPC。' : '點任務或「前往」，角色會走到對應的 NPC。完成就能領站內薪水。每日任務每天換日重置，成就任務只能領一次。'}</p></div>`}
-    ${tabs}${cards || '<p class="note">這層樓的 NPC 還在路上。</p>'}
-    ${focusN ? '<button class="btn ghost sm" id="qAll" style="width:100%">看這層全部任務</button>' : ''}
-    <p class="note">薪水是站內虛擬點數，可在服裝店兌換裝扮；其他兌換內容即將公開。不能換現金。</p>`;
+}
+function refreshNpcQuestCard() {
+  const el = document.getElementById('npcQuestCard');
+  if (!el || !questFocus) return;
+  const n = NPCS.find(x => x.id === questFocus); if (!n) return;
+  const wrap = document.createElement('div');
+  wrap.innerHTML = questCardHTML(n, evalQuest(n.quest, questCtx()), { idAttr: ' id="npcQuestCard"' });
+  el.replaceWith(wrap.firstElementChild);
+  bindQuestButtons(document.getElementById('panelBody'));
+}
+function maybeClaimFocused({ refreshCard = true, force = false } = {}) {
+  if (isGM() || !questFocus) return false;
+  if (!force && !panel.classList.contains('open')) return false;
+  const n = NPCS.find(x => x.id === questFocus); if (!n) return false;
+  const q = n.quest;
+  if (claiming.has(q.id)) return false;
+  const r = evalQuest(q, questCtx());
+  if (!r.ready) return false;
+  claiming.add(q.id);
+  markClaimed(fixQuests(), q, today());
+  const rw = q.reward || {};
+  addXP(rw.xp | 0, rw.coins | 0);
+  blip(1046);
+  toast(`任務完成！${rewardText(rw)}`);
+  if (refreshCard) refreshNpcQuestCard();
+  setTimeout(() => claiming.delete(q.id), 600);
+  return true;
+}
+function mountNpcAction(host, n) {
+  const act = (n.quest && n.quest.action) || '';
+  host.dataset.action = act;
+  if (act === 'rank') {
+    host.innerHTML = `<div id="npcRank">${ladderHTML()}</div><div id="npcRankPunch"></div><p class="note">經驗來自打卡、心法、猜盤與複盤。達標後會在這裡自動發薪水。</p>`;
+    RENDER.checkin(host.querySelector('#npcRankPunch'));
+    return;
+  }
+  const fn = RENDER[act];
+  if (fn) fn(host);
+  else host.innerHTML = '<p class="note">這項任務會隨著日常累積，達標後在這裡領取。</p>';
+}
+function bindQuestButtons(el) {
   el.querySelectorAll('[data-qf]').forEach(b => b.onclick = ev => { ev.stopPropagation(); questTab = b.dataset.qf; renderQuests(el); });
-  const qa = el.querySelector('#qAll'); qa && (qa.onclick = () => { questFocus = null; questTab = f; $('#panelTitle').textContent = 'NPC 任務'; $('#panelKicker').textContent = FLOORS[f].name; renderQuests(el); });
+  const qa = el.querySelector('#qAll'); qa && (qa.onclick = () => { questFocus = null; questTab = (NPCS.find(n => n.id === el.querySelector('[data-npc]')?.dataset.npc) || {}).floor || floor; $('#panelTitle').textContent = 'NPC 任務'; $('#panelKicker').textContent = FLOORS[questTab].name; renderQuests(el); });
   el.querySelectorAll('[data-go-npc]').forEach(b => b.onclick = ev => { ev.stopPropagation(); goToQuestNpc(b.dataset.goNpc); });
   el.querySelectorAll('.card[data-npc]').forEach(card => {
-    card.onclick = ev => { if (ev.target.closest('button')) return; goToQuestNpc(card.dataset.npc); };
+    card.onclick = ev => { if (ev.target.closest('button') || ev.target.closest('#npcAction')) return; if (questFocus === card.dataset.npc) return; goToQuestNpc(card.dataset.npc); };
   });
-  el.querySelectorAll('[data-claim]').forEach(b => b.onclick = () => {
+  el.querySelectorAll('[data-claim]').forEach(b => b.onclick = ev => {
+    ev.stopPropagation();
     if (b.disabled) return;
     if (blockGmProgress('GM 模式只能預覽任務，不會發薪水')) return;
     const q = questById(b.dataset.claim);
     if (!q || claiming.has(q.id)) return;
     b.disabled = true; claiming.add(q.id);
     try {
-      const qs = fixQuests(), r = evalQuest(q, questCtx());
+      const r = evalQuest(q, questCtx());
       if (!r.ready) { toast(r.got ? '這個任務已經領過了' : '任務還沒完成'); return; }
-      markClaimed(qs, q, today());
+      markClaimed(fixQuests(), q, today());
       const rw = q.reward || {};
-      addXP(rw.xp | 0, rw.coins | 0, b); // 內含 save()
+      addXP(rw.xp | 0, rw.coins | 0, b);
       blip(1046);
       toast(`任務完成！${rewardText(rw)}`);
     } finally {
       setTimeout(() => { claiming.delete(q.id); if (el.isConnected && panel.classList.contains('open')) renderQuests(el); }, 600);
     }
   });
+}
+function renderQuests(el) {
+  const gmv = isGM();
+  const order = FLOOR_ORDER.slice().reverse();
+  if (!gmv || !questTab || !FLOORS[questTab]) questTab = floor;
+  const focusN = questFocus ? NPCS.find(n => n.id === questFocus) : null;
+  if (focusN && !gmv) maybeClaimFocused({ refreshCard: false, force: true });
+  const f = focusN ? focusN.floor : questTab, c = questCtx(), list = focusN ? [focusN] : npcsOn(f);
+  const tabs = gmv && !focusN ? `<div class="shop-tabs" role="tablist">${order.map(id => `<button type="button" class="shop-tab${id === f ? ' on' : ''}" data-qf="${id}">${FLOORS[id].num}F</button>`).join('')}</div>` : '';
+  const cards = list.map(n => questCardHTML(n, evalQuest(n.quest, c), { go: !focusN, idAttr: focusN ? ' id="npcQuestCard"' : '' })).join('');
+  const intro = focusN
+    ? (gmv ? '<p class="note" style="margin:0 0 4px">GM 預覽：可以在這裡看任務、試做動作，不會記錄進度、也不會發薪水。</p>' : '')
+    : `<div class="card"><div class="row between"><b>${FLOORS[f].name}</b><span class="tag">${gmv ? 'GM 預覽' : '站內薪水'}</span></div>
+    <p class="note" style="margin:8px 0 0">${gmv ? 'GM 模式可以預覽每一層的任務，點「前往」會走到 NPC，在對話裡直接做任務。不會記錄進度、也不會發薪水。' : '點任務或「前往」，角色會走到對應的 NPC／櫃檯，在對話裡直接完成任務並自動領薪水。每日任務每天換日重置，成就任務只能領一次。'}</p></div>`;
+  el.innerHTML = `${intro}
+    ${tabs}${cards || '<p class="note">這層樓的 NPC 還在路上。</p>'}
+    ${focusN ? '<button class="btn ghost sm" id="qAll" style="width:100%">看這層全部任務</button><div id="npcAction" class="npc-action"></div>' : ''}
+    <p class="note">薪水是站內虛擬點數，可在服裝店兌換裝扮；其他兌換內容即將公開。不能換現金。</p>`;
+  if (focusN) mountNpcAction(el.querySelector('#npcAction'), focusN);
+  bindQuestButtons(el);
 }
 
 function renderShop(el) {
@@ -523,7 +573,7 @@ function renderShop(el) {
       equipItem(st, it); save(); blip(1046);
       toast(it.price === 0 ? `已免費領取「${it.name}」` : `已購買「${it.name}」`);
       if (it.price > 0) coinBurst(ev.target);
-      refreshHud(); wearAll(); renderShop(el); return;
+      refreshHud(); wearAll(); renderShop(el); maybeClaimFocused(); return;
     }
     if (isOn(st, it)) { unequipItem(st, it); toast(`已脫下「${it.name}」`); }
     else { equipItem(st, it); toast(`已穿上「${it.name}」`); }
@@ -1310,6 +1360,6 @@ function maybeGmGate() {
 initFin({ get S() { return S; }, save, addXP, toast, blip, isGM, block: blockGmProgress, esc, refreshHud, PUBLIC_REPORTS,
   rankName: () => RANKS[rankIndex()].name, insider: () => insiderLinks });
 initLab({ get S() { return S; }, save, addXP, toast, blip, isGM, questLog, today, refreshHud, open: (id, opt) => openPanel(id, opt) });
-window.__niuma = { get world() { return world; }, get floor() { return floor; }, openPanel, closePanel, ride, goToQuestNpc, get ready() { return ready; }, SHOP, encodeBackup, decodeBackup, applySnapshot, maybeRemind, get isGM() { return isGM(); } };
+window.__niuma = { get world() { return world; }, get floor() { return floor; }, openPanel, closePanel, ride, goToQuestNpc, maybeClaimFocused, questLog, get ready() { return ready; }, SHOP, encodeBackup, decodeBackup, applySnapshot, maybeRemind, get isGM() { return isGM(); } };
 ready = (async () => { await restoreInsider(); await switchTo(startFlat ? 'flat' : '3d', false); maybeGmGate(); })();
 if (qs.has('lobby')) skip();
