@@ -43,6 +43,7 @@ export const SHOP = [
   I('kline-glasses', [G, ...N], 'glasses', 'K線眼鏡', 1680, { type: 'glasses', shape: 'square', color: 0x0b1220, lens: 0x111118, pattern: 'kline', metal: .7 }, { series: 'kline', featured: true }),
   I('kline-glasses-gold', [G, ...N], 'glasses', '金色K線眼鏡', 2180, { type: 'glasses', shape: 'square', color: 0xd9a441, lens: 0x1a1408, pattern: 'kline-gold', metal: .9 }, { series: 'kline', featured: true }),
   I('yageo-glasses', [G, ...N], 'glasses', '國巨 2327 綠油油眼鏡', 0, { type: 'glasses', shape: 'square', color: 0x0a3d28, lens: 0x062316, pattern: 'yageo', metal: .6 }, { series: 'yageo', badge: '首發免費', featured: true }),
+  I('tsmc-glasses', [G, ...N], 'glasses', '台積電 2330 漲停眼鏡', 0, { type: 'glasses', shape: 'square', color: 0x3a1014, lens: 0x2a080c, pattern: 'tsmc', metal: .6 }, { series: 'tsmc', badge: '首發免費', featured: true }),
 
   /* ---- 帽子（含舊 id） ---- */
   I('hat-knit', H, 'hat', '針織毛帽', 12, { type: 'hat', shape: 'beanie', color: 0x3a4a5a }),
@@ -67,6 +68,7 @@ export const SHOP = [
   I('hat-crystal', H, 'hat', '水晶冠', 1880, { type: 'hat', shape: 'crown', color: 0xb8e0ff, metal: .85 }),
   I('hat-bull', H, 'hat', '金牛禮帽', 2200, { type: 'hat', shape: 'tophat', color: 0xd9a441, metal: .95 }),
   I('yageo-hat', [H, ...N], 'hat', '國巨 2327 綠油油帽', 0, { type: 'hat', shape: 'cap', color: 0x0a3d28, color2: 0x2fd38a, pattern: 'yageo' }, { series: 'yageo', badge: '首發免費', featured: true }),
+  I('tsmc-hat', [H, ...N], 'hat', '台積電 2330 漲停紅棒帽', 0, { type: 'hat', shape: 'candle', color: 0xff3a4c, color2: 0xffe3a0, pattern: 'tsmc' }, { series: 'tsmc', badge: '首發免費', featured: true }),
 
   /* ---- 衣服：外套／襯衫／領帶／披風（含舊 id） ---- */
   I('tie-black', C, 'tie', '黑色領帶', 10, { type: 'tie', shape: 'tie', color: 0x151515 }),
@@ -99,6 +101,7 @@ export const SHOP = [
   I('kline-jacket', [C, ...N], 'jacket', 'K線衣服', 1880, { type: 'jacket', shape: 'suit', color: 0x0b1220, pattern: 'kline', metal: .3 }, { series: 'kline', featured: true }),
   I('kline-jacket-gold', [C, ...N], 'jacket', '金色K線衣服', 2480, { type: 'jacket', shape: 'suit', color: 0x3a2a10, color2: 0xd9a441, pattern: 'kline-gold', metal: .5 }, { series: 'kline', featured: true }),
   I('yageo-jacket', [C, ...N], 'jacket', '國巨 2327 綠油油衣服', 0, { type: 'jacket', shape: 'suit', color: 0x0a3d28, color2: 0x2fd38a, pattern: 'yageo' }, { series: 'yageo', badge: '首發免費', featured: true }),
+  I('tsmc-jacket', [C, ...N], 'jacket', '台積電 2330 漲停衣服', 0, { type: 'jacket', shape: 'suit', color: 0x3a1014, color2: 0xff3a4c, pattern: 'tsmc' }, { series: 'tsmc', badge: '首發免費', featured: true }),
 
   /* ---- 褲子 ---- */
   I('pants-khaki', P, 'pants', '卡其長褲', 12, { type: 'pants', color: 0xb8a074 }),
@@ -123,6 +126,7 @@ export const SHOP = [
   I('kline-pants', [P, ...N], 'pants', 'K線褲子', 1780, { type: 'pants', color: 0x0b1220, pattern: 'kline' }, { series: 'kline', featured: true }),
   I('kline-pants-gold', [P, ...N], 'pants', '金色K線褲子', 2280, { type: 'pants', color: 0x3a2a10, color2: 0xd9a441, pattern: 'kline-gold' }, { series: 'kline', featured: true }),
   I('yageo-pants', [P, ...N], 'pants', '國巨 2327 綠油油褲子', 0, { type: 'pants', color: 0x0a3d28, color2: 0x2fd38a, pattern: 'yageo' }, { series: 'yageo', badge: '首發免費', featured: true }),
+  I('tsmc-pants', [P, ...N], 'pants', '台積電 2330 漲停褲子', 0, { type: 'pants', color: 0x3a1014, color2: 0xff3a4c, pattern: 'tsmc' }, { series: 'tsmc', badge: '首發免費', featured: true }),
 
   /* ---- 鞋子 ---- */
   I('shoes-canvas', S, 'shoes', '帆布鞋', 10, { type: 'shoes', shape: 'sneaker', color: 0xe8e0c8, color2: 0xf2f5fb }),
@@ -147,6 +151,7 @@ export const SHOP = [
   I('kline-shoes', [S, ...N], 'shoes', 'K線鞋', 1880, { type: 'shoes', shape: 'oxford', color: 0x0b1220, pattern: 'kline' }, { series: 'kline', featured: true }),
   I('kline-shoes-gold', [S, ...N], 'shoes', '金色K線鞋', 2380, { type: 'shoes', shape: 'oxford', color: 0x3a2a10, color2: 0xd9a441, pattern: 'kline-gold', metal: .45 }, { series: 'kline', featured: true }),
   I('yageo-shoes', [S, ...N], 'shoes', '國巨 2327 綠油油鞋', 0, { type: 'shoes', shape: 'oxford', color: 0x0a3d28, color2: 0x2fd38a, pattern: 'yageo' }, { series: 'yageo', badge: '首發免費', featured: true }),
+  I('tsmc-shoes', [S, ...N], 'shoes', '台積電 2330 漲停鞋', 0, { type: 'shoes', shape: 'oxford', color: 0x3a1014, color2: 0xff3a4c, pattern: 'tsmc' }, { series: 'tsmc', badge: '首發免費', featured: true }),
 
   /* ---- 首飾：項鍊／金鍊／戒指／手錶／耳環／牛角（含舊 id） ---- */
   I('ring-silver', J, 'ring', '銀戒', 10, { type: 'ring', color: 0xc0c8d4, metal: .95 }),
@@ -179,11 +184,17 @@ export const SHOP = [
   I('kline-watch-gold', [J, ...N], 'watch', '金色K線手錶', 2180, { type: 'watch', color: 0xd9a441, color2: 0x0b1220, pattern: 'kline-gold', metal: .9 }, { series: 'kline', featured: true }),
   I('yageo-watch', [J, ...N], 'watch', '國巨 2327 綠油油手錶', 0, { type: 'watch', color: 0x0a3d28, color2: 0x2fd38a, pattern: 'yageo', metal: .5 }, { series: 'yageo', badge: '首發免費', featured: true }),
   I('yageo-necklace', [J, ...N], 'necklace', '國巨 2327 綠油油項鍊', 0, { type: 'necklace', shape: 'chip', color: 0x1a6b44, color2: 0xb8ffd4, pattern: 'yageo', metal: .6 }, { series: 'yageo', badge: '首發免費', featured: true }),
+  I('tsmc-watch', [J, ...N], 'watch', '台積電 2330 漲停手錶', 0, { type: 'watch', color: 0x3a1014, color2: 0xff3a4c, pattern: 'tsmc', metal: .5 }, { series: 'tsmc', badge: '首發免費', featured: true }),
+  I('tsmc-necklace', [J, ...N], 'necklace', '台積電 2330 漲停項鍊', 0, { type: 'necklace', shape: 'candle', color: 0xff3a4c, color2: 0xffe3a0, pattern: 'tsmc', metal: .6 }, { series: 'tsmc', badge: '首發免費', featured: true }),
 
   /* ---- 套裝 ---- */
   I('set-yageo', [SET, ...N], 'set', '國巨（2327）跌停・綠油油套裝', 0, { color: 0x2fd38a, pattern: 'yageo' }, {
     series: 'yageo', badge: '首發免費', featured: true,
     pieces: { glasses: 'yageo-glasses', hat: 'yageo-hat', jacket: 'yageo-jacket', pants: 'yageo-pants', shoes: 'yageo-shoes', watch: 'yageo-watch', necklace: 'yageo-necklace' },
+  }),
+  I('set-tsmc', [SET, ...N], 'set', '漲停板套裝', 0, { color: 0xff3a4c, pattern: 'tsmc' }, {
+    series: 'tsmc', badge: '首發免費', featured: true,
+    pieces: { glasses: 'tsmc-glasses', hat: 'tsmc-hat', jacket: 'tsmc-jacket', pants: 'tsmc-pants', shoes: 'tsmc-shoes', watch: 'tsmc-watch', necklace: 'tsmc-necklace' },
   }),
   I('set-navy', SET, 'set', '藏青通勤套裝', 240, { color: 0x1a2744 }, {
     pieces: { jacket: 'jacket-navy', tie: 'tie-gold', pants: 'pants-navy', shoes: 'shoes-navy', glasses: 'glasses-black' },
