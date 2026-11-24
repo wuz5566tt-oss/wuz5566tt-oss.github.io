@@ -1254,12 +1254,25 @@ export async function create3D(canvas, hooks) {
   const NPC_TIES = [C.gold, C.cyan, C.up];
   const npcHits = [], npcMap = {}, npcData = {};
   const npcHash = t => { let h = 2166136261; for (const c of t) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return h >>> 0; };
-  const markTex = canvasTex(128, 128, g => {
-    const r = g.createRadialGradient(64, 64, 10, 64, 64, 62); r.addColorStop(0, 'rgba(255,200,90,.95)'); r.addColorStop(.62, 'rgba(255,170,40,.9)'); r.addColorStop(1, 'rgba(255,170,40,0)');
-    g.fillStyle = r; g.beginPath(); g.arc(64, 64, 62, 0, Math.PI * 2); g.fill();
-    g.fillStyle = '#2a1700'; g.font = `900 84px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('!', 64, 70);
-  });
-  const markMat = keep(new THREE.SpriteMaterial({ map: markTex, transparent: true, depthWrite: false, depthTest: false }));
+  function bangTex(ready) {
+    return canvasTex(256, 256, g => {
+      const r = g.createRadialGradient(128, 118, 12, 128, 118, 126);
+      if (ready) {
+        r.addColorStop(0, 'rgba(255,250,220,.98)'); r.addColorStop(.32, 'rgba(255,230,120,.95)');
+        r.addColorStop(.62, 'rgba(255,200,70,.7)'); r.addColorStop(1, 'rgba(255,180,40,0)');
+      } else {
+        r.addColorStop(0, 'rgba(255,230,140,.96)'); r.addColorStop(.38, 'rgba(255,200,90,.92)');
+        r.addColorStop(.7, 'rgba(255,170,40,.5)'); r.addColorStop(1, 'rgba(255,170,40,0)');
+      }
+      g.fillStyle = r; g.beginPath(); g.arc(128, 118, 126, 0, Math.PI * 2); g.fill();
+      g.fillStyle = ready ? '#fff8d0' : '#ffc85a';
+      g.strokeStyle = '#2a1700'; g.lineWidth = 16; g.lineJoin = 'round'; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(128, 38); g.lineTo(112, 150); g.lineTo(144, 150); g.closePath(); g.stroke(); g.fill();
+      g.beginPath(); g.arc(128, 196, 22, 0, Math.PI * 2); g.stroke(); g.fill();
+    });
+  }
+  const markMat = keep(new THREE.SpriteMaterial({ map: bangTex(false), transparent: true, depthWrite: false, depthTest: false, sizeAttenuation: true }));
+  const markMatReady = keep(new THREE.SpriteMaterial({ map: bangTex(true), transparent: true, depthWrite: false, depthTest: false, sizeAttenuation: true }));
   const lighten = (hex, k) => new THREE.Color(hex).lerp(new THREE.Color(0xf4e6d4), k).getHex();
   // 任務 NPC＝穿衣服的馬（和玩家的牛同一套積木風格）：長臉長嘴、直立尖耳、鬃毛、尾巴、沒有角
   function buildNpc(n, i, parent) {
@@ -1373,7 +1386,7 @@ export async function create3D(canvas, hooks) {
     const sh = new THREE.Mesh(shadow.geometry, shadow.material); sh.rotation.x = -Math.PI / 2; sh.position.y = .05; root.add(sh);
     const ring = new THREE.Mesh(keep(new THREE.RingGeometry(.5, .6, 36)), keep(new THREE.MeshBasicMaterial({ color: C.gold, transparent: true, opacity: .35, depthWrite: false })));
     ring.rotation.x = -Math.PI / 2; ring.position.y = .06; root.add(ring);
-    const mark = new THREE.Sprite(markMat); mark.scale.set(.55, .55, 1); mark.position.y = 2.85; mark.visible = false; root.add(mark);
+    const mark = new THREE.Sprite(markMat); mark.scale.set(1.15, 1.15, 1); mark.position.y = 3.05; mark.visible = false; mark.renderOrder = 8; root.add(mark);
     const hit = new THREE.Mesh(boxGeo, hitMat); hit.scale.set(1.1, 2.7, 1.1); hit.position.y = 1.35; hit.userData.npc = n.id; hit.userData.fg = parent; root.add(hit); npcHits.push(hit);
     const ph = (h % 628) / 100;
     return { id: n.id, floor: null, root, bd, hd, tail, mark, ring, ph, data: n };
@@ -1386,11 +1399,20 @@ export async function create3D(canvas, hooks) {
     (npcData[floorNow] || []).forEach(d => {
       const o = npcMap[d.id]; if (!o) return;
       o.bd.position.y = Math.sin(tAll * 2 + o.ph) * .015; o.hd.rotation.y = Math.sin(tAll * .7 + o.ph) * .18; if (o.tail) o.tail.rotation.z = Math.sin(tAll * 1.6 + o.ph) * .18;
-      o.mark.visible = !!d.ready; if (d.ready) o.mark.position.y = 2.85 + Math.sin(tAll * 3 + o.ph) * .08;
-      o.ring.material.opacity = activeZone === 'npc:' + d.id ? .9 : d.ready ? .45 + Math.sin(tAll * 3) * .15 : .22;
+      const show = !!(d.pending || d.ready);
+      o.mark.visible = show;
+      if (show) {
+        const dest = walkTargetId === d.id, ready = !!d.ready;
+        o.mark.material = ready ? markMatReady : markMat;
+        o.mark.position.y = 3.05 + Math.sin(tAll * 3 + o.ph) * .14;
+        const base = dest ? 1.55 : ready ? 1.35 : 1.15;
+        const pulse = (dest || ready) ? 1 + Math.sin(tAll * 5.2) * .1 : 1 + Math.sin(tAll * 3 + o.ph) * .04;
+        o.mark.scale.set(base * pulse, base * pulse, 1);
+      }
+      o.ring.material.opacity = walkTargetId === d.id ? .95 : activeZone === 'npc:' + d.id ? .9 : d.ready ? .5 + Math.sin(tAll * 3) * .18 : d.pending ? .32 : .22;
     });
   }
-  function npcLabelHTML(d) { return `<i></i>${d.name}${d.ready ? '<span class="new">！</span>' : ''}`; }
+  function npcLabelHTML(d) { return `<i></i>${d.name}${(d.pending || d.ready) ? '<span class="bang">！</span>' : ''}`; }
   function npcCam(o) {
     const { spot, f } = npcSpot(o), mid = o.root.position.clone().add(spot).multiplyScalar(.5);
     const side = new THREE.Vector3(-f.z, 0, f.x), portrait = camera.aspect < 0.8;
@@ -1423,7 +1445,7 @@ export async function create3D(canvas, hooks) {
   let floorNow = hooks.floor ? hooks.floor() : 'lobby';
   let mode = 'orbit'; // orbit | intro | follow | zone | overview | ride
   let tAll = 0, introT = 0, introResolve = null, captionCb = null, captionStep = -1;
-  let path = [], speed = 2.6, onArrive = null, walkPhase = 0, waveT = 0, jumpT = 0, faceTarget = null;
+  let path = [], speed = 2.6, onArrive = null, walkPhase = 0, waveT = 0, jumpT = 0, faceTarget = null, walkTargetId = null;
   let doorOpen = 0, liftOpen = 0, liftWant = 0, activeZone = null, panelOpen = false, viewShift = 0, viewShiftX = 0;
   const camPos = new THREE.Vector3(4, 8, 52), camLook = new THREE.Vector3(0, 25, -8);
   const camPosT = camPos.clone(), camLookT = camLook.clone();
@@ -1482,6 +1504,13 @@ export async function create3D(canvas, hooks) {
     mode = 'zone'; camK = 2.6;
   }
   function walkTo(points, done) { path = points.map(p => p.clone()); onArrive = done || null; }
+  function cancelAutoWalk() {
+    if (mode === 'intro' || mode === 'ride') return false;
+    if (!path.length && !onArrive && !walkTargetId) return false;
+    path = []; onArrive = null; walkTargetId = null;
+    if (activeZone && String(activeZone).startsWith('npc:')) activeZone = null;
+    return true;
+  }
   function routeTo(target) {
     const p = avatar.position; const pts = [];
     if (p.distanceTo(target) > 3.6 && p.distanceTo(HUB) > 1) pts.push(HUB.clone());
@@ -1491,9 +1520,9 @@ export async function create3D(canvas, hooks) {
   /* ---------- 主要 API ---------- */
   const api = {
     kind: '3d',
-    _dbg: () => ({ x: avatar.position.x, z: avatar.position.z, mode, moving: path.length > 0, floor: floorNow, yaw: orbitYaw, pitch: orbitPitch, dist: orbitDist, cyber: CYBER }),
+    _dbg: () => ({ x: avatar.position.x, z: avatar.position.z, mode, moving: path.length > 0, floor: floorNow, yaw: orbitYaw, pitch: orbitPitch, dist: orbitDist, cyber: CYBER, walkTarget: walkTargetId }),
     setOutfit(eq) { applyOutfit(eq); },
-    setSteer(x, y) { steerX = x; steerY = y; if (Math.hypot(x, y) > .08) pokeCam(); },
+    setSteer(x, y) { steerX = x; steerY = y; if (Math.hypot(x, y) > .08) { pokeCam(); cancelAutoWalk(); } },
     setOrbit(o = {}) { if (o.yaw != null) orbitYaw = o.yaw; if (o.pitch != null) orbitPitch = o.pitch; if (o.dist != null) orbitDist = o.dist; pokeCam(); playCam(); camPos.copy(camPosT); camLook.copy(camLookT); },
     holdCam(px, py, pz, lx, ly, lz) {
       mode = 'hold'; camK = 24;
@@ -1515,7 +1544,7 @@ export async function create3D(canvas, hooks) {
     },
     enterDirect() {
       if (floorNow !== hooks.floor()) setFloorVisual(hooks.floor());
-      path = []; onArrive = null; speed = 2.6;
+      path = []; onArrive = null; walkTargetId = null; speed = 2.6;
       avatar.position.set(0, 0, floorNow === 'lobby' ? -6.6 : -9); avatar.rotation.y = 0; faceTarget = 0;
       if (hooks.outfit) applyOutfit(hooks.outfit());
       overview(); camPos.copy(camPosT); camLook.copy(camLookT); labelsEl.style.display = '';
@@ -1524,7 +1553,7 @@ export async function create3D(canvas, hooks) {
       if (mode === 'intro' || mode === 'ride') return;
       const z = hooks.ZONES.find(z => z.id === id); if (!z || z.floor !== floorNow) return;
       document.getElementById('panelClose').click();
-      activeZone = id; const s = SLOT[z.slot];
+      walkTargetId = null; activeZone = id; const s = SLOT[z.slot];
       speed = 2.8; mode = 'follow'; camK = 2.2;
       walkTo(routeTo(new THREE.Vector3(s.spot[0], 0, s.spot[1])), () => {
         faceTarget = Math.atan2(s.f[0], s.f[1]);
@@ -1552,7 +1581,7 @@ export async function create3D(canvas, hooks) {
         res();
       });
     },
-    // 任務 NPC：floor 的 NPC 清單（含 ready＝有可領任務）；同一樓層重複呼叫只更新標記
+    // 任務 NPC：floor 的 NPC 清單（pending＝進行中／未領，ready＝可領）；同一樓層重複呼叫只更新標記
     setNpcs(f, list) {
       const g = floors[f]; if (!g || !Array.isArray(list)) return;
       const ids = list.map(n => n.id).join('|'), prev = (npcData[f] || []).map(n => n.id).join('|');
@@ -1566,10 +1595,11 @@ export async function create3D(canvas, hooks) {
       if (mode === 'intro' || mode === 'ride' || mode === 'orbit') return;
       const o = npcMap[id]; if (!o || o.floor !== floorNow) return;
       document.getElementById('panelClose').click();
-      const key = 'npc:' + id; activeZone = key;
+      const key = 'npc:' + id; activeZone = key; walkTargetId = id;
       const { spot } = npcSpot(o), np = o.root.position;
       speed = 2.8; mode = 'follow'; camK = 2.2;
       walkTo(routeTo(spot), () => {
+        walkTargetId = null;
         faceTarget = Math.atan2(np.x - spot.x, np.z - spot.z);
         npcCam(o);
         setTimeout(() => { if (activeZone === key) hooks.openNpc && hooks.openNpc(id); }, 380);
@@ -1579,6 +1609,11 @@ export async function create3D(canvas, hooks) {
       const o = npcMap[id]; if (!o || o.floor !== floorNow) return null;
       const v = o.root.position.clone().setY(1.3).project(camera);
       return { x: (v.x * .5 + .5) * innerWidth, y: (-v.y * .5 + .5) * innerHeight, onScreen: v.z < 1 && Math.abs(v.x) < 1 && Math.abs(v.y) < 1 };
+    },
+    npcCue(id) { // 測試用：任務「！」與距離
+      const o = npcMap[id]; if (!o || o.floor !== floorNow) return null;
+      const d = (npcData[floorNow] || []).find(n => n.id === id) || o.data || {};
+      return { visible: !!o.mark.visible, pending: !!d.pending, ready: !!d.ready, walkTarget: walkTargetId === id, dist: avatar.position.distanceTo(o.root.position) };
     },
     onPanel(open, id) {
       panelOpen = open;
@@ -1661,7 +1696,7 @@ export async function create3D(canvas, hooks) {
     const hit = ray.intersectObjects(cand, false)[0];
     if (hit) return hit.object.userData.npc ? api.goNpc(hit.object.userData.npc) : api.go(hit.object.userData.zone);
     const fh = ray.intersectObject(fl)[0];
-    if (fh) { document.getElementById('panelClose').click(); mode = 'follow'; activeZone = null; const p = clampAvatar(fh.point.clone().setY(0)); walkTo([p], () => overview()); }
+    if (fh) { document.getElementById('panelClose').click(); mode = 'follow'; activeZone = null; walkTargetId = null; const p = clampAvatar(fh.point.clone().setY(0)); walkTo([p], () => overview()); }
   };
   const onWheel = e => {
     if (mode === 'intro' || mode === 'ride' || mode === 'orbit') return;
@@ -1712,6 +1747,11 @@ export async function create3D(canvas, hooks) {
     scan.position.z = -((tAll * 3) % (D + 2)) + 1; liftBeam.scale.y = 1 + Math.sin(tAll * 2.4) * .04;
     // 小人移動
     let moving = false;
+    if (path.length && mode !== 'intro' && mode !== 'ride' && mode !== 'orbit') {
+      let mx = steerX, mz = steerY;
+      if (held.has('u')) mz += 1; if (held.has('d')) mz -= 1; if (held.has('r')) mx += 1; if (held.has('l')) mx -= 1;
+      if (Math.hypot(mx, mz) > .08) cancelAutoWalk();
+    }
     if (path.length) {
       const tgt = path[0]; tmp.subVectors(tgt, avatar.position); tmp.y = 0; const d = tmp.length();
       if (d < .05) { path.shift(); if (!path.length) { const cb = onArrive; onArrive = null; cb && cb(); } }
