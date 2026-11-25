@@ -54,6 +54,9 @@ export function normFin(f) {
 }
 
 /* ---------- 時間（一律以台北時間判斷） ---------- */
+export function marketResult(date, m) { return resultFor(date, m); }
+export function resultsInfo() { return D.results; }
+export async function ensureResults() { return load('results'); }
 export function tpe(now = new Date()) {
   const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', weekday: 'short' }).formatToParts(now).map(x => [x.type, x.value]));
   const dow = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(p.weekday);
