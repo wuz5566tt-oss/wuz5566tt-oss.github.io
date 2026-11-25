@@ -3,9 +3,10 @@ import { applyBrand, STAR_LOGO_UI, TOWER_NAME, EVENT_NAME, isCyber } from './bra
 import { encodeBackup, decodeBackup, applySnapshot, hasProgress } from './backup.js';
 import { GM_HASH } from './gm.js';
 import { SHOP, TABS, itemById, itemsInTab, cssHex } from './shop-catalog.js';
-import { FIN_PANELS, FIN_ICON, RENDER_FIN, normFin, finTodos, initFin, finSync } from './fin.js';
+import { FIN_PANELS, FIN_ICON, RENDER_FIN, normFin, finTodos, initFin, finSync, marketResult, resultsInfo, ensureResults, tpe as tpeFin } from './fin.js';
+import { DESK_LEVELS, DESK_ITEMS, GUESS_WIN, GUESS_STREAK_STEP, GUESS_STREAK_CAP, WEEK_PT, normOffice, nextDesk, deskOf, itemUnlocked, guessPick, tipFor } from './office.js';
 import { LAB_RENDER, LAB_ICON, initLab, labTodos } from './lab.js';
-import { NPCS, npcsOn, questById, normQuests, pruneQuests, evalQuest, markClaimed, rewardText } from './quests.js';
+import { NPCS, npcsOn, questNpcsOn, questById, normQuests, pruneQuests, evalQuest, markClaimed, rewardText } from './quests.js';
 export { SHOP };
 
 /* ---------- 基本資料 ---------- */
@@ -40,18 +41,19 @@ export const ICON = {
 };
 // 樓層：lobby＝一樓公開大廳（陌生人也看得到）；insider＝68 樓自己人專區（要暗號）
 // slot＝在大廳的位置（立體版與平面版共用），兩層樓的格局相同
-export const SLOTS = { A: [18, 74], B: [82, 74], C: [18, 55], D: [82, 55], E: [50, 74], F: [18, 37], G: [50, 37], H: [82, 37] };
+export const SLOTS = { A: [18, 74], B: [82, 74], C: [18, 55], D: [82, 55], E: [50, 74], F: [18, 37], G: [50, 37], H: [82, 37], J: [50, 58] };
 // 樓層：need＝累積打卡天數門檻；pass＝要暗號
 export const FLOORS = {
   lobby: { name: '1 樓・交易大廳', num: 1, need: 0 },
   f2: { name: '2 樓・晨會室', num: 2, need: 3 },
   f3: { name: '3 樓・訓練場', num: 3, need: 7 },
-  f4: { name: '4 樓・戰報與英雄榜', num: 4, need: 0 },
+  f4: { name: '4 樓・戰報與榮譽牆', num: 4, need: 0 },
   f5: { name: '5 樓・目標值研究室', num: 5, need: TARGET_DAYS },
   f6: { name: '6 樓・交易實驗室', num: 6, need: 0 },
+  f7: { name: '7 樓・個人交易室', num: 7, need: 0 },
   insider: { name: '68 樓・自己人專區', num: 68, pass: true },
 };
-const FLOOR_ORDER = ['insider', 'f6', 'f5', 'f4', 'f3', 'f2', 'lobby'];
+const FLOOR_ORDER = ['insider', 'f7', 'f6', 'f5', 'f4', 'f3', 'f2', 'lobby'];
 export const ZONES = [
   { id: 'checkin', floor: 'lobby', slot: 'A', name: '打卡櫃台', kicker: '每日上班', gold: true },
   { id: 'guide', floor: 'lobby', slot: 'B', name: '接引櫃台', kicker: '我的資格・新人報到', gold: true },
@@ -67,7 +69,7 @@ export const ZONES = [
   { id: 'bag', floor: 'f3', slot: 'E', name: '訓練沙包', kicker: '連續來就對了', hidden: true },
   { id: 'tips', floor: 'f3', slot: 'G', name: '心法小提醒', kicker: '練完記一句' },
   { id: 'reports', floor: 'f4', slot: 'G', name: '戰報牆', kicker: '台股・美股每日戰報' },
-  { id: 'heroes', floor: 'f4', slot: 'F', name: '英雄榜', kicker: '榮譽牆', gold: true },
+  { id: 'heroes', floor: 'f4', slot: 'F', name: 'STAR史塔財商榮譽牆', kicker: 'STAR史塔財商', gold: true },
   { id: 'honor', floor: 'f4', slot: 'C', name: '職級榮譽牆', kicker: '升職之路', gold: true },
   { id: 'cta', floor: 'f4', slot: 'B', name: '私訊『成長』', kicker: '我的資格・加入自己人', gold: true },
   { id: 'target', floor: 'f5', slot: 'G', name: '目標值系統', kicker: '最高獎勵', gold: true },
@@ -75,10 +77,12 @@ export const ZONES = [
   { id: 'labsim', floor: 'f6', slot: 'G', name: '參數實驗台', kicker: '拖動參數・看結構變化', gold: true },
   { id: 'labdrill', floor: 'f6', slot: 'D', name: '實戰演練', kicker: '進場・停損・目標評分', gold: true },
   { id: 'labwiki', floor: 'f6', slot: 'C', name: '概念圖鑑', kicker: '結構・流動性・二次突破' },
+  { id: 'desk', floor: 'f7', slot: 'J', name: '我的工位', kicker: '用紙箱一路升到頂樓交易室', gold: true },
+  { id: 'academy', floor: 'f7', slot: 'G', name: 'STAR史塔財商教室', kicker: 'STAR史塔財商', gold: true },
   { id: 'boss', floor: 'insider', slot: 'A', name: '掌門辦公室', kicker: '自己人專區', gold: true },
   { id: 'hall', floor: 'insider', slot: 'B', name: '執事堂', kicker: '公告與排程' },
   { id: 'library', floor: 'insider', slot: 'C', name: '藏經閣講義', kicker: '三卷九章', gold: true },
-  { id: 'course', floor: 'insider', slot: 'D', name: '傳功課程', kicker: '課程' },
+  { id: 'course', floor: 'insider', slot: 'D', name: 'STAR史塔財商教室入口', kicker: 'STAR史塔財商', gold: true },
   { id: 'review', floor: 'insider', slot: 'E', name: '下班複盤', kicker: '今日心得' },
   { id: 'arena', floor: 'insider', slot: 'F', name: '演武場', kicker: '實盤複盤', gold: true },
   { id: 'ireports', floor: 'insider', slot: 'G', name: '三市戰報室', kicker: 'A股戰報與總控台' },
@@ -137,6 +141,9 @@ ICON.backup = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke
 Object.keys(FLOORS).forEach(f => ICON['lift_' + f] = ICON.elevator);
 Object.assign(ICON, FIN_ICON, LAB_ICON);
 ICON.quests = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M17 4v6M17 13v.5" stroke="#ffc85a" stroke-width="2.2"/></svg>';
+ICON.desk = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 14h16v6H4z"/><path d="M8 14V8h8v6" stroke="#ffc85a"/><path d="M7 18h2M15 18h2"/></svg>';
+ICON.academy = ICON.course;
+
 
 
 /* ---------- GM 模式（?gm=1 + 通行證，進度與正式資料分開） ---------- */
@@ -220,13 +227,14 @@ const dstr = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate()
 const today = () => dstr(new Date());
 const yesterday = () => { const d = new Date(); d.setDate(d.getDate() - 1); return dstr(d); };
 const hash = s => { let h = 2166136261; for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return h >>> 0; };
-const fresh = () => ({ coins: 0, xp: 0, streak: 0, last: null, days: [], guesses: {}, fortune: null, reviews: {}, pref: {}, week: {}, claims: {}, vid: null, games: {}, shop: { owned: [], eq: {} }, bak: { seen: false, last: null, snooze: null, remindDays: 0 }, quests: normQuests(), fin: normFin() });
+const fresh = () => ({ coins: 0, xp: 0, streak: 0, last: null, days: [], guesses: {}, fortune: null, reviews: {}, pref: {}, week: {}, claims: {}, vid: null, games: {}, shop: { owned: [], eq: {} }, bak: { seen: false, last: null, snooze: null, remindDays: 0 }, quests: normQuests(), fin: normFin(), office: normOffice() });
 let S; try { S = Object.assign(fresh(), JSON.parse(localStorage.getItem(KEY) || '{}')); } catch { S = fresh(); }
 const save = () => { if (isGM()) return; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
 if (!S.vid) { S.vid = String(100000 + Math.floor(Math.random() * 900000)); save(); }
 const fixQuests = () => { S.quests = pruneQuests(normQuests(S.quests), today()); return S.quests; };
 fixQuests();
 S.fin = normFin(S.fin);
+S.office = normOffice(S.office);
 const QS = new URLSearchParams(location.search);
 const realDays = () => new Set(S.days).size;
 const effDays = () => Math.max(realDays(), QS.has('days') ? (+QS.get('days') || 0) : 0); // 隱藏測試參數 ?days=7
@@ -277,7 +285,7 @@ const questCtx = () => ({ S, today: today(), days: realDays(), streak: streakNow
 function questReadyCount(f) {
   if (isGM() || !f) return 0;
   const c = questCtx();
-  return npcsOn(f).filter(n => evalQuest(n.quest, c).ready).length;
+  return npcsOn(f).filter(n => n.quest && evalQuest(n.quest, c).ready).length;
 }
 // 小遊戲當日紀錄（每日任務用）
 function questLog(key, val, mode = 'max') {
@@ -289,8 +297,8 @@ const claiming = new Set();
 function npcView(f) {
   const c = questCtx();
   return npcsOn(f).map(n => {
-    const r = evalQuest(n.quest, c);
-    return { id: n.id, name: n.name, avatar: n.avatar, pose: n.pose, gender: n.gender, outfit: n.outfit, station: n.station || '', slot: n.slot || '', pending: isGM() || !r.got, ready: !isGM() && r.ready };
+    const r = n.quest ? evalQuest(n.quest, c) : { got: true, ready: false };
+    return { id: n.id, name: n.name, avatar: n.avatar, pose: n.pose, gender: n.gender, outfit: n.outfit, station: n.station || '', slot: n.slot || '', stand: n.stand || null, face: n.face != null ? n.face : null, pending: n.quest ? (isGM() || !r.got) : false, ready: !!(n.quest && !isGM() && r.ready) };
   });
 }
 let questFocus = null; // 點 3D NPC 時只顯示那一位的任務卡
@@ -362,7 +370,7 @@ function refreshHud() {
     }
   });
   world && world.setRank && world.setRank(rankIndex(), RANKS[rankIndex()].name);
-  world && world.refresh && world.refresh({ floors: floorInfo(), board: boardRows(), rank: rankIndex() });
+  world && world.refresh && world.refresh({ floors: floorInfo(), board: boardRows(), rank: rankIndex(), office: S.office });
   world && world.setNpcs && world.setNpcs(floor, npcView(floor)); // 3D 場景裡的任務 NPC（含可領標記）
   finSync(); // 排行榜同步（防抖、GM 不送、連不上也不影響）
 }
@@ -377,6 +385,53 @@ function addXP(n, coins = 0, el) {
 }
 
 /* ---------- 面板 ---------- */
+
+function renderDesk(el) {
+  S.office = normOffice(S.office);
+  const off = S.office, cur = deskOf(off), nxt = nextDesk(off);
+  const ctx = { days: realDays(), office: off };
+  const items = DESK_ITEMS.map(it => {
+    const ok = itemUnlocked(it, ctx);
+    const on = off.slots[it.slot] === it.id;
+    const btn = !ok ? `<span class="note">${it.how}</span>`
+      : `<button type="button" class="btn ${on ? 'primary' : 'ghost'} sm" data-place="${it.id}" data-slot="${it.slot}">${on ? '展示中' : '放到工位'}</button>`;
+    return `<div class="row between" style="margin-top:8px"><span>${it.name}${ok ? '' : '（未解鎖）'}</span>${btn}</div>`;
+  }).join('');
+  const gm = isGM();
+  const upBtn = !nxt ? '<p class="note">已經是最高級「頂樓交易室」。金框與桌面就地升級，不用搬去 68 樓。</p>'
+    : `<button type="button" class="btn primary" id="deskUp" style="width:100%">${gm ? 'GM 預覽升級為「' + nxt.name + '」（不扣薪水）' : '升級為「' + nxt.name + '」・薪水 ' + nxt.price}</button>`;
+  el.innerHTML = `<div class="card"><div class="row between"><b>我的工位</b><span class="tag">${cur.name}</span></div>
+    <p class="note" style="margin:8px 0 0">${cur.blurb}</p>
+    <p class="note" style="margin:8px 0 0">升級路線：${DESK_LEVELS.map(l => l.name).join(' → ')}。這是你自己的個人交易室；旁邊三位同期學員工位等級固定，方便你比較，不是全伺服器一人一桌。</p></div>
+    ${upBtn}
+    ${gm ? '<p class="note">GM 模式可以預覽每一級外觀，不會扣薪水、也不會存檔。</p>' : `<p class="note">目前薪水 ${S.coins}。升級只扣站內薪水，不能換現金。</p>`}
+    <div class="card"><b>擺設格</b><p class="note" style="margin:6px 0 0">解鎖後可以把 STAR史塔財商獎盃、證書放到自己的桌子上。</p>${items}</div>
+    <p class="note">同期學員是固定陳列的馬型 NPC，不是真實玩家名單。</p>`;
+  const ub = el.querySelector('#deskUp');
+  ub && (ub.onclick = () => {
+    const n = nextDesk(S.office);
+    if (!n) return;
+    if (gm) { S.office.lv = n.lv; toast(`GM 預覽：工位看起來像「${n.name}」`); renderDesk(el); refreshHud(); return; }
+    if (blockGmProgress('GM 模式不能升級工位')) return;
+    if ((S.coins | 0) < n.price) { toast('薪水不夠，先去打卡或完成任務'); return; }
+    S.coins -= n.price;
+    S.office.lv = n.lv;
+    save();
+    toast(`工位升級為「${n.name}」，薪水 −${n.price}`);
+    blip(1046);
+    renderDesk(el);
+    refreshHud();
+  });
+  el.querySelectorAll('[data-place]').forEach(b => b.onclick = () => {
+    const it = DESK_ITEMS.find(x => x.id === b.dataset.place);
+    if (!it || !itemUnlocked(it, { days: realDays(), office: S.office })) return;
+    if (isGM()) { S.office.slots[it.slot] = S.office.slots[it.slot] === it.id ? '' : it.id; renderDesk(el); refreshHud(); return; }
+    if (blockGmProgress()) return;
+    S.office.slots[it.slot] = S.office.slots[it.slot] === it.id ? '' : it.id;
+    save(); renderDesk(el); refreshHud();
+  });
+}
+
 const panel = $('#panel');
 export function openPanel(id, opt) {
   if (typeof id === 'string' && !id.startsWith('npc:') && !(opt && opt.raw)) {
@@ -461,7 +516,7 @@ function refreshNpcQuestCard() {
 function maybeClaimFocused({ refreshCard = true, force = false } = {}) {
   if (isGM() || !questFocus) return false;
   if (!force && !panel.classList.contains('open')) return false;
-  const n = NPCS.find(x => x.id === questFocus); if (!n) return false;
+  const n = NPCS.find(x => x.id === questFocus); if (!n || !n.quest) return false;
   const q = n.quest;
   if (claiming.has(q.id)) return false;
   const r = evalQuest(q, questCtx());
@@ -530,13 +585,35 @@ function bindQuestButtons(el) {
     }
   });
 }
+function academyCtaHTML() {
+  return `<div class="card" style="margin-top:12px"><div class="row between"><b>想學完整版？來 STAR史塔財商</b><span class="tag">私訊「成長」</span></div>
+    <p class="note" style="margin:8px 0 10px">課程介紹在 7 樓 STAR史塔財商教室。報名入口與全樓「私訊『成長』」相同，不會另開新網址。</p>
+    <div class="row" style="gap:8px;flex-wrap:wrap">
+      <button type="button" class="btn cyan sm" data-go-floor="f7">前往 7 樓教室</button>
+      <button type="button" class="btn ghost sm" id="cpGrow">複製關鍵字「成長」</button>
+      <a class="btn primary sm" href="${IG}" target="_blank" rel="noopener">前往 IG 私訊 @wuz200200</a>
+    </div></div>`;
+}
+function bindAcademyCta(el) {
+  const cp = el.querySelector('#cpGrow');
+  cp && (cp.onclick = async ev => { ev.stopPropagation(); try { await navigator.clipboard.writeText('成長'); toast('已複製「成長」'); } catch { toast('請手動輸入「成長」'); } });
+  el.querySelectorAll('[data-go-floor]').forEach(b => b.onclick = ev => { ev.stopPropagation(); const to = b.dataset.goFloor; closePanel(); if (floorOpen(to)) ride(to); else toast('這層樓還沒解鎖'); });
+}
+function renderLecturer(el, n) {
+  el.innerHTML = `<div class="card"><div class="row" style="align-items:flex-start"><div aria-hidden="true" style="flex:0 0 44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:1.6rem;background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px var(--line)">${n.avatar}</div>
+    <div><b>${n.name}</b><p class="note" style="margin:6px 0 0">「${n.line}」</p><p class="note" style="margin:8px 0 0">${n.talk === 'classmate' ? '— 在 STAR史塔財商學到的。' : '— STAR史塔財商心法，出自董事長 LEO易凡 的教學精神。'}</p></div></div></div>
+    ${academyCtaHTML()}
+    <p class="note">薪水是站內虛擬點數，不能換現金。內容非投資建議。</p>`;
+  bindAcademyCta(el);
+}
 function renderQuests(el, opt) {
   const gmv = isGM();
   const order = FLOOR_ORDER.slice().reverse();
   if (!gmv || !questTab || !FLOORS[questTab]) questTab = floor;
   const focusN = questFocus ? NPCS.find(n => n.id === questFocus) : null;
+  if (focusN && focusN.talk && !focusN.quest) { renderLecturer(el, focusN); return; }
   if (focusN && !gmv) maybeClaimFocused({ refreshCard: false, force: true });
-  const f = focusN ? focusN.floor : questTab, c = questCtx(), list = focusN ? [focusN] : npcsOn(f);
+  const f = focusN ? focusN.floor : questTab, c = questCtx(), list = focusN ? (focusN.quest ? [focusN] : []) : questNpcsOn(f);
   const tabs = gmv && !focusN ? `<div class="shop-tabs" role="tablist">${order.map(id => `<button type="button" class="shop-tab${id === f ? ' on' : ''}" data-qf="${id}">${FLOORS[id].num}F</button>`).join('')}</div>` : '';
   const cards = list.map(n => questCardHTML(n, evalQuest(n.quest, c), { go: !focusN, idAttr: focusN ? ' id="npcQuestCard"' : '' })).join('');
   const intro = focusN
@@ -662,7 +739,7 @@ function renderBackup(el) {
   el.querySelector('#bakNo').onclick = () => { pending = null; ask.hidden = true; say('已取消還原', true); };
 }
 function doRestore(data, say) {
-  applySnapshot(S, data); fixQuests(); S.fin = normFin(S.fin); save(); markBakDone(); refreshHud(); buildDock(); wearAll();
+  applySnapshot(S, data); fixQuests(); S.fin = normFin(S.fin); S.office = normOffice(S.office); save(); markBakDone(); refreshHud(); buildDock(); wearAll();
   say('進度已還原', true); toast('進度已還原');
 }
 function maybeRemind() {
@@ -742,25 +819,87 @@ const RENDER = {
     });
   },
   heroes(el) {
-    el.innerHTML = comingCard('英雄榜即將公開', '陸續更新中。只放經本人同意的學員故事，不放未經證實的數字。');
+    const off = S.office, d = deskOf(off), st = off.guessStat || {};
+    el.innerHTML = `<div class="card"><div class="row between"><b>STAR史塔財商榮譽牆</b><span class="tag">4 樓</span></div>
+      <p class="note" style="margin:8px 0 0">這裡改掛 STAR史塔財商榮譽牆。週榜前十名上牆，要等伺服器有「本週猜盤」專屬榜之後才會列出真實玩家；現在先放你自己的成績，不編造名單、也不放未經證實的數字。</p></div>
+      <div class="card"><div class="row between"><span>目前職級</span><b>${RANKS[rankIndex()].name}</b></div>
+        <div class="row between" style="margin-top:8px"><span>工位</span><b>${d.name}</b></div>
+        <div class="row between" style="margin-top:8px"><span>猜盤連對（最佳）</span><b>${st.streak || 0} 天（最佳 ${st.best || 0}）</b></div>
+        <div class="row between" style="margin-top:8px"><span>本週猜盤積分</span><b>${weekPts()} 分</b></div></div>
+      <p class="note">獎勵僅站內薪水，不能換現金。內容非投資建議。</p>`;
   },
-  guess(el) {
-    const g = S.guesses[today()] || (S.guesses[today()] = {});
+  async guess(el) {
+    const day = today();
+    const raw = S.guesses[day] || (S.guesses[day] = {});
+    await ensureResults();
+    const meta = resultsInfo();
     const rows = MARKETS.map(m => {
-      const v = g[m.id];
+      const pick = guessPick(raw[m.id]);
+      const rec = raw[m.id] && typeof raw[m.id] === 'object' ? raw[m.id] : null;
+      const r = marketResult(day, m.id);
+      let reveal;
+      if (!pick) reveal = '選一邊，先留下今天的看法。台北時間台股 14:00、美股等收盤資料出來後，依實際收盤開獎。';
+      else if (rec && rec.settled) reveal = rec.win ? `已開獎：你猜「${pick === 'up' ? '看漲' : '看跌'}」，實際「${rec.settled === 'up' ? '收紅' : rec.settled === 'down' ? '收綠' : '平盤'}」，猜中了。` : `已開獎：你猜「${pick === 'up' ? '看漲' : '看跌'}」，實際「${rec.settled === 'up' ? '收紅' : rec.settled === 'down' ? '收綠' : '平盤'}」，沒猜中。平盤不算猜中。`;
+      else if (r) reveal = `已選「${pick === 'up' ? '看漲' : '看跌'}」，收盤結果已到，可以開獎。`;
+      else reveal = `已選「${pick === 'up' ? '看漲' : '看跌'}」，等真實收盤資料。`;
       return `<div class="card mkt"><h3>${m.name}</h3>
-        <button class="btn up ${v === 'up' ? 'sel' : ''}" data-m="${m.id}" data-v="up" ${v ? 'disabled' : ''}>看漲</button>
-        <button class="btn down ${v === 'down' ? 'sel' : ''}" data-m="${m.id}" data-v="down" ${v ? 'disabled' : ''}>看跌</button>
-        <div class="reveal">${!v ? '選一邊，先留下今天的看法。收盤揭曉即將接入。' : `已選「${v === 'up' ? '看漲' : '看跌'}」，收盤揭曉即將接入。`}</div></div>`;
+        <button class="btn up ${pick === 'up' ? 'sel' : ''}" data-m="${m.id}" data-v="up" ${pick ? 'disabled' : ''}>看漲</button>
+        <button class="btn down ${pick === 'down' ? 'sel' : ''}" data-m="${m.id}" data-v="down" ${pick ? 'disabled' : ''}>看跌</button>
+        <div class="reveal">${reveal}</div></div>`;
     }).join('');
-    el.innerHTML = `<p style="margin:0">晨會開始！猜猜今天台股、美股收盤是漲還是跌。只猜方向，不給點位，純粹練盤感。</p>${rows}
+    const ready = MARKETS.filter(m => {
+      const rec = raw[m.id];
+      const pick = guessPick(rec);
+      return pick && !(rec && rec.settled) && marketResult(day, m.id);
+    });
+    const tip = tipFor(day);
+    const st = (S.office.guessStat || {});
+    el.innerHTML = `<p style="margin:0">晨會開始！猜猜今天台股、美股收盤是漲還是跌。只猜方向，不給點位，純粹練盤感。開獎用與「市場溫度計」同一套真實收盤資料，不編造數字。</p>${rows}
+      ${ready.length ? `<button class="btn primary" id="gClaim" style="width:100%">開獎・領取薪水（${ready.length} 筆）</button>` : ''}
+      <div class="card"><b>STAR史塔財商心法</b><p style="margin:8px 0 0">「${tip}」</p><p class="note" style="margin:8px 0 0">— 董事長 LEO易凡</p></div>
       <div class="card row between"><span>你本週積分</span><b class="stat" style="font-size:1.4rem">${weekPts()}</b></div>
-      <p class="note">收盤揭曉即將接入。積分會在揭曉後再計算。</p>`;
-    el.querySelectorAll('[data-v]').forEach(b => b.onclick = () => { g[b.dataset.m] = b.dataset.v; save(); addXP(3, 0); blip(880); RENDER.guess(el); });
+      <p class="note">猜中一市場薪水 +${GUESS_WIN}；連對加成每段 +${GUESS_STREAK_STEP}，上限 +${GUESS_STREAK_CAP}。連對目前 ${st.streak || 0} 天（最佳 ${st.best || 0}）。開獎資料：${meta ? `${meta.source}，更新於 ${meta.updated}${meta.sample ? '（範例）' : ''}` : '讀取中或讀取失敗'}。平盤不算猜中。薪水是站內虛擬點數，不能換現金。非投資建議。</p>`;
+    el.querySelectorAll('[data-v]').forEach(b => b.onclick = () => {
+      const g = S.guesses[today()] || (S.guesses[today()] = {});
+      if (guessPick(g[b.dataset.m])) return;
+      g[b.dataset.m] = b.dataset.v;
+      if (isGM()) { blip(880); RENDER.guess(el); return; }
+      save(); addXP(3, 0); blip(880); RENDER.guess(el);
+    });
+    const cb = el.querySelector('#gClaim');
+    cb && (cb.onclick = () => {
+      if (blockGmProgress('GM 模式不能開獎領薪水')) return;
+      const day2 = today();
+      const g = S.guesses[day2] || (S.guesses[day2] = {});
+      let wins = 0, n = 0, coins = 0;
+      MARKETS.forEach(m => {
+        const pick = guessPick(g[m.id]);
+        const rec = g[m.id] && typeof g[m.id] === 'object' ? g[m.id] : null;
+        const r = marketResult(day2, m.id);
+        if (!pick || !r || (rec && rec.settled)) return;
+        const win = pick === r.dir;
+        g[m.id] = { pick, settled: r.dir, win, paid: 0 };
+        n++; if (win) wins++;
+      });
+      if (!n) { toast('沒有可以開獎的盤'); return; }
+      S.office = normOffice(S.office);
+      const gs = S.office.guessStat;
+      if (wins > 0) { gs.streak = (gs.streak | 0) + 1; gs.best = Math.max(gs.best | 0, gs.streak); }
+      else gs.streak = 0;
+      const bonus = wins ? Math.min(GUESS_STREAK_CAP, Math.max(0, (gs.streak - 1) * GUESS_STREAK_STEP)) : 0;
+      coins = wins * GUESS_WIN + bonus;
+      if (wins) S.week[weekKey()] = (S.week[weekKey()] || 0) + wins * WEEK_PT;
+      addXP(0, coins, cb);
+      toast(wins ? `開獎完成！猜中 ${wins} 筆，薪水 +${coins}${bonus ? `（含連對加成 +${bonus}）` : ''}` : '開獎完成，這次沒猜中。平盤也不算猜中。');
+      refreshHud();
+      RENDER.guess(el);
+    });
   },
   leader(el) {
     el.innerHTML = `<div class="card row between"><span>你本週猜盤積分</span><b class="stat" style="font-size:1.5rem">${weekPts()} 分</b></div>
-      <p class="note">目前先記錄你自己的積分。完整排行榜即將公開。</p>`;
+      <div class="card"><div class="row between"><span>連對天數</span><b>${(S.office.guessStat || {}).streak || 0} 天</b></div>
+        <div class="row between" style="margin-top:8px"><span>最佳連對</span><b>${(S.office.guessStat || {}).best || 0} 天</b></div></div>
+      <p class="note">積分在收盤開獎、猜中後才會加上（每市場 ${WEEK_PT} 分）。完整的多人週榜目前沒有對應的伺服器榜（現有榜是財富、預測擂台連勝／勝率、模擬資金），所以這裡只顯示你自己的成績，不會編造其他玩家。非投資建議。</p>`;
   },
   target(el) {
     const m = modelStates(S, today(), realDays()).find(x => x.id === 'target');
@@ -838,7 +977,20 @@ const RENDER = {
     el.innerHTML = `<p style="margin:0">三卷九章講義，照順序讀。</p>${comingCard('講義即將公開')}`;
   },
   course(el) {
-    el.innerHTML = `<p style="margin:0">傳功課程：由淺入深的影片課。</p>${comingCard('課程即將公開')}`;
+    el.innerHTML = `<div class="card"><div class="row between"><b>STAR史塔財商教室入口</b><span class="tag">68 樓</span></div>
+      <p style="margin:8px 0 0">這裡從「傳功課程」改成 STAR史塔財商教室的入口。完整課程介紹在 7 樓教室，報名仍走全樓統一的私訊「成長」，不另開新網址。</p></div>
+      ${academyCtaHTML()}
+      <p class="note">內容非投資建議。</p>`;
+    bindAcademyCta(el);
+  },
+  desk(el) { renderDesk(el); },
+  academy(el) {
+    el.innerHTML = `<div class="card"><div class="row between"><b>STAR史塔財商教室</b><span class="tag">7 樓</span></div>
+      <p style="margin:10px 0 0">這裡是 7 樓的 STAR史塔財商教室。牆上會看到董事長 LEO易凡 的心法：先結構、再進場，先停損、再談目標。</p>
+      <p class="note" style="margin:10px 0 0">教室提供課程介紹與報名入口。報名方式與全樓「私訊『成長』」相同。</p></div>
+      ${academyCtaHTML()}
+      <p class="note">內容非投資建議。薪水是站內虛擬點數，不能換現金。</p>`;
+    bindAcademyCta(el);
   },
   arena(el) {
     el.innerHTML = `<p style="margin:0">演武場：實盤複盤片段，只看當時的判斷與結果，不帶單、不喊單。</p>${comingCard('即將公開')}`;
@@ -1341,7 +1493,7 @@ function syncGmUi() {
   refreshHud();
   buildDock();
   wearAll();
-  if (world && world.refresh) world.refresh({ floors: floorInfo(), board: boardRows(), rank: rankIndex() });
+  if (world && world.refresh) world.refresh({ floors: floorInfo(), board: boardRows(), rank: rankIndex(), office: S.office });
 }
 function logoutGm() {
   const here = floor;
