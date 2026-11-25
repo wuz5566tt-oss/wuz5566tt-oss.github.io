@@ -1,3 +1,5 @@
+import { CLASSMATES } from './office.js';
+
 // 每層樓 NPC 任務：資料與判斷（純函式，不碰畫面）
 // kind: 'daily' 每日任務（依日期重置）／'once' 成就任務（一次性）
 // reward: 目前只發站內薪水 coins（可附少量經驗 xp）；之後商店上架可加 items 等欄位，claim 時統一處理
@@ -29,7 +31,7 @@ export const NPCS = [
     quest: { id: 'q_daily_fake3', kind: 'daily', title: '今天「躲假突破」單局躲過 3 次', check: 'fakeBestToday', target: 3, action: 'fakeout', reward: { coins: 60, xp: 3 } } },
   { id: 'n_bear', floor: 'f3', gender: 'm', outfit: 'sport', avatar: '🏋️‍♂️', name: '體能教練大熊', line: '練功沒有捷徑，天天來就對了。', pose: 'stand', station: 'bag',
     quest: { id: 'q_once_streak7', kind: 'once', title: '連續打卡 7 天', check: 'streak', target: 7, action: 'checkin', reward: { coins: 300, xp: 10 } } },
-  // 4 樓・戰報與英雄榜
+  // 4 樓・戰報與榮譽牆
   { id: 'n_editor', floor: 'f4', gender: 'm', outfit: 'vest', avatar: '📰', name: '戰報編輯阿哲', line: '看圖的眼力，是一根一根練出來的。', pose: 'desk', station: 'reports',
     quest: { id: 'q_once_kline4', kind: 'once', title: '「看K線猜下一根」單局答對 4 題', check: 'klineBest', target: 4, action: 'kline', reward: { coins: 200, xp: 6 } } },
   { id: 'n_honor', floor: 'f4', gender: 'f', outfit: 'curator', avatar: '🏅', name: '榮譽牆管理員', line: '累積 14 天，名字就該上牆了。', pose: 'stand', station: 'honor',
@@ -55,9 +57,21 @@ export const NPCS = [
     quest: { id: 'q_once_review10', kind: 'once', title: '累積寫 10 天複盤', check: 'reviews', target: 10, action: 'review', reward: { coins: 400, xp: 10 } } },
   { id: 'n_senior', floor: 'insider', gender: 'm', outfit: 'gi', avatar: '🥋', name: '演武場師兄', line: '升到經理，才算真正站穩腳步。', pose: 'stand', station: 'arena',
     quest: { id: 'q_once_rank3', kind: 'once', title: '職級升到「經理」', check: 'rank', target: 3, action: 'rank', reward: { coins: 500, xp: 0 } } },
+  // STAR史塔財商講師馬：只說話、沒有任務（避免影響既有任務列）
+  { id: 'n_lec_f2', floor: 'f2', gender: 'f', outfit: 'skirtsuit', avatar: '🐴', name: 'STAR史塔財商講師 心蘭', line: '猜方向不如等結構確認。', pose: 'stand', slot: 'C', talk: 'academy' },
+  { id: 'n_lec_f3', floor: 'f3', gender: 'm', outfit: 'polo', avatar: '🐴', name: 'STAR史塔財商講師 子安', line: '別急，看清楚再出手。', pose: 'stand', slot: 'F', talk: 'academy' },
+  { id: 'n_lec_f4', floor: 'f4', gender: 'm', outfit: 'vest', avatar: '🐴', name: 'STAR史塔財商講師 正遠', line: '交易的盡頭不是技術，是概率。', pose: 'stand', slot: 'D', talk: 'academy' },
+  { id: 'n_lec_f5', floor: 'f5', gender: 'f', outfit: 'blouse', avatar: '🐴', name: 'STAR史塔財商講師 沐橙', line: '長期的紀律，比一次的好運重要。', pose: 'stand', slot: 'F', talk: 'academy' },
+  { id: 'n_lec_f6', floor: 'f6', gender: 'm', outfit: 'suit', avatar: '🐴', name: 'STAR史塔財商講師 景行', line: '先想好停損，再談進場。', pose: 'stand', slot: 'A', talk: 'academy' },
+  // 7 樓同期學員馬：只說話、工位等級固定，不進任務列
+  ...CLASSMATES.map(c => ({
+    id: c.id, floor: 'f7', gender: c.gender, outfit: c.outfit, avatar: '🐴',
+    name: c.name, line: c.line, pose: 'sit', stand: c.stand, face: c.face, talk: 'classmate',
+  })),
 ];
 export const npcsOn = f => NPCS.filter(n => n.floor === f);
-export const questById = id => { const n = NPCS.find(n => n.quest.id === id); return n ? n.quest : null; };
+export const questNpcsOn = f => NPCS.filter(n => n.floor === f && n.quest);
+export const questById = id => { const n = NPCS.find(n => n.quest && n.quest.id === id); return n ? n.quest : null; };
 
 // 狀態：{ v, daily: { 'YYYY-MM-DD': [已領任務 id] }, done: [已領成就 id], day: { 'YYYY-MM-DD': { klinePlays, klineBest, fakeBest } } }
 export function normQuests(q) {
@@ -106,6 +120,7 @@ export function claimed(q, quest, today) {
   return (q.done || []).includes(quest.id);
 }
 export function evalQuest(quest, ctx) {
+  if (!quest) return { prog: 0, target: 0, done: false, got: true, ready: false };
   const fn = CHECKS[quest.check];
   const raw = fn ? fn(ctx) : 0;
   const prog = Math.min(raw, quest.target);
