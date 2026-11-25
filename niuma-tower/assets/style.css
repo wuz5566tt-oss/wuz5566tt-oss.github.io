@@ -586,3 +586,6 @@ body[data-floor=f6] .chip.floor{box-shadow:inset 0 0 0 1px rgba(46,255,196,.55),
 .lab-disc{margin:10px 0 0;text-align:center;font-size:.72rem}
 .lab-gm{margin:8px 0 0;color:var(--gold)}
 @media (max-width:360px){.lab-sliders{grid-template-columns:1fr}.lab-read.four{grid-template-columns:repeat(2,1fr)}}
+
+/* 7F / 猜盤結算補充 */
+.mkt .reveal{grid-column:1/-1;font-size:.88rem;color:var(--mute);line-height:1.45}
