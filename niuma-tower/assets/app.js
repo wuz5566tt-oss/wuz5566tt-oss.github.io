@@ -337,7 +337,7 @@ function lockInsider() { insiderLinks = null; try { sessionStorage.removeItem(GA
 
 /* ---------- 介面工具 ---------- */
 const $ = s => document.querySelector(s);
-const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '"' }[c]));
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 let toastT;
 export function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600); }
 function coinBurst(from) {
