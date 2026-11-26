@@ -4,7 +4,7 @@ import { encodeBackup, decodeBackup, applySnapshot, hasProgress } from './backup
 import { GM_HASH } from './gm.js';
 import { SHOP, TABS, itemById, itemsInTab, cssHex } from './shop-catalog.js';
 import { FIN_PANELS, FIN_ICON, RENDER_FIN, normFin, finTodos, initFin, finSync, marketResult, resultsInfo, ensureResults, tpe as tpeFin } from './fin.js';
-import { DESK_LEVELS, DESK_ITEMS, GUESS_WIN, GUESS_STREAK_STEP, GUESS_STREAK_CAP, WEEK_PT, normOffice, nextDesk, deskOf, itemUnlocked, guessPick, tipFor } from './office.js';
+import { DESK_LEVELS, DESK_ITEMS, DESK_DECOR, GUESS_WIN, GUESS_STREAK_STEP, GUESS_STREAK_CAP, WEEK_PT, normOffice, nextDesk, deskOf, itemUnlocked, guessPick, tipFor, decorOf, ownsDecor } from './office.js';
 import { LAB_RENDER, LAB_ICON, initLab, labTodos } from './lab.js';
 import { NPCS, npcsOn, questNpcsOn, questById, normQuests, pruneQuests, evalQuest, markClaimed, rewardText } from './quests.js';
 export { SHOP };
@@ -337,7 +337,7 @@ function lockInsider() { insiderLinks = null; try { sessionStorage.removeItem(GA
 
 /* ---------- 介面工具 ---------- */
 const $ = s => document.querySelector(s);
-const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&', '<': '<', '>': '>', '"': '"' }[c]));
 let toastT;
 export function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600); }
 function coinBurst(from) {
@@ -386,6 +386,43 @@ function addXP(n, coins = 0, el) {
 
 /* ---------- 面板 ---------- */
 
+function buyDecor(id) {
+  S.office = normOffice(S.office);
+  const it = decorOf(id);
+  if (!it) return { ok: false, why: 'no' };
+  if (ownsDecor(S.office, it.id)) return { ok: false, why: 'owned' };
+  if (!itemUnlocked(it, { days: realDays(), office: S.office })) return { ok: false, why: 'need' };
+  const gm = isGM();
+  if (gm) {
+    S.office.decor.owned.push(it.id);
+    if (it.kind === 'chair') S.office.decor.chair = it.id;
+    toast(`GM 預覽：擺上「${it.name}」（不扣薪水）`);
+    refreshHud();
+    return { ok: true, gm: true };
+  }
+  if (blockGmProgress('GM 模式不能購買擺設')) return { ok: false, why: 'gm' };
+  if ((S.coins | 0) < it.price) { toast('薪水不夠，先去打卡或完成任務'); return { ok: false, why: 'coins' }; }
+  S.coins -= it.price;
+  S.office.decor.owned.push(it.id);
+  if (it.kind === 'chair') S.office.decor.chair = it.id;
+  save();
+  toast(`已擺上「${it.name}」，薪水 −${it.price}`);
+  blip(1046);
+  refreshHud();
+  return { ok: true };
+}
+function equipDecorChair(id) {
+  S.office = normOffice(S.office);
+  const it = decorOf(id);
+  if (!it || it.kind !== 'chair' || !ownsDecor(S.office, id)) return { ok: false, why: 'no' };
+  S.office.decor.chair = id;
+  if (isGM()) { toast(`GM 預覽：椅子換成「${it.name}」（不寫存檔）`); refreshHud(); return { ok: true, gm: true }; }
+  if (blockGmProgress()) return { ok: false, why: 'gm' };
+  save();
+  toast(`工位椅子換成「${it.name}」`);
+  refreshHud();
+  return { ok: true };
+}
 function renderDesk(el) {
   S.office = normOffice(S.office);
   const off = S.office, cur = deskOf(off), nxt = nextDesk(off);
@@ -400,12 +437,37 @@ function renderDesk(el) {
   const gm = isGM();
   const upBtn = !nxt ? '<p class="note">已經是最高級「頂樓交易室」。金框與桌面就地升級，不用搬去 68 樓。</p>'
     : `<button type="button" class="btn primary" id="deskUp" style="width:100%">${gm ? 'GM 預覽升級為「' + nxt.name + '」（不扣薪水）' : '升級為「' + nxt.name + '」・薪水 ' + nxt.price}</button>`;
+    const decorItems = DESK_DECOR.map(it => {
+      const owned = ownsDecor(off, it.id);
+      const unlocked = itemUnlocked(it, ctx);
+      const needName = it.need && it.need.desk ? ((DESK_LEVELS[it.need.desk] || {}).name || '') : '';
+      const equipped = it.kind === 'chair' && off.decor.chair === it.id;
+      let action = '';
+      if (owned && it.kind === 'chair') {
+        action = equipped ? '<span class="tag">使用中</span>' : `<button type="button" class="btn ghost sm" data-equip="${it.id}">換成這個</button>`;
+      } else if (owned) {
+        action = '<span class="tag">已擺上</span>';
+      } else if (!unlocked) {
+        action = `<span class="note">需「${needName}」以上才能買</span>`;
+      } else if (gm) {
+        action = `<button type="button" class="btn primary sm" data-buy="${it.id}">GM 預覽購買（不扣薪水）</button>`;
+      } else {
+        action = `<button type="button" class="btn primary sm" data-buy="${it.id}">購買・薪水 ${it.price}</button>`;
+      }
+      return `<div class="decor-item${owned ? ' owned' : ''}" data-decor="${it.id}"><div class="row between"><b>${it.name}</b><span class="price">薪水 ${it.price}</span></div><p class="note" style="margin:6px 0 8px">${it.blurb}</p><div class="row between">${action}</div></div>`;
+    }).join('');
+
   el.innerHTML = `<div class="card"><div class="row between"><b>我的工位</b><span class="tag">${cur.name}</span></div>
     <p class="note" style="margin:8px 0 0">${cur.blurb}</p>
     <p class="note" style="margin:8px 0 0">升級路線：${DESK_LEVELS.map(l => l.name).join(' → ')}。這是你自己的個人交易室；旁邊三位同期學員工位等級固定，方便你比較，不是全伺服器一人一桌。</p></div>
     ${upBtn}
     ${gm ? '<p class="note">GM 模式可以預覽每一級外觀，不會扣薪水、也不會存檔。</p>' : `<p class="note">目前薪水 ${S.coins}。升級只扣站內薪水，不能換現金。</p>`}
     <div class="card"><b>擺設格</b><p class="note" style="margin:6px 0 0">解鎖後可以把 STAR史塔財商獎盃、證書放到自己的桌子上。</p>${items}</div>
+    <div class="card"><b>小擺設商店</b>
+      <p class="note" style="margin:6px 0 8px">一次購買，買了就會出現在你的 3D 工位上。椅子三選一，換成新椅就會替掉預設椅；已買的椅子可免費換。只扣站內薪水，不能換現金。</p>
+      <div class="decor-shop">${decorItems}</div>
+      ${gm ? '<p class="note">GM 模式可以預覽擺設，不會扣薪水、也不會存檔。</p>' : ''}
+    </div>
     <p class="note">同期學員是固定陳列的馬型 NPC，不是真實玩家名單。</p>`;
   const ub = el.querySelector('#deskUp');
   ub && (ub.onclick = () => {
@@ -429,6 +491,14 @@ function renderDesk(el) {
     if (blockGmProgress()) return;
     S.office.slots[it.slot] = S.office.slots[it.slot] === it.id ? '' : it.id;
     save(); renderDesk(el); refreshHud();
+  });
+  el.querySelectorAll('[data-buy]').forEach(b => b.onclick = () => {
+    const r = buyDecor(b.dataset.buy);
+    if (r && r.ok) { renderDesk(el); refreshHud(); }
+  });
+  el.querySelectorAll('[data-equip]').forEach(b => b.onclick = () => {
+    const r = equipDecorChair(b.dataset.equip);
+    if (r && r.ok) { renderDesk(el); refreshHud(); }
   });
 }
 
@@ -1395,7 +1465,18 @@ const hooks = {
   nearZone(z) {
     const b = document.getElementById('zonePrompt'); if (!b) return;
     if (!z || document.getElementById('panel').classList.contains('open')) { b.hidden = true; return; }
-    b.hidden = false; b.textContent = z.id.startsWith('lift_') ? '打開電梯' : '打開' + z.name;
+    b.hidden = false;
+    if (z.id === 'desk' && world) {
+      if (world.isSitting && world.isSitting()) {
+        b.textContent = '起身';
+        b.onclick = () => { world.standUp && world.standUp(); };
+        return;
+      }
+      b.textContent = '坐下';
+      b.onclick = () => { world.sitAtDesk && world.sitAtDesk(); };
+      return;
+    }
+    b.textContent = z.id.startsWith('lift_') ? '打開電梯' : '打開' + z.name;
     b.onclick = () => world && world.go(z.id);
   },
   fallback(reason) { toast(reason || '已自動切換為省電平面版'); switchTo('flat', true); },
@@ -1551,6 +1632,6 @@ function maybeGmGate() {
 initFin({ get S() { return S; }, save, addXP, toast, blip, isGM, block: blockGmProgress, esc, refreshHud, PUBLIC_REPORTS,
   rankName: () => RANKS[rankIndex()].name, insider: () => insiderLinks });
 initLab({ get S() { return S; }, save, addXP, toast, blip, isGM, questLog, today, refreshHud, open: (id, opt) => openPanel(id, opt) });
-window.__niuma = { get world() { return world; }, get floor() { return floor; }, openPanel, closePanel, ride, goToQuestNpc, maybeClaimFocused, questLog, get ready() { return ready; }, SHOP, encodeBackup, decodeBackup, applySnapshot, maybeRemind, get isGM() { return isGM(); } };
+window.__niuma = { get world() { return world; }, get floor() { return floor; }, openPanel, closePanel, ride, goToQuestNpc, maybeClaimFocused, questLog, get ready() { return ready; }, SHOP, encodeBackup, decodeBackup, applySnapshot, maybeRemind, get isGM() { return isGM(); }, get office() { return S.office; }, get coins() { return S.coins; }, buyDecor, equipDecorChair, sitAtDesk: () => world && world.sitAtDesk && world.sitAtDesk(), standUp: () => world && world.standUp && world.standUp(), isSitting: () => !!(world && world.isSitting && world.isSitting()) };
 ready = (async () => { await restoreInsider(); await switchTo(startFlat ? 'flat' : '3d', false); maybeGmGate(); })();
 if (qs.has('lobby')) skip();
