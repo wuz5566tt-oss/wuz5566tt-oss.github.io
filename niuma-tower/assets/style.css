@@ -589,3 +589,11 @@ body[data-floor=f6] .chip.floor{box-shadow:inset 0 0 0 1px rgba(46,255,196,.55),
 
 /* 7F / 猜盤結算補充 */
 .mkt .reveal{grid-column:1/-1;font-size:.88rem;color:var(--mute);line-height:1.45}
+
+
+/* 7F 小擺設商店 */
+.decor-shop{display:grid;grid-template-columns:1fr;gap:8px;margin-top:8px}
+.decor-item{padding:12px;border-radius:14px;background:linear-gradient(160deg,rgba(255,200,90,.08),rgba(255,255,255,.025));box-shadow:inset 0 0 0 1px rgba(212,168,75,.3)}
+.decor-item.owned{box-shadow:inset 0 0 0 1px rgba(255,200,90,.6),0 0 16px rgba(255,200,90,.12)}
+.decor-item .price{color:var(--gold);font-variant-numeric:tabular-nums;font-weight:800;font-size:.85rem;flex-shrink:0}
+.decor-item b{color:#ffe6a8}
