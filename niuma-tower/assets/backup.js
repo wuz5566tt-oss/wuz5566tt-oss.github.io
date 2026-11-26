@@ -61,6 +61,17 @@ function unpackDays(s) {
   return out;
 }
 
+
+/** 向下相容：把打卡日期清單整理好。沒有清單時只補 last（或今天已打的 last），不依連續天數虛構過去的日期。最多保留約 400 天。 */
+export function normCheckinDays(S) {
+  if (!S || typeof S !== 'object') return [];
+  const ok = d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d);
+  let days = Array.isArray(S.days) ? S.days.filter(ok) : [];
+  if (!days.length && ok(S.last)) days = [S.last];
+  S.days = [...new Set(days)].sort().slice(-400);
+  return S.days;
+}
+
 function snapshot(S) {
   return {
     v: VER,
@@ -90,6 +101,7 @@ export function applySnapshot(S, data) {
   S.streak = data.streak | 0;
   S.last = data.last || null;
   S.days = Array.isArray(data.days) ? data.days : unpackDays(data.days);
+  normCheckinDays(S);
   S.claims = data.claims || {};
   S.shop = data.shop && typeof data.shop === 'object' ? data.shop : { owned: [], eq: {} };
   if (!Array.isArray(S.shop.owned)) S.shop.owned = [];
