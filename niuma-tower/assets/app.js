@@ -1,6 +1,6 @@
 import { toggleMusic, blip, preferMusicOn, isMusicOn } from './audio.js';
 import { applyBrand, STAR_LOGO_UI, TOWER_NAME, EVENT_NAME, isCyber } from './brand.js';
-import { encodeBackup, decodeBackup, applySnapshot, hasProgress } from './backup.js';
+import { encodeBackup, decodeBackup, applySnapshot, hasProgress, normCheckinDays } from './backup.js';
 import { GM_HASH } from './gm.js';
 import { SHOP, TABS, itemById, itemsInTab, cssHex } from './shop-catalog.js';
 import { FIN_PANELS, FIN_ICON, RENDER_FIN, normFin, finTodos, initFin, finSync, marketResult, resultsInfo, ensureResults, tpe as tpeFin } from './fin.js';
@@ -235,6 +235,11 @@ const fixQuests = () => { S.quests = pruneQuests(normQuests(S.quests), today());
 fixQuests();
 S.fin = normFin(S.fin);
 S.office = normOffice(S.office);
+{
+  const before = JSON.stringify(S.days || []);
+  normCheckinDays(S);
+  if (JSON.stringify(S.days || []) !== before) save();
+}
 const QS = new URLSearchParams(location.search);
 const realDays = () => new Set(S.days).size;
 const effDays = () => Math.max(realDays(), QS.has('days') ? (+QS.get('days') || 0) : 0); // 隱藏測試參數 ?days=7
@@ -266,7 +271,7 @@ const streakNow = () => {
 };
 if ((S.last === today() || S.last === yesterday()) && streakFromDays() > S.streak) {
   S.streak = streakFromDays();
-  S.days = [...new Set((S.days || []).filter(Boolean))].sort().slice(-365);
+  normCheckinDays(S);
   save();
 }
 const todos = () => ({
@@ -809,7 +814,7 @@ function renderBackup(el) {
   el.querySelector('#bakNo').onclick = () => { pending = null; ask.hidden = true; say('已取消還原', true); };
 }
 function doRestore(data, say) {
-  applySnapshot(S, data); fixQuests(); S.fin = normFin(S.fin); S.office = normOffice(S.office); save(); markBakDone(); refreshHud(); buildDock(); wearAll();
+  applySnapshot(S, data); fixQuests(); S.fin = normFin(S.fin); S.office = normOffice(S.office); normCheckinDays(S); save(); markBakDone(); refreshHud(); buildDock(); wearAll();
   say('進度已還原', true); toast('進度已還原');
 }
 function maybeRemind() {
@@ -831,8 +836,54 @@ function maybeRemind() {
   document.getElementById('bakLater').onclick = () => { tip.hidden = true; markBakSnooze(); };
 }
 
+
+let checkinCalYM = null;
+function currentYM() { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() + 1 }; }
+function shiftYM(ym, delta) {
+  let y = ym.y, m = ym.m + delta;
+  while (m < 1) { m += 12; y--; }
+  while (m > 12) { m -= 12; y++; }
+  return { y, m };
+}
+function monthDays(y, m) { return new Date(y, m, 0).getDate(); }
+function paintCheckinCal(root) {
+  const box = root.querySelector('#checkinCal');
+  if (!box) return;
+  const ym = checkinCalYM || (checkinCalYM = currentYM());
+  const set = new Set((S.days || []).filter(Boolean));
+  const todayStr = today();
+  const marked = [...set].filter(d => d.startsWith(`${ym.y}-${String(ym.m).padStart(2, '0')}-`)).length;
+  const firstDow = (new Date(ym.y, ym.m - 1, 1).getDay() + 6) % 7; // 0=週一
+  const nDays = monthDays(ym.y, ym.m);
+  const cells = [];
+  for (let i = 0; i < firstDow; i++) cells.push('<span class="cal-cell mute" aria-hidden="true"></span>');
+  for (let day = 1; day <= nDays; day++) {
+    const iso = `${ym.y}-${String(ym.m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const hit = set.has(iso);
+    const isToday = iso === todayStr;
+    const cls = ['cal-cell', hit ? 'marked' : '', isToday ? 'today' : ''].filter(Boolean).join(' ');
+    const label = hit ? `${ym.m}月${day}日已打卡` : `${ym.m}月${day}日`;
+    cells.push(`<span class="${cls}" data-cal-day="${iso}" ${hit ? 'data-marked="1"' : ''} ${isToday ? 'data-today="1"' : ''} title="${label}">${day}</span>`);
+  }
+  box.innerHTML = `
+    <div class="row between"><b>打卡月曆</b><span class="tag" id="calCount">本月已打卡 ${marked} 天</span></div>
+    <div class="cal-nav">
+      <button type="button" class="iconbtn" id="calPrev" aria-label="上個月">‹</button>
+      <div class="cal-title" id="calTitle">${ym.y}年${ym.m}月</div>
+      <button type="button" class="iconbtn" id="calNext" aria-label="下個月">›</button>
+    </div>
+    <div class="cal-dow">${['一','二','三','四','五','六','日'].map(d => `<span>${d}</span>`).join('')}</div>
+    <div class="cal-grid" id="calGrid">${cells.join('')}</div>
+    <p class="note" style="margin:8px 0 0">只標實際打卡的日子，不會補沒來的日期。日期以你的裝置為準。</p>`;
+  const prev = box.querySelector('#calPrev');
+  const next = box.querySelector('#calNext');
+  if (prev) prev.onclick = () => { checkinCalYM = shiftYM(ym, -1); paintCheckinCal(root); };
+  if (next) next.onclick = () => { checkinCalYM = shiftYM(ym, 1); paintCheckinCal(root); };
+}
+
 const RENDER = {
-  checkin(el) {
+  checkin(el, opt) {
+    if (!(opt && opt.keepCal)) checkinCalYM = currentYM();
     const done = checkedToday(), st = streakNow(), total = realDays();
     const broke = !done && S.last && S.last !== yesterday() && S.streak > 0;
     const cycle = done ? ((st - 1) % 7) + 1 : (st % 7) + 1;
@@ -847,7 +898,9 @@ const RENDER = {
       <p class="note" style="text-align:center;margin:4px 0 0">${done ? '明天記得回來，斷簽就要重新累積喔' : broke ? `上次打卡是 ${S.last.slice(5).replace('-', '/')}，中間斷簽，連續天數已重新計算；累積天數和薪水都保留` : '每天打卡領薪水，連續七天有大禮'}</p>
       <h3 style="margin:16px 0 0;font-size:1rem">七日打卡獎勵 <span class="tag">即將公開</span></h3>
       <div class="track">${days}</div>
-      <p class="note">薪水是站內虛擬點數，可在服裝店兌換裝扮；其他兌換內容即將公開。不能換現金。</p>`;
+      <p class="note">薪水是站內虛擬點數，可在服裝店兌換裝扮；其他兌換內容即將公開。不能換現金。</p>
+      <div class="checkin-cal" id="checkinCal"></div>`;
+    paintCheckinCal(el);
     const b = el.querySelector('#punch');
     b && (b.onclick = () => {
       if (blockGmProgress()) return;
@@ -859,7 +912,8 @@ const RENDER = {
       const wasBroke = !!S.last && !y && S.streak > 0;
       S.streak = y ? prevStreak + 1 : 1;
       S.last = today();
-      S.days = [...new Set([...(S.days || []).filter(Boolean), today()])].sort().slice(-365);
+      S.days = [...new Set([...(S.days || []).filter(Boolean), today()])].sort();
+      normCheckinDays(S);
       const c = ((S.streak - 1) % 7) + 1;
       el.querySelector('#stamp').classList.add('show'); blip(1046);
       addXP(10 + Math.min(S.streak, 7) * 2, 100 + c * 20, b);
@@ -867,7 +921,7 @@ const RENDER = {
       toast(wasBroke ? `打卡成功！薪水 +${100 + c * 20}（中間斷簽，連續天數重新計算）` : `打卡成功！薪水 +${100 + c * 20}`);
       const opened = ['f2', 'f3'].filter(f => floorOpen(f) && !before.includes(f));
       if (opened.length) setTimeout(() => toast(`恭喜！${FLOORS[opened[0]].name} 解鎖了`), 2700);
-      setTimeout(() => RENDER.checkin(el), 700);
+      setTimeout(() => RENDER.checkin(el, { keepCal: true }), 700);
     });
   },
   fortune(el) {
@@ -1632,6 +1686,6 @@ function maybeGmGate() {
 initFin({ get S() { return S; }, save, addXP, toast, blip, isGM, block: blockGmProgress, esc, refreshHud, PUBLIC_REPORTS,
   rankName: () => RANKS[rankIndex()].name, insider: () => insiderLinks });
 initLab({ get S() { return S; }, save, addXP, toast, blip, isGM, questLog, today, refreshHud, open: (id, opt) => openPanel(id, opt) });
-window.__niuma = { get world() { return world; }, get floor() { return floor; }, openPanel, closePanel, ride, goToQuestNpc, maybeClaimFocused, questLog, get ready() { return ready; }, SHOP, encodeBackup, decodeBackup, applySnapshot, maybeRemind, get isGM() { return isGM(); }, get office() { return S.office; }, get coins() { return S.coins; }, buyDecor, equipDecorChair, sitAtDesk: () => world && world.sitAtDesk && world.sitAtDesk(), standUp: () => world && world.standUp && world.standUp(), isSitting: () => !!(world && world.isSitting && world.isSitting()) };
+window.__niuma = { get world() { return world; }, get floor() { return floor; }, openPanel, closePanel, ride, goToQuestNpc, maybeClaimFocused, questLog, get ready() { return ready; }, SHOP, encodeBackup, decodeBackup, applySnapshot, maybeRemind, get isGM() { return isGM(); }, get office() { return S.office; }, get coins() { return S.coins; }, get days() { return [...(S.days || [])]; }, get last() { return S.last; }, get streak() { return streakNow(); }, today, realDays, buyDecor, equipDecorChair, sitAtDesk: () => world && world.sitAtDesk && world.sitAtDesk(), standUp: () => world && world.standUp && world.standUp(), isSitting: () => !!(world && world.isSitting && world.isSitting()) };
 ready = (async () => { await restoreInsider(); await switchTo(startFlat ? 'flat' : '3d', false); maybeGmGate(); })();
 if (qs.has('lobby')) skip();
