@@ -1,3 +1,4 @@
+import { normOffice } from './office.js';
 // 進度備份碼：壓縮後以數字呈現，再用 HMAC 簽名（金鑰在前端，只能擋隨手改碼）
 const BAK_KEY = 'niuma-bak-v1-7c3e9a1f0b24d8e55a91c4f6e2d0b387';
 const VER = 1;
@@ -100,7 +101,7 @@ export function applySnapshot(S, data) {
   S.week = data.week || {};
   S.quests = data.quests && typeof data.quests === 'object' ? data.quests : { daily: {}, done: [], day: {} };
   S.fin = data.fin && typeof data.fin === 'object' ? data.fin : {};
-  S.office = data.office && typeof data.office === 'object' ? data.office : S.office || {};
+  S.office = normOffice(data.office && typeof data.office === 'object' ? data.office : S.office || {});
 }
 
 export async function encodeBackup(S) {
