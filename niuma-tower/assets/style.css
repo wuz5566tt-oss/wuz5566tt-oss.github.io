@@ -597,3 +597,17 @@ body[data-floor=f6] .chip.floor{box-shadow:inset 0 0 0 1px rgba(46,255,196,.55),
 .decor-item.owned{box-shadow:inset 0 0 0 1px rgba(255,200,90,.6),0 0 16px rgba(255,200,90,.12)}
 .decor-item .price{color:var(--gold);font-variant-numeric:tabular-nums;font-weight:800;font-size:.85rem;flex-shrink:0}
 .decor-item b{color:#ffe6a8}
+
+
+/* ABA-7 打卡月曆 */
+.checkin-cal{margin-top:16px;padding:14px;border-radius:16px;background:linear-gradient(160deg,rgba(255,200,90,.07),rgba(255,255,255,.03));box-shadow:inset 0 0 0 1px rgba(212,168,75,.28)}
+.checkin-cal .cal-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:10px 0 8px}
+.checkin-cal .cal-title{font-weight:800;letter-spacing:.08em;color:var(--ink);font-variant-numeric:tabular-nums}
+.checkin-cal .cal-nav .iconbtn{min-width:36px;justify-content:center;font-size:1.15rem;color:var(--gold)}
+.checkin-cal .cal-dow{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:.7rem;color:var(--mute);margin-bottom:6px}
+.checkin-cal .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.checkin-cal .cal-cell{aspect-ratio:1;border-radius:10px;display:grid;place-items:center;font-variant-numeric:tabular-nums;font-size:.82rem;background:rgba(5,12,28,.35);box-shadow:inset 0 0 0 1px var(--line);color:var(--ink)}
+.checkin-cal .cal-cell.mute{opacity:.28;box-shadow:none;background:transparent}
+.checkin-cal .cal-cell.marked{background:linear-gradient(160deg,rgba(255,200,90,.28),rgba(255,200,90,.1));box-shadow:inset 0 0 0 1px rgba(255,200,90,.6),0 0 10px rgba(255,200,90,.16);color:var(--gold);font-weight:800}
+.checkin-cal .cal-cell.today{box-shadow:inset 0 0 0 1px var(--gold),0 0 12px rgba(255,200,90,.3)}
+.checkin-cal .cal-cell.marked.today{box-shadow:inset 0 0 0 1.5px var(--gold),0 0 14px rgba(255,200,90,.4)}
