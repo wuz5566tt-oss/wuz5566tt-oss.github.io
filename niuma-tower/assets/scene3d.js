@@ -571,6 +571,11 @@ export async function create3D(canvas, hooks) {
     const w = new THREE.Group(); p.add(w); wearLegs.push(w);
     return p;
   });
+  const playerShin = legs.map((lg, i) => {
+    const shin = new THREE.Group(); shin.position.set(0, -.36, 0); lg.add(shin);
+    const shoe = legShoes[i]; lg.remove(shoe); shoe.position.y = -.36; shin.add(shoe);
+    return shin;
+  });
   rbox(.74, .78, .46, .14, shirt, 0, 1.17, 0, body);
   const defaultTie = box(.12, .5, .04, goldGlow, 0, 1.2, .24, body);
   const defaultBadge = box(.14, .09, .03, cyanGlow, .22, 1.3, .24, body);
@@ -1297,7 +1302,110 @@ export async function create3D(canvas, hooks) {
     m.material.transparent = false;
     return m;
   }
-  function makeDesk(lv, slots, goldFr) {
+
+  function putChair(kind, ddesk, g) {
+    const z = ddesk / 2 + .35;
+    const chrome = std(0xb8bcc8, { metalness: .95, roughness: .22 });
+    const leather = std(0x1c1c24, { metalness: .15, roughness: .45 });
+    const ergoS = std(0x2a2d3a, { metalness: .1, roughness: .5 });
+    const ergoB = std(0x4a5568, { metalness: .2, roughness: .55 });
+    const game = std(0x14141c, { metalness: .2, roughness: .4 });
+    const pillow = std(0x3a2a12, { roughness: .5, metalness: .15 });
+    if (kind === 'chair-office' || kind === 'chair-ergo' || kind === 'chair-gaming') {
+      cyl(.04, .04, .32, 8, chrome, 0, .22, z, g);
+      for (let i = 0; i < 5; i++) {
+        const a = i * Math.PI * 2 / 5;
+        const arm = box(.34, .04, .06, chrome, Math.sin(a) * .12, .06, z + Math.cos(a) * .12, g);
+        arm.rotation.y = a;
+      }
+    }
+    if (kind === 'chair-office') {
+      rbox(.52, .07, .48, .04, leather, 0, .42, z, g);
+      rbox(.5, .62, .08, .04, leather, 0, .78, z + .22, g);
+      [-1, 1].forEach(s => {
+        box(.04, .22, .04, chrome, s * .24, .5, z, g);
+        rbox(.06, .04, .28, .02, leather, s * .26, .62, z - .02, g);
+      });
+    } else if (kind === 'chair-ergo') {
+      rbox(.54, .08, .5, .05, ergoS, 0, .42, z, g);
+      rbox(.42, .7, .06, .03, ergoB, 0, .86, z + .23, g);
+      rbox(.32, .14, .08, .03, ergoS, 0, 1.22, z + .22, g);
+      rbox(.36, .12, .07, .03, ergoS, 0, .72, z + .2, g);
+      [-1, 1].forEach(s => {
+        box(.04, .26, .04, chrome, s * .26, .52, z, g);
+        rbox(.07, .05, .3, .02, ergoS, s * .28, .66, z - .02, g);
+      });
+    } else if (kind === 'chair-gaming') {
+      rbox(.56, .09, .5, .05, game, 0, .42, z, g);
+      rbox(.5, .88, .09, .04, game, 0, .95, z + .24, g);
+      box(.02, .8, .02, goldM, -.24, .95, z + .28, g);
+      box(.02, .8, .02, goldM, .24, .95, z + .28, g);
+      rbox(.3, .12, .1, .04, pillow, 0, 1.36, z + .22, g);
+      rbox(.28, .12, .08, .03, pillow, 0, .7, z + .2, g);
+      [-1, 1].forEach(s => {
+        box(.05, .24, .05, goldM, s * .28, .52, z, g);
+        rbox(.08, .05, .32, .02, game, s * .3, .66, z - .02, g);
+      });
+    } else {
+      const dark = std(0x151d33, { metalness: .7, roughness: .35 });
+      rbox(.5, .07, .46, .04, dark, 0, .42, z, g);
+      rbox(.5, .55, .07, .04, dark, 0, .74, z + .19, g);
+    }
+  }
+  function putDeskProps(g, lv, decor) {
+    const owned = decor && Array.isArray(decor.owned) ? decor.owned : [];
+    const has = id => owned.includes(id);
+    const wdesk = lv >= 3 ? 2.2 : 1.7, ddesk = lv >= 3 ? 1.0 : .8;
+    const top = .8;
+    if (has('plant')) {
+      const x = -wdesk / 2 + .18, z = ddesk / 2 - .18;
+      const pot = std(0x6a3a24, { roughness: .7, metalness: .05 });
+      const leaf = std(0x2a7a48, { roughness: .55, metalness: .05 });
+      cyl(.07, .055, .09, 8, pot, x, top + .045, z, g);
+      cyl(.05, .05, .02, 8, std(0x3a2a18, { roughness: .9 }), x, top + .09, z, g);
+      const s1 = new THREE.Mesh(keep(new THREE.SphereGeometry(.08, 10, 8)), leaf); s1.position.set(x, top + .18, z); g.add(s1);
+      const s2 = new THREE.Mesh(keep(new THREE.SphereGeometry(.06, 10, 8)), leaf); s2.position.set(x + .05, top + .22, z - .02); g.add(s2);
+      const s3 = new THREE.Mesh(keep(new THREE.SphereGeometry(.055, 10, 8)), leaf); s3.position.set(x - .04, top + .2, z + .03); g.add(s3);
+    }
+    if (has('lamp')) {
+      const x = wdesk / 2 - .18, z = ddesk / 2 - .16;
+      const chrome = std(0xc5c8d0, { metalness: .95, roughness: .2 });
+      cyl(.07, .07, .03, 10, chrome, x, top + .015, z, g);
+      box(.025, .28, .025, chrome, x, top + .16, z, g);
+      box(.16, .02, .02, chrome, x - .06, top + .31, z, g);
+      cyl(.08, .1, .1, 10, glow(0xffc878, 1.5), x - .14, top + .28, z, g);
+      const bulb = new THREE.Mesh(keep(new THREE.SphereGeometry(.035, 8, 8)), glow(0xffe0a0, 2.2));
+      bulb.position.set(x - .14, top + .24, z); g.add(bulb);
+    }
+    if (has('charm')) {
+      const x = -.12, z = ddesk / 2 - .18;
+      rbox(.16, .06, .1, .02, goldM, x, top + .04, z, g);
+      rbox(.12, .05, .08, .02, goldM, x, top + .09, z, g);
+      const knot = new THREE.Mesh(keep(new THREE.SphereGeometry(.025, 8, 8)), std(0xa01a1a, { roughness: .5, metalness: .1 }));
+      knot.position.set(x, top + .14, z); g.add(knot);
+    }
+    if (has('coffee')) {
+      const x = -wdesk / 2 - .34, z = .08;
+      const wood = std(0x3a2414, { roughness: .5, metalness: .08 });
+      const body = std(0x1a1a22, { metalness: .6, roughness: .35 });
+      rbox(.4, .05, .32, .02, wood, x, .52, z, g);
+      [-1, 1].forEach(s => box(.05, .5, .05, wood, x + s * .14, .26, z + .1, g));
+      [-1, 1].forEach(s => box(.05, .5, .05, wood, x + s * .14, .26, z - .1, g));
+      rbox(.22, .28, .18, .03, body, x, .7, z, g);
+      cyl(.07, .07, .08, 10, std(0x2a3040, { metalness: .4, roughness: .3 }), x, .9, z, g);
+      box(.04, .04, .1, body, x + .12, .68, z, g);
+      cyl(.035, .03, .05, 8, std(0xf2e6c4, { roughness: .5 }), x + .16, .58, z, g);
+    }
+    if (has('cert-star')) {
+      const x = wdesk / 2 + .02, z = .12;
+      rbox(.32, .44, .04, .02, std(0x1a1408, { roughness: .4, metalness: .3 }), x, 1.05, z, g);
+      box(.34, .02, .08, goldM, x, .81, z, g);
+      const tex = textTex(['STAR史塔財商', '結業證書'], { w: 640, h: 400, size: 88, color: '#ffd68a', border: '#d4a84b', glowC: '#d4a84b', sub: '#fff4d2' });
+      plane(.28, .36, tex, x, 1.06, z + .025, g);
+    }
+  }
+  function makeDesk(lv, slots, goldFr, decor) {
+
     const g = new THREE.Group();
     const wood2 = std(0x3a2414, { roughness: .45, metalness: .1 });
     const crate = std(0x6a4a28, { roughness: .7, metalness: 0 });
@@ -1305,6 +1413,9 @@ export async function create3D(canvas, hooks) {
     if (lv <= 0) {
       rbox(1.1, .7, .8, .04, crate, 0, .35, 0, g);
       rbox(.6, .45, .55, .04, crate, .35, .92, .05, g);
+      // 紙箱也可坐：在紙箱後方放一只矮凳
+      rbox(.5, .16, .46, .04, crate, 0, .40, .62, g);
+      rbox(.5, .32, .07, .04, crate, 0, .64, .82, g);
     } else {
       const wdesk = lv >= 3 ? 2.2 : 1.7, ddesk = lv >= 3 ? 1.0 : .8;
       rbox(wdesk, .08, ddesk, .03, lv >= 4 ? goldM : wood2, 0, .76, 0, g);
@@ -1332,9 +1443,7 @@ export async function create3D(canvas, hooks) {
           putChart(.56, .38, chartTex(20 + lv * 5 + i), 0, 1.22, .03, stand);
         }
       }
-      // chair
-      rbox(.5, .07, .46, .04, dark, 0, .42, ddesk / 2 + .35, g);
-      rbox(.5, .55, .07, .04, dark, 0, .74, ddesk / 2 + .54, g);
+      putChair(decor && decor.chair, ddesk, g);
     }
     if (goldFr || lv >= 4) {
       const fw = 2.6, fh = 2.2, fd = 1.8;
@@ -1351,6 +1460,11 @@ export async function create3D(canvas, hooks) {
       rbox(.28, .4, .04, .02, std(0xf2e6c4, { roughness: .5 }), .55, 1.12, .05, g);
       box(.3, .02, .08, goldM, .55, .9, .05, g);
     }
+    if (lv >= 1) putDeskProps(g, lv, decor);
+    g.userData.decor = {
+      chair: (decor && decor.chair) || '',
+      owned: (decor && Array.isArray(decor.owned) ? decor.owned.slice() : [])
+    };
     return g;
   }
   const officeNbors = new THREE.Group(); F7.add(officeNbors);
@@ -1362,16 +1476,20 @@ export async function create3D(canvas, hooks) {
     box(6.4, 4, .14, armor, 0, 3, .06, g); plane(6.2, 3.88, t, 0, 3, .15, g); box(6.6, .1, .2, goldGlow, 0, 5.05, .08, g); }
   { const t = textTex(['個人交易室', '你的工位・同期學員'], { w: 1024, h: 300, size: 110, color: '#ffd68a', border: '#d4a84b', glowC: '#d4a84b', sub: '#fff4d2' }); plane(3.4, 1, t, -W + .05, 3.8, -12.4, F7, Math.PI / 2); }
   let officeKey = '';
+  let officeState = { lv: 0, slots: {}, decor: { owned: [], chair: '' } };
   function layoutOffice(off) {
     if (!off) return;
-    const key = [off.lv | 0, (off.slots && off.slots.cup) || '', (off.slots && off.slots.cert) || ''].join('|');
+    officeState = off;
+    const dec = off.decor || {};
+    const ownedKey = Array.isArray(dec.owned) ? dec.owned.slice().sort().join(',') : '';
+    const key = [off.lv | 0, (off.slots && off.slots.cup) || '', (off.slots && off.slots.cert) || '', dec.chair || '', ownedKey].join('|');
     if (key === officeKey) return;
     officeKey = key;
     const host = zoneObj.desk;
     [...host.children].forEach(c => { if (c.userData && c.userData.zone) return; if (c.type === 'Mesh' && c.material && c.material.visible === false) return; /* keep hitbox */ });
     // remove previous desk models only
     host.children.slice().forEach(c => { if (c.userData.deskModel) host.remove(c); });
-    const model = makeDesk(off.lv | 0, off.slots || {}, (off.lv | 0) >= 4);
+    const model = makeDesk(off.lv | 0, off.slots || {}, (off.lv | 0) >= 4, dec);
     model.userData.deskModel = true;
     host.add(model);
     // 同期學員桌在 init 時就放好，升級只改玩家自己的工位
@@ -1758,18 +1876,79 @@ export async function create3D(canvas, hooks) {
   setFloorVisual(floorNow);
 
   const fovFor = () => (camera.aspect < 0.8 ? 72 : camera.aspect < 1.2 ? 62 : 52);
+  // 縮放上下限：最遠只拉到廳內能看整層，相機不得穿出天花（H=6.6，天花材質近黑）或外牆
+  const ORBIT_DIST_MIN = 3.8, ORBIT_DIST_MAX = 10, ORBIT_PITCH_MIN = 0.18, ORBIT_PITCH_MAX = 1.02;
+  const CAM_Y_MAX = 5.7;
   let orbitYaw = 0.55, orbitPitch = 0.48, orbitDist = 7.4, orbitIdle = 0, orbitDragging = false;
   let steerX = 0, steerY = 0, lastNear = undefined, didDrag = false, pinch0 = 0;
+  let playerSitting = false;
   const pointers = new Map(), held = new Set();
   const KEYMAP = { KeyW: 'u', ArrowUp: 'u', KeyS: 'd', ArrowDown: 'd', KeyA: 'l', ArrowLeft: 'l', KeyD: 'r', ArrowRight: 'r' };
   const pokeCam = () => { orbitIdle = 0; };
+  function clampOrbit() {
+    orbitDist = Math.max(ORBIT_DIST_MIN, Math.min(ORBIT_DIST_MAX, orbitDist));
+    orbitPitch = Math.max(ORBIT_PITCH_MIN, Math.min(ORBIT_PITCH_MAX, orbitPitch));
+  }
+  function clampCamInside(v) {
+    v.x = Math.max(-8.3, Math.min(8.3, v.x));
+    v.z = Math.max(-15.4, Math.min(floorNow === 'lobby' ? 2.0 : -0.45, v.z));
+    v.y = Math.max(1.55, Math.min(CAM_Y_MAX, v.y));
+    return v;
+  }
   function playCam() {
+    clampOrbit();
     const hz = Math.cos(orbitPitch) * orbitDist;
     camPosT.set(avatar.position.x + Math.sin(orbitYaw) * hz, Math.max(1.55, 1.15 + Math.sin(orbitPitch) * orbitDist), avatar.position.z + Math.cos(orbitYaw) * hz);
-    camPosT.x = Math.max(-10.8, Math.min(10.8, camPosT.x));
-    camPosT.z = Math.max(-18.5, Math.min(5, camPosT.z));
+    clampCamInside(camPosT);
     camLookT.set(avatar.position.x, 1.25, avatar.position.z);
     camK = orbitDragging ? 10 : 3.3;
+  }
+  function playerSeatOffset(lv) {
+    const ddesk = (lv | 0) <= 0 ? .8 : ((lv | 0) >= 3 ? 1.0 : .8);
+    return ddesk / 2 + .35;
+  }
+  function sitCam() {
+    const lv = (officeState && officeState.lv) | 0;
+    const chairZ = -7.2 + playerSeatOffset(lv);
+    const portrait = camera.aspect < 0.8;
+    camPosT.set(portrait ? 1.15 : 1.05, portrait ? 2.05 : 1.82, chairZ + (portrait ? 2.45 : 2.1));
+    clampCamInside(camPosT);
+    camLookT.set(-0.1, lv >= 1 ? 1.12 : 0.95, -7.2 - (lv >= 1 ? 0.25 : 0.02));
+    camK = 5.2;
+  }
+  function applyPlayerSitPose() {
+    body.position.y = -0.38 + Math.sin(tAll * 2) * 0.006;
+    legs[0].rotation.x = -Math.PI / 2; legs[1].rotation.x = -Math.PI / 2;
+    legs[0].position.z = .06; legs[1].position.z = .06;
+    playerShin.forEach(s => { s.rotation.x = Math.PI / 2; });
+    legPants.forEach(m => { m.scale.y = .36; m.position.y = -.18; });
+    arms[0].rotation.x = .25; arms[1].rotation.x = .25;
+    head.rotation.x = .12; head.rotation.z = 0;
+  }
+  function sitAtDesk() {
+    if (floorNow !== 'f7') return false;
+    cancelAutoWalk();
+    const lv = (officeState && officeState.lv) | 0;
+    avatar.position.set(0, 0, -7.2 + playerSeatOffset(lv));
+    avatar.rotation.y = Math.PI; faceTarget = Math.PI;
+    playerSitting = true; mode = 'sit';
+    applyPlayerSitPose(); sitCam();
+    camPos.copy(camPosT); camLook.copy(camLookT);
+    lastNear = undefined; pokeCam();
+    return true;
+  }
+  function standUp() {
+    if (!playerSitting) return false;
+    playerSitting = false;
+    legs.forEach(lg => { lg.rotation.x = 0; lg.position.z = 0; });
+    playerShin.forEach(s => { s.rotation.x = 0; });
+    legPants.forEach(m => { m.scale.y = .7; m.position.y = -.35; });
+    head.rotation.x = 0; body.position.y = 0;
+    const lv = (officeState && officeState.lv) | 0;
+    avatar.position.z = Math.min(-0.95, -7.2 + playerSeatOffset(lv) + 0.7);
+    clampAvatar(avatar.position);
+    mode = 'follow'; playCam(); lastNear = undefined; pokeCam();
+    return true;
   }
   function overview() { mode = 'overview'; camK = 2.6; playCam(); }
   function clampHall(v) { v.x = Math.max(-8.3, Math.min(8.3, v.x)); v.z = Math.max(-15.3, Math.min(-.6, v.z)); v.y = Math.min(6.1, v.y); return v; }
@@ -1804,8 +1983,32 @@ export async function create3D(canvas, hooks) {
     kind: '3d',
     _dbg: () => ({ x: avatar.position.x, z: avatar.position.z, mode, moving: path.length > 0, floor: floorNow, yaw: orbitYaw, pitch: orbitPitch, dist: orbitDist, cyber: CYBER, walkTarget: walkTargetId }),
     setOutfit(eq) { applyOutfit(eq); },
-    setSteer(x, y) { steerX = x; steerY = y; if (Math.hypot(x, y) > .08) { pokeCam(); cancelAutoWalk(); } },
-    setOrbit(o = {}) { if (o.yaw != null) orbitYaw = o.yaw; if (o.pitch != null) orbitPitch = o.pitch; if (o.dist != null) orbitDist = o.dist; pokeCam(); playCam(); camPos.copy(camPosT); camLook.copy(camLookT); },
+    setSteer(x, y) { steerX = x; steerY = y; if (Math.hypot(x, y) > .08) { if (playerSitting) standUp(); pokeCam(); cancelAutoWalk(); } },
+    setOrbit(o = {}) { if (o.yaw != null) orbitYaw = o.yaw; if (o.pitch != null) orbitPitch = o.pitch; if (o.dist != null) orbitDist = o.dist; clampOrbit(); pokeCam(); if (mode === 'sit') sitCam(); else playCam(); camPos.copy(camPosT); camLook.copy(camLookT); camera.position.copy(camPos); camera.lookAt(camLook); },
+    setZoom(kind) {
+      if (mode === 'intro' || mode === 'ride' || mode === 'orbit') return null;
+      if (playerSitting) standUp();
+      const out = kind === 'out' || kind === 'min' || kind === 'far';
+      orbitDist = out ? ORBIT_DIST_MAX : ORBIT_DIST_MIN;
+      orbitPitch = out ? 0.85 : 0.48;
+      clampOrbit();
+      if (mode === 'zone' || mode === 'sit' || mode === 'hold') mode = 'follow';
+      playCam();
+      camPos.copy(camPosT); camLook.copy(camLookT);
+      camera.position.copy(camPos); camera.lookAt(camLook);
+      return api.orbitRange();
+    },
+    orbitRange() {
+      return { min: ORBIT_DIST_MIN, max: ORBIT_DIST_MAX, dist: +orbitDist.toFixed(3), pitch: +orbitPitch.toFixed(3),
+        cam: { x: +camPos.x.toFixed(3), y: +camPos.y.toFixed(3), z: +camPos.z.toFixed(3) } };
+    },
+    sitAtDesk, standUp,
+    isSitting() { return !!playerSitting; },
+    playerSit() {
+      const lv = (officeState && officeState.lv) | 0;
+      const dec = (officeState && officeState.decor) || {};
+      return { sit: !!playerSitting, x: +avatar.position.x.toFixed(3), z: +avatar.position.z.toFixed(3), rot: +avatar.rotation.y.toFixed(3), sitY: +body.position.y.toFixed(3), lv, chair: dec.chair || '', seatZ: +(-7.2 + playerSeatOffset(lv)).toFixed(3) };
+    },
     holdCam(px, py, pz, lx, ly, lz) {
       mode = 'hold'; camK = 24;
       camPosT.set(px, py, pz); camLookT.set(lx, ly, lz);
@@ -1848,6 +2051,7 @@ export async function create3D(canvas, hooks) {
     },
     ride(to, cb) {
       return new Promise(async res => {
+        if (playerSitting) standUp();
         const s = SLOT.H; mode = 'follow'; activeZone = null; labelsEl.style.display = 'none';
         const wait = ms => new Promise(r => setTimeout(r, ms));
         const walkP = pts => new Promise(r => { speed = 2.6; walkTo(pts, r); });
@@ -1909,6 +2113,12 @@ export async function create3D(canvas, hooks) {
       avatar.position.set(x, 0, z);
       if (rot != null && isFinite(rot)) { avatar.rotation.y = rot; faceTarget = rot; }
     },
+    deskDecor() { // 測試用：讀玩家工位上的小擺設
+      const host = zoneObj.desk;
+      const m = host && host.children.find(c => c.userData && c.userData.deskModel);
+      const d = m && m.userData && m.userData.decor;
+      return { chair: (d && d.chair) || '', owned: (d && Array.isArray(d.owned) ? d.owned.slice() : []) };
+    },
     onPanel(open, id) {
       panelOpen = open;
       if (!open) { activeZone = null; liftWant = 0; if (mode === 'zone') overview(); }
@@ -1969,7 +2179,7 @@ export async function create3D(canvas, hooks) {
     if (mode === 'intro' || mode === 'ride' || mode === 'orbit') return;
     if (pointers.size === 2 && pinch0) {
       const [a, b] = [...pointers.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y);
-      orbitDist = Math.max(3.6, Math.min(13, orbitDist * (pinch0 / Math.max(20, d)))); pinch0 = d; didDrag = true; pokeCam(); if (mode === 'zone') mode = 'follow'; return;
+      orbitDist = Math.max(ORBIT_DIST_MIN, Math.min(ORBIT_DIST_MAX, orbitDist * (pinch0 / Math.max(20, d)))); pinch0 = d; didDrag = true; pokeCam(); if (mode === 'zone') mode = 'follow'; if (mode === 'sit') standUp(); return;
     }
     const dx = e.clientX - prev.x, dy = e.clientY - prev.y;
     if (Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 8) {
@@ -1994,7 +2204,7 @@ export async function create3D(canvas, hooks) {
   };
   const onWheel = e => {
     if (mode === 'intro' || mode === 'ride' || mode === 'orbit') return;
-    e.preventDefault(); orbitDist = Math.max(3.6, Math.min(13, orbitDist + e.deltaY * 0.01)); pokeCam(); if (mode === 'zone') mode = 'follow';
+    e.preventDefault(); orbitDist = Math.max(ORBIT_DIST_MIN, Math.min(ORBIT_DIST_MAX, orbitDist + e.deltaY * 0.01)); pokeCam(); if (mode === 'zone') mode = 'follow'; if (mode === 'sit') standUp();
   };
   const onKey = e => {
     if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
@@ -2050,7 +2260,7 @@ export async function create3D(canvas, hooks) {
       const tgt = path[0]; tmp.subVectors(tgt, avatar.position); tmp.y = 0; const d = tmp.length();
       if (d < .05) { path.shift(); if (!path.length) { const cb = onArrive; onArrive = null; cb && cb(); } }
       else { moving = true; const step = Math.min(d, speed * dt); avatar.position.addScaledVector(tmp.normalize(), step); avatar.rotation.y = lerpAng(avatar.rotation.y, Math.atan2(tmp.x, tmp.z), 1 - Math.exp(-dt * 12)); faceTarget = null; }
-    } else if (mode !== 'intro' && mode !== 'ride' && mode !== 'orbit') {
+    } else if (mode !== 'intro' && mode !== 'ride' && mode !== 'orbit' && mode !== 'sit') {
       let ix = steerX, iz = steerY;
       if (held.has('u')) iz += 1; if (held.has('d')) iz -= 1; if (held.has('r')) ix += 1; if (held.has('l')) ix -= 1;
       const len = Math.hypot(ix, iz);
@@ -2068,6 +2278,9 @@ export async function create3D(canvas, hooks) {
       (hooks.ZONES || []).forEach(z => { if (z.floor !== floorNow) return; const s = SLOT[z.slot]; if (!s) return; const d = Math.hypot(avatar.position.x - s.spot[0], avatar.position.z - s.spot[1]); if (d < bd) { bd = d; best = z; } });
       const id = best && best.id; if (id !== lastNear) { lastNear = id; hooks.nearZone(best); }
     }
+    if (playerSitting) {
+      moving = false; applyPlayerSitPose();
+    } else {
     walkPhase += dt * (moving ? speed * 3.6 : 0);
     const sw = moving ? Math.sin(walkPhase) : 0;
     legs[0].rotation.x = sw * .65; legs[1].rotation.x = -sw * .65;
@@ -2076,6 +2289,7 @@ export async function create3D(canvas, hooks) {
     body.position.y = moving ? Math.abs(Math.sin(walkPhase)) * .07 : Math.sin(tAll * 2) * .012;
     head.rotation.z = moving ? Math.sin(walkPhase) * .05 : 0;
     if (jumpT > 0) { jumpT -= dt; body.position.y += Math.sin((1 - jumpT / .6) * Math.PI) * .6; }
+    }
     // 門
     const near = floorNow === 'lobby' && avatar.position.z < 6.5 && avatar.position.z > -3.2 ? 1 : 0;
     doorOpen += (near - doorOpen) * (1 - Math.exp(-dt * 5));
@@ -2145,6 +2359,8 @@ export async function create3D(canvas, hooks) {
         camPosT.set(avatar.position.x + .8, 2.8, avatar.position.z + 5.2); camLookT.set(avatar.position.x, 1.5, avatar.position.z - 4); camK = 3.5;
         if (!path.length && waveT < .2 && introResolve) { const r = introResolve; introResolve = null; overview(); labelsEl.style.display = ''; setTimeout(r, 200); }
       }
+    } else if (mode === 'sit') {
+      sitCam();
     } else if (mode === 'follow' || mode === 'overview') {
       if (!panelOpen && !orbitDragging && Math.hypot(steerX, steerY) < .08 && !held.size && !path.length) {
         orbitIdle += dt; if (orbitIdle > 4) orbitYaw += 0.18 * dt;
@@ -2162,11 +2378,38 @@ export async function create3D(canvas, hooks) {
     npcTick(dt);
     // 標籤
     if (labelsEl.style.display !== 'none') {
+      const vis = [];
       for (const l of labels) {
         tmp.copy(l.anchor).project(camera);
-        const vis = tmp.z < 1 && Math.abs(tmp.x) < 1.1 && Math.abs(tmp.y) < 1.1 && !(panelOpen && l.z.id !== activeZone);
-        l.el.classList.toggle('hidden', !vis);
-        if (vis) l.el.style.transform = `translate(${(tmp.x * .5 + .5) * innerWidth}px,${(-tmp.y * .5 + .5) * innerHeight}px) translate(-50%,-100%)`;
+        const on = tmp.z < 1 && Math.abs(tmp.x) < 1.02 && Math.abs(tmp.y) < 1.02 && !(panelOpen && l.z.id !== activeZone);
+        l._sx = (tmp.x * .5 + .5) * innerWidth;
+        l._sy = (-tmp.y * .5 + .5) * innerHeight;
+        l._depth = tmp.z;
+        l.el.classList.toggle('hidden', !on);
+        if (on) vis.push(l);
+      }
+      vis.sort((a, b) => a._depth - b._depth);
+      const placed = [];
+      for (const l of vis) {
+        const lw = Math.max(96, l._w || (l._w = l.el.offsetWidth || 120));
+        const lh = Math.max(28, l._h || (l._h = l.el.offsetHeight || 28));
+        let dy = 0;
+        for (let pass = 0; pass < 6; pass++) {
+          let hit = false;
+          for (const o of placed) {
+            const needX = (lw + o.w) * 0.5 + 6;
+            const needY = (lh + o.h) * 0.5 + 4;
+            if (Math.abs(l._sx - o.x) < needX && Math.abs((l._sy + dy) - o.y) < needY) {
+              dy = (o.y + needY) - l._sy;
+              hit = true;
+              break;
+            }
+          }
+          if (!hit) break;
+        }
+        if (dy > 110 || l._sy + dy > innerHeight - 60) { l.el.classList.add('hidden'); continue; }
+        placed.push({ x: l._sx, y: l._sy + dy, w: lw, h: lh });
+        l.el.style.transform = `translate(${l._sx}px,${l._sy + dy}px) translate(-50%,-100%)`;
       }
     }
     if (bloomOn && composer) composer.render(); else renderer.render(scene, camera);
