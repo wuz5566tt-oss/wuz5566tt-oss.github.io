@@ -52,6 +52,47 @@ export const DESK_ITEMS = [
   { id: 'cup-top', slot: 'cup', name: '頂樓交易室獎盃', how: '工位升到頂樓交易室', need: { desk: 4 } },
 ];
 
+
+/* 小擺設商店：一次性購買，買了在 3D 工位上看得見。椅子三選一替換預設椅。只花站內薪水。 */
+export const DESK_DECOR = [
+  { id: 'plant', name: '小盆栽', kind: 'prop', price: 80, need: { desk: 1 }, blurb: '桌角一盆綠葉，讓工位看起來有人在照顧。' },
+  { id: 'lamp', name: '溫黃桌燈', kind: 'prop', price: 120, need: { desk: 1 }, blurb: '暖色小燈，對圖時桌面比較亮。' },
+  { id: 'charm', name: '開運飾品', kind: 'prop', price: 200, need: { desk: 1 }, blurb: '金色小擺件，純粹裝飾，與行情無關。' },
+  { id: 'coffee', name: '手沖咖啡機', kind: 'prop', price: 280, need: { desk: 2 }, blurb: '工位旁邊一台小咖啡機，提神用的裝飾。' },
+  { id: 'chair-office', name: '辦公椅', kind: 'chair', price: 180, need: { desk: 1 }, blurb: '有扶手的辦公椅，換成它就不再用預設椅。' },
+  { id: 'chair-ergo', name: '人體工學椅', kind: 'chair', price: 420, need: { desk: 2 }, blurb: '頭靠與腰靠更完整，長時間坐著比較穩。' },
+  { id: 'chair-gaming', name: '電競椅', kind: 'chair', price: 680, need: { desk: 3 }, blurb: '高背金邊電競椅，三選一替換預設椅。' },
+  { id: 'cert-star', name: 'STAR史塔財商結業證書', kind: 'prop', price: 450, need: { desk: 3 }, blurb: '把結業證書放到工位上，純粹裝飾。' }
+];
+
+const DECOR_IDS = new Set(DESK_DECOR.map(d => d.id));
+const CHAIR_IDS = new Set(DESK_DECOR.filter(d => d.kind === 'chair').map(d => d.id));
+
+export function decorOf(id) {
+  return DESK_DECOR.find(d => d.id === id) || null;
+}
+
+export function normDecor(d) {
+  const x = d && typeof d === 'object' ? d : {};
+  const ownedSrc = Array.isArray(x.owned) ? x.owned : [];
+  const owned = [];
+  const seen = new Set();
+  for (const raw of ownedSrc) {
+    const id = typeof raw === 'string' ? raw : '';
+    if (!DECOR_IDS.has(id) || seen.has(id)) continue;
+    seen.add(id);
+    owned.push(id);
+  }
+  let chair = typeof x.chair === 'string' ? x.chair : '';
+  if (!CHAIR_IDS.has(chair) || !owned.includes(chair)) chair = '';
+  return { owned, chair };
+}
+
+export function ownsDecor(office, id) {
+  const owned = office && office.decor && Array.isArray(office.decor.owned) ? office.decor.owned : [];
+  return owned.includes(id);
+}
+
 export const SETTLE_TIPS = [
   '猜方向不如等結構確認',
   '真正好用的東西，往往簡單到讓人不想承認',
@@ -71,6 +112,7 @@ export function normOffice(o) {
     lv,
     slots: { cup: typeof slots.cup === 'string' ? slots.cup : '', cert: typeof slots.cert === 'string' ? slots.cert : '' },
     guessStat: Object.assign({ streak: 0, best: 0 }, x.guessStat && typeof x.guessStat === 'object' ? x.guessStat : {}),
+    decor: normDecor(x.decor)
   };
 }
 
