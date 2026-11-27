@@ -1,5 +1,6 @@
 // 老闆藍圖（11/27）：新手（入職第一天、新手禮包、捏自己的牛馬）｜每天（下班複盤 1 題、突發行情、每週前十本機版）｜展覽（華爾街歷史、大盤比個股、0050 定期定額示範、準備中展廳）｜置入（戰報看板）
 // 規則：薪水＝站內虛擬點數，不能換現金；GM 模式只預覽，不存檔、不發薪水；不做 A股；不帶單、不喊點位、非投資建議。
+import { lineCtaHTML } from './uikit.js';
 export const CAREER_VER = 1;
 export const REWARD_C = { badge: 100, gift: 200, offq: 20, flash: 10 };
 export const LOOK_OPT = {
@@ -241,7 +242,7 @@ function warboard(el) {
   const R = C.PUBLIC_REPORTS || {}, a = (u, t, s) => u ? `<a class="screen" href="${u}" target="_blank" rel="noopener"><div class="row between"><h3>${t}</h3><span class="tag cyan">打開</span></div><div class="note">${s}</div></a>` : `<div class="screen lockedrow"><div class="row between"><h3>${t}</h3><span class="tag">準備中</span></div></div>`;
   el.innerHTML = `<p style="margin:0">每天收盤後更新的多空戰報，點下去直接看。</p>
     <div class="screens" style="margin-top:12px">${a(R.tw, '台股每日多空戰報', '每天收盤後更新')}${a(R.us, '美股（納斯達克）每日多空戰報', '美股收盤後更新')}</div>
-    <div class="card row between cta"><span>想更深入？私訊『成長』</span><a class="btn primary sm" href="${C.IG}" target="_blank" rel="noopener">前往 IG @wuz200200</a></div>
+    ${lineCtaHTML('想更深入？加入 LINE')}
     <p class="note">非投資建議。</p>`;
 }
 
