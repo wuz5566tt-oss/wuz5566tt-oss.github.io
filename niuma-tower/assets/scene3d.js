@@ -3,6 +3,7 @@ import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.j
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { STAR_LOGO_UI, TOWER_NAME, EVENT_NAME, isCyber, logoStyle } from './brand.js';
 import { itemById } from './shop-catalog.js';
+import { LEO_HEAD } from './uikit.js'; // 董事長上課大頭（data URI 模組）
 import { CLASSMATES, CLASSMATE_SCALE, boardLines } from './office.js';
 
 /* 史塔金融大樓：低面數程序生成場景（無外部模型） */
@@ -80,15 +81,15 @@ export async function create3D(canvas, hooks) {
   }
   const rng = (s => () => (s = (s * 16807) % 2147483647) / 2147483647)(42);
 
-  /* ---------- UI BOT ui-kit 加件：輪播廣告屏（IG／Threads 封面待提供框，@wuz200200）。只加新物件，不動既有招牌 ---------- */
+  /* ---------- UI BOT ui-kit 加件：輪播廣告屏（加入 LINE wuzakakak，放董事長上課大頭）。只加新物件，不動既有招牌 ---------- */
   const UK_IMG = 'assets/ui-kit/img/';
   const UK_REDUCED = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const ukScreens = [], ukMeshes = []; // ukMeshes：點廣告屏 → 開外牆影音看板（IG @wuz200200）
+  const ukScreens = [], ukMeshes = []; // ukMeshes：點廣告屏 → 開外牆影音看板（加入 LINE wuzakakak）
   function ukScreen(files, w, h, cap, x, y, z, parent, ry = 0) {
     const portrait = h > w, W = portrait ? 540 : 1024, Hh = portrait ? 960 : 576;
     const tex = canvasTex(W, Hh, g => { g.fillStyle = '#05070d'; g.fillRect(0, 0, W, Hh); });
     let i = 0;
-    const imgs = files.map(f => { const im = new Image(); im.onload = () => { if (imgs[i] === im) draw(); }; im.src = UK_IMG + f; return im; });
+    const imgs = files.map(f => { const im = new Image(); im.onload = () => { if (imgs[i] === im) draw(); }; im.src = (f.startsWith('assets/') || f.startsWith('data:')) ? f : UK_IMG + f; return im; });
     function draw() {
       const g = tex._g, im = imgs[i], pad = 18, bar = portrait ? 92 : 70;
       g.fillStyle = '#05070d'; g.fillRect(0, 0, W, Hh);
@@ -98,7 +99,7 @@ export async function create3D(canvas, hooks) {
       }
       g.fillStyle = 'rgba(8,14,32,.96)'; g.fillRect(0, Hh - bar - 6, W, bar + 6);
       g.textBaseline = 'middle'; g.textAlign = 'left'; g.fillStyle = '#9ff3ff'; g.font = `800 ${portrait ? 34 : 30}px ${FONT}`; g.fillText(cap, 26, Hh - bar / 2 - 3);
-      g.textAlign = 'right'; g.fillStyle = '#ffd66b'; g.fillText('@wuz200200', W - 26, Hh - bar / 2 - 3);
+      g.textAlign = 'right'; g.fillStyle = '#ffd66b'; g.fillText('LINE wuzakakak', W - 26, Hh - bar / 2 - 3);
       g.strokeStyle = '#3ef2ff'; g.lineWidth = 8; g.strokeRect(4, 4, W - 8, Hh - 8);
       for (let k = 0; k < files.length; k++) { g.fillStyle = k === i ? '#3ef2ff' : 'rgba(255,255,255,.25)'; g.fillRect(W / 2 - files.length * 14 + k * 28, Hh - bar - 22, 18, 6); }
       tex.needsUpdate = true;
@@ -205,7 +206,7 @@ export async function create3D(canvas, hooks) {
     const pole = cyl(.15, .2, 7, 8, std(0x1b2440, { metalness: .8 }), 10, 3.5, 9, streetClassic);
     const bb = textTex(['今天也要準時上班', '牛馬交易上班日・每天打卡領薪水'], { w: 1024, h: 384, size: 110, color: '#ffe3a0', border: '#3ef2ff' });
     plane(6, 2.25, bb, 10, 7.8, 9, streetClassic, -0.5);
-    ukScreen(['reels-cover-01.svg', 'reels-cover-02.svg', 'threads-quote-01.svg', 'threads-quote-02.svg'], 1.5, 2.66, '限動・封面待提供', 9.88, 3.3, 9.22, streetClassic, -0.5); // ui-kit 加件
+    ukScreen([LEO_HEAD], 1.5, 2.66, '加入 LINE', 9.88, 3.3, 9.22, streetClassic, -0.5);
   }
 
   /* ---------- 大樓外觀 ---------- */
@@ -260,8 +261,8 @@ export async function create3D(canvas, hooks) {
   // 招牌與雨遮
   const signTex = textTex(['史塔金融大樓', '牛馬交易上班日・交易大廳'], { w: 1024, h: 300, size: 132 });
   plane(9.4, 2.75, signTex, 0, 8.2, 0.12, tower);
-  ukScreen(['reels-cover-01.svg', 'reels-cover-02.svg', 'reels-cover-03.svg', 'reels-cover-04.svg'], 5.2, 2.92, '外牆・IG 限動', -6.3, 15, 0.16, tower); // ui-kit 加件
-  ukScreen(['threads-quote-01.svg', 'threads-quote-02.svg', 'threads-quote-03.svg'], 5.2, 2.92, '外牆・Threads 引言', 6.3, 15, 0.16, tower);
+  ukScreen([LEO_HEAD], 5.2, 2.92, '外牆・加入 LINE', -6.3, 15, 0.16, tower);
+  ukScreen([LEO_HEAD], 5.2, 2.92, '外牆・加入 LINE', 6.3, 15, 0.16, tower);
   box(8.6, .3, 3.4, armor2, 0, 6.15, 1.7, tower);
   box(8.6, .06, .1, cyanGlow, 0, 5.98, 3.38, tower);
   [-1, 1].forEach(s => cyl(.14, .14, 6, 8, armor, s * 4.1, 3, 3.2, tower));
@@ -519,7 +520,7 @@ export async function create3D(canvas, hooks) {
   box(2.4, .1, 2.2, cabMat, 7.2, 0, -17.4, cab); box(2.4, .1, 2.2, cabMat, 7.2, 3.3, -17.4, cab);
   box(.1, 3.3, 2.2, cabMat, 6.0, 1.65, -17.4, cab); box(.1, 3.3, 2.2, cabMat, 8.4, 1.65, -17.4, cab); box(2.4, 3.3, .1, cabMat, 7.2, 1.65, -18.5, cab);
   box(2, .05, .05, glow(0xfff1cf, 2), 7.2, 3.16, -17.4, cab);
-  ukScreen(['reels-cover-03.svg', 'threads-quote-03.svg', 'reels-cover-04.svg'], .82, 1.46, '電梯廣告', 7.2, 1.85, -18.43, cab); // ui-kit 加件
+  ukScreen([LEO_HEAD], .82, 1.46, '電梯・加入 LINE', 7.2, 1.85, -18.43, cab);
   // 電梯門與框
   box(2.5, .14, .2, goldGlow, 7.2, 3.25, -15.95, hall); [-1, 1].forEach(s => box(.14, 3.3, .2, goldGlow, 7.2 + s * 1.18, 1.65, -15.95, hall));
   const doorMat = std(0x9aa6bf, { metalness: 1, roughness: .2, envMapIntensity: 1 });
@@ -1121,7 +1122,7 @@ export async function create3D(canvas, hooks) {
   { const g = zoneGroup('guide', 'B', L);
     cyl(1.1, 1.2, 1.05, 24, darkPanel, 0, .52, 0, g); cyl(1.15, 1.15, .06, 32, cyanGlow, 0, 1.06, 0, g);
     const holo = new THREE.Mesh(keep(new THREE.OctahedronGeometry(.42)), keep(new THREE.MeshBasicMaterial({ color: C.gold, wireframe: true }))); holo.position.y = 1.9; g.add(holo); g.userData.spin = holo;
-    wallSign('接引櫃台', '私訊「成長」領取', 'B', L, true); }
+    wallSign('接引櫃台', '加入 LINE 領取', 'B', L, true); }
   // 心法籤機
   { const g = zoneGroup('fortune', 'C', L);
     const cabm = std(0x3a1c22, { metalness: .6, roughness: .35 });
@@ -1231,7 +1232,7 @@ export async function create3D(canvas, hooks) {
   { const g = zoneGroup('cta', 'B', F4);
     cyl(1.1, 1.2, 1.05, 24, darkPanel, 0, .52, 0, g); cyl(1.15, 1.15, .06, 32, glow(0xff4d6d, 1.8), 0, 1.06, 0, g);
     const holo = new THREE.Mesh(keep(new THREE.OctahedronGeometry(.42)), keep(new THREE.MeshBasicMaterial({ color: C.gold, wireframe: true }))); holo.position.y = 1.9; g.add(holo); g.userData.spin = holo;
-    wallSign('私訊『成長』', '加入自己人', 'B', F4, true); }
+    wallSign('加入 LINE', '加入自己人', 'B', F4, true); }
   [[-6.5, -4.5], [-6.5, -11.5]].forEach(([x, z]) => { cyl(.35, .45, 1, 8, armor2, x, .5, z, F4); cyl(.28, .14, .5, 10, goldM, x, 1.25, z, F4); });
 
   // ---- 5 樓：目標值研究室（藍紫實驗室・六角地板・懸浮靶環） ----
@@ -1240,7 +1241,7 @@ export async function create3D(canvas, hooks) {
     rbox(2.4, .5, 2.4, .12, darkPanel, 0, .25, 1.2, g); cyl(1, 1, .06, 6, glow(0x78aaff, 2), 0, .52, 1.2, g);
     [1.6, 1.15, .7].forEach((r, i) => { const t = new THREE.Mesh(keep(new THREE.TorusGeometry(r, .05, 6, 6 + i * 0 + 48)), glow(i === 2 ? C.gold : 0x78aaff, 2.2)); t.position.set(0, 2.6, 1.2); g.add(t); f5Rings.push(t); });
     const core = new THREE.Mesh(keep(new THREE.IcosahedronGeometry(.26)), goldGlow); core.position.set(0, 2.6, 1.2); g.add(core);
-    const t = textTex(['目標值系統', `打卡滿天數解鎖・私訊「成長」領取`], { w: 1400, h: 300, size: 120, color: '#c9dcff', border: '#78aaff', glowC: '#78aaff', sub: '#ffd68a' });
+    const t = textTex(['目標值系統', `打卡滿天數解鎖・加入 LINE 領取`], { w: 1400, h: 300, size: 120, color: '#c9dcff', border: '#78aaff', glowC: '#78aaff', sub: '#ffd68a' });
     box(6, 1.5, .12, armor, 0, 5, .06, g); plane(5.8, 1.3, t, 0, 5, .14, g); }
   // 兩側裝飾儀器（不可點選，用來平衡左右佈局）
   [[-8.2, -8], [6.6, -8]].forEach(([x, z]) => {
@@ -1252,7 +1253,7 @@ export async function create3D(canvas, hooks) {
   { const g = zoneGroup('cta5', 'B', F5);
     cyl(1.1, 1.2, 1.05, 6, darkPanel, 0, .52, 0, g); cyl(1.15, 1.15, .06, 6, glow(0x78aaff, 1.8), 0, 1.06, 0, g);
     const holo = new THREE.Mesh(keep(new THREE.OctahedronGeometry(.42)), keep(new THREE.MeshBasicMaterial({ color: C.gold, wireframe: true }))); holo.position.y = 1.9; g.add(holo); g.userData.spin = holo;
-    wallSign('私訊『成長』', '領取目標值系統', 'B', F5, true); }
+    wallSign('加入 LINE', '領取目標值系統', 'B', F5, true); }
   [[-6.6, -4.2], [-6.6, -11.6]].forEach(([x, z]) => { const p = new THREE.Mesh(keep(new THREE.CylinderGeometry(.35, .35, 2.4, 6)), keep(new THREE.MeshStandardMaterial({ color: 0x78aaff, transparent: true, opacity: .22, emissive: 0x2a3a88, emissiveIntensity: .8 }))); p.position.set(x, 1.2, z); F5.add(p); cyl(.4, .4, .1, 6, glow(0xc890ff, 1.6), x, .05, z, F5); });
   { const t = textTex(['目標值研究室', '最高獎勵在這裡'], { w: 1024, h: 300, size: 110, color: '#c9dcff', border: '#78aaff', glowC: '#78aaff', sub: '#ffd68a' }); plane(3.4, 1, t, -W + .05, 3.8, -11.8, F5, Math.PI / 2); }
 
@@ -1536,7 +1537,7 @@ export async function create3D(canvas, hooks) {
     plane(1.55, .48, t, 0, 2.12, .58, g);
     deskWall.tex = canvasTex(768, 300, () => {}); plane(1.55, .6, deskWall.tex, 0, 2.78, .58, g); drawDeskWall(); }
   { const g = zoneGroup('academy', 'G', F7);
-    const t = textTex(['STAR史塔財商教室', '私訊「成長」進教室'], { w: 1400, h: 640, size: 120, color: '#ffd68a', border: '#d4a84b', glowC: '#d4a84b', sub: '#fff4d2' });
+    const t = textTex(['STAR史塔財商教室', '加入 LINE 進教室'], { w: 1400, h: 640, size: 120, color: '#ffd68a', border: '#d4a84b', glowC: '#d4a84b', sub: '#fff4d2' });
     box(6.4, 4, .14, armor, 0, 3, .06, g); plane(6.2, 3.88, t, 0, 3, .15, g); box(6.6, .1, .2, goldGlow, 0, 5.05, .08, g); }
   { const t = textTex(['個人交易室', '你的工位・同期學員'], { w: 1024, h: 300, size: 110, color: '#ffd68a', border: '#d4a84b', glowC: '#d4a84b', sub: '#fff4d2' }); plane(3.4, 1, t, -W + .05, 3.8, -12.4, F7, Math.PI / 2); }
   let officeKey = '';
@@ -1622,7 +1623,7 @@ export async function create3D(canvas, hooks) {
     rbox(.8, 1.5, .8, .15, std(0x1a1414, { roughness: .4 }), -.9, .75, 0, g);
     const plaque = textTex(['掌門辦公室', '董事長 LEO易凡'], { w: 768, h: 260, size: 100 }); plane(1.2, .4, plaque, .72, .62, 0, g, Math.PI / 2);
     wallSign('掌門辦公室', '董事長 LEO易凡', 'A', I, true);
-    const intro = textTex(['董事長 LEO易凡', '13 年全職交易・經歷過三次牛熊轉換・私訊『成長』'], { w: 1024, h: 360, size: 96, color: '#ffe3a0', border: '#d4a84b', glowC: '#d4a84b', sub: '#fff4d2' });
+    const intro = textTex(['董事長 LEO易凡', '13 年全職交易・經歷過三次牛熊轉換・加入 LINE'], { w: 1024, h: 360, size: 96, color: '#ffe3a0', border: '#d4a84b', glowC: '#d4a84b', sub: '#fff4d2' });
     plane(1.9, .67, intro, -1.55, 2.1, 0, g, Math.PI / 2); } // ui-kit 加件：董事長室介紹
   { const g = zoneGroup('hall', 'B', I);
     rbox(1.3, 1, 3, .1, darkPanel, 0, .5, 0, g); box(1.34, .05, 3.04, cyanGlow, 0, 1.02, 0, g);
@@ -1634,7 +1635,7 @@ export async function create3D(canvas, hooks) {
     wallSign('藏經閣講義', '三卷九章', 'C', I, true, 4.9); }
   { const g = zoneGroup('course', 'D', I);
     rbox(.7, 1.2, .6, .08, wood, 0, .6, 0, g); box(.74, .04, .64, goldGlow, 0, 1.22, 0, g);
-    const scr = textTex(['STAR史塔財商教室入口', '私訊「成長」進教室'], { w: 1024, h: 560, size: 110, color: '#ffd68a', border: '#d4a84b', glowC: '#d4a84b', sub: '#fff4d2' });
+    const scr = textTex(['STAR史塔財商教室入口', '加入 LINE 進教室'], { w: 1024, h: 560, size: 110, color: '#ffd68a', border: '#d4a84b', glowC: '#d4a84b', sub: '#fff4d2' });
     plane(3, 1.65, scr, 2.25, 3, 0, g, -Math.PI / 2);
     [0, 1, 2].forEach(i => rbox(.5, .45, .5, .08, armor2, -1.4, .22, -1 + i, g));
     wallSign('教室入口', 'STAR史塔財商', 'D', I, true, 5.3); }
