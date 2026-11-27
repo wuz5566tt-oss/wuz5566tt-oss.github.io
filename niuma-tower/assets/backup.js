@@ -1,4 +1,6 @@
 import { normOffice } from './office.js';
+import { normAcademy } from './academy-logic.js';
+import { normCareer } from './career.js';
 // 進度備份碼：壓縮後以數字呈現，再用 HMAC 簽名（金鑰在前端，只能擋隨手改碼）
 const BAK_KEY = 'niuma-bak-v1-7c3e9a1f0b24d8e55a91c4f6e2d0b387';
 const VER = 1;
@@ -91,6 +93,8 @@ function snapshot(S) {
     quests: S.quests || {},
     fin: S.fin || {},
     office: S.office || {},
+    academy: S.academy || {},
+    career: S.career || {},
   };
 }
 
@@ -114,6 +118,10 @@ export function applySnapshot(S, data) {
   S.quests = data.quests && typeof data.quests === 'object' ? data.quests : { daily: {}, done: [], day: {} };
   S.fin = data.fin && typeof data.fin === 'object' ? data.fin : {};
   S.office = normOffice(data.office && typeof data.office === 'object' ? data.office : S.office || {});
+  // 舊備份碼沒有 academy：保留這台裝置目前的學院進度
+  S.academy = normAcademy(data.academy && typeof data.academy === 'object' ? data.academy : S.academy || {});
+  // 舊備份碼沒有 career（入職清單、造型）：保留這台裝置目前的資料
+  S.career = normCareer(data.career && typeof data.career === 'object' ? data.career : S.career || {});
 }
 
 export async function encodeBackup(S) {
