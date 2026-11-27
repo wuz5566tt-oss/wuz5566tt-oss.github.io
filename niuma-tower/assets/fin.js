@@ -1,11 +1,11 @@
-// 金融小功能：1F 市場溫度計、玩家財富榜｜2F 三市預測擂台｜4F 讀戰報抽考｜5F 模擬資金挑戰
+// 金融小功能：1F 市場溫度計、玩家財富榜｜2F 預測擂台（台股・美股）｜4F 讀戰報抽考｜5F 模擬資金挑戰
 // 薪水＝站內虛擬點數（獎金），不能換現金。GM 模式只能預覽，不寫進度、不發薪水。
 import { backend } from './social.js';
 
 export const FIN_VER = 1;
 export const SIM_START = 1000000;
 const MK = { tw: '台股', us: '美股', cn: 'A股' };
-const MK_ORDER = ['tw', 'cn', 'us'];
+const MK_ORDER = ['tw', 'us']; // 老闆藍圖：不做 A股（舊存檔的 cn 紀錄保留、不再顯示）
 // 下注截止（台北時間，分鐘）：台股 13:30 收盤、A股 15:00 收盤、美股 21:30 開盤前
 const CUTOFF = { tw: 13 * 60 + 30, cn: 15 * 60, us: 21 * 60 + 30 };
 // 可開獎時間（台北時間）：台股 14:00 後、A股 15:00 後；美股以資料檔出現結果為準
@@ -20,7 +20,7 @@ export const REWARD = {
 export const FIN_PANELS = [
   { id: 'thermo', floor: 'lobby', name: '市場溫度計', kicker: '今日台股偏多還偏空' },
   { id: 'wealth', floor: 'lobby', name: '財富榜', kicker: '玩家總薪水排名' },
-  { id: 'predict', floor: 'f2', name: '預測擂台', kicker: '台股・美股・A股猜漲跌' },
+  { id: 'predict', floor: 'f2', name: '預測擂台', kicker: '台股・美股猜漲跌' },
   { id: 'quiz', floor: 'f4', name: '戰報抽考', kicker: '讀完戰報答 3 題' },
   { id: 'sim', floor: 'f5', name: '模擬資金', kicker: '100 萬虛擬資金挑戰' },
 ];
@@ -56,6 +56,7 @@ export function normFin(f) {
 /* ---------- 時間（一律以台北時間判斷） ---------- */
 export function marketResult(date, m) { return resultFor(date, m); }
 export function resultsInfo() { return D.results; }
+export function pricesInfo() { return D.prices; }
 export async function ensureResults() { return load('results'); }
 export function tpe(now = new Date()) {
   const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', weekday: 'short' }).formatToParts(now).map(x => [x.type, x.value]));
@@ -224,7 +225,7 @@ async function wealth(el) {
   });
 }
 
-/* ---------- 2F 三市預測擂台 ---------- */
+/* ---------- 2F 預測擂台（台股・美股） ---------- */
 async function predict(el, tab) {
   el.dataset.fin = 'predict';
   await load('results');
@@ -243,8 +244,8 @@ async function predict(el, tab) {
   finSync();
   const board = await backend.getLeaderboard(kind, { name: nickOf(), rank: C.rankName(), value: kind === 'arena-rate' ? rate : st.streak, extra: st });
   if (el.dataset.fin !== 'predict') return;
-  el.innerHTML = `<div class="card"><div class="row between"><b>三市預測擂台（${md(t.date)}）</b><span class="tag">連勝有加成</span></div>
-    <p class="note" style="margin:8px 0 0">台股、A股、美股每天各猜一次漲跌，猜中 +${REWARD.arenaWin} 薪水；連勝第 2 場起每場再加 ${REWARD.arenaStreakStep}，最多加 ${REWARD.arenaStreakMax}。台股 14:00、A股 15:00 後開獎，美股等收盤資料出來（約台北隔天清晨）。只猜方向、不給點位。</p></div>
+  el.innerHTML = `<div class="card"><div class="row between"><b>預測擂台（${md(t.date)}）</b><span class="tag">連勝有加成</span></div>
+    <p class="note" style="margin:8px 0 0">台股、美股每天各猜一次漲跌，猜中 +${REWARD.arenaWin} 薪水；連勝第 2 場起每場再加 ${REWARD.arenaStreakStep}，最多加 ${REWARD.arenaStreakMax}。台股 14:00 後開獎，美股等收盤資料出來（約台北隔天清晨）。只猜方向、不給點位。</p></div>
     ${rows}
     <div class="card row between"><span>目前連勝 <b style="color:var(--gold)">${st.streak}</b>・最佳 ${st.best}</span><span>勝率 <b style="color:var(--cyan)">${st.n ? rate + '%' : '—'}</b>（${st.win}/${st.n}）</span></div>
     ${ready.length ? `<button class="btn primary" id="aClaim" style="width:100%">開獎・領取獎金（${ready.length} 場）</button>` : ''}
@@ -252,7 +253,7 @@ async function predict(el, tab) {
     <div class="shop-tabs" role="tablist"><button type="button" class="shop-tab${kind === 'arena-streak' ? ' on' : ''}" data-at="streak">連勝</button><button type="button" class="shop-tab${kind === 'arena-rate' ? ' on' : ''}" data-at="rate">勝率</button></div>
     ${boardHTML(board, r => kind === 'arena-rate' ? `${r.value}%` : `${r.value} 連勝`, r => r.extra ? `${r.extra.win}/${r.extra.n} 場` : '')}
     ${kind === 'arena-rate' ? '<p class="note" style="margin:4px 0 0">勝率榜至少要開獎 5 場才會上榜。</p>' : ''}
-    <p class="note">開獎資料：${D.results ? `${D.results.source}（台股加權、上證指數、那斯達克），更新於 ${D.results.updated}` : '讀取失敗'}。平盤不算猜中。排行榜是真實玩家，每天最多計 3 場。非投資建議。</p>`;
+    <p class="note">開獎資料：${D.results ? `${D.results.source}（台股加權、那斯達克），更新於 ${D.results.updated}` : '讀取失敗'}。平盤不算猜中。排行榜是真實玩家，每天最多計 3 場。非投資建議。</p>`;
   el.querySelectorAll('[data-at]').forEach(b => b.onclick = () => predict(el, b.dataset.at));
   el.querySelectorAll('[data-av]').forEach(b => b.onclick = () => lockRun('arena-' + b.dataset.am, b, () => {
     const t2 = tpe(), m = b.dataset.am, d = F().arena[t2.date] || (F().arena[t2.date] = {});
