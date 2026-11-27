@@ -8,14 +8,14 @@ export const MASTER_DAYS = 60;   // 掌門面試收徒
 // 老闆定的階梯（由弱到強）：台美股戰報 < 美指模型 < 台指模型 < 目標值系統 < 掌門面試收徒
 // 寫進資格碼的四項（依序）：美指、台指、目標值系統、掌門面試收徒；台美股戰報免登記
 export const MODELS = [
-  { id: 'us', name: '美指模型', need: 0, how: '第一天私訊「成長」進群就送' },
+  { id: 'us', name: '美指模型', need: 0, how: '第一天加入 LINE 進群就送' },
   { id: 'tw', name: '台指模型', need: TW_DAYS, how: `累積打卡 ${TW_DAYS} 天解鎖` },
-  { id: 'target', name: '目標值系統', need: TARGET_DAYS, how: `累積打卡 ${TARGET_DAYS} 天解鎖，私訊「成長」領取` },
+  { id: 'target', name: '目標值系統', need: TARGET_DAYS, how: `累積打卡 ${TARGET_DAYS} 天解鎖，加入 LINE 領取` },
   { id: 'master', name: '掌門面試收徒', need: MASTER_DAYS, how: `最後一關・累積打卡 ${MASTER_DAYS} 天，加官方 LINE 申請面試` },
 ];
 export const LADDER = [
   { name: '台美股戰報', where: '第 1 天', rule: '4 樓直接看，不用登記', need: 0 },
-  { name: '美指模型', where: '第 1 天', rule: '私訊「成長」進群就送', need: 0 },
+  { name: '美指模型', where: '第 1 天', rule: '加入 LINE 進群就送', need: 0 },
   { name: '台指模型', where: `第 ${TW_DAYS} 天`, rule: `累積打卡 ${TW_DAYS} 天解鎖`, need: TW_DAYS },
   { name: '目標值系統', where: `第 ${TARGET_DAYS} 天`, rule: `累積打卡 ${TARGET_DAYS} 天・5 樓目標值研究室`, need: TARGET_DAYS, best: true },
   { name: '掌門面試收徒', where: `第 ${MASTER_DAYS} 天`, rule: `累積打卡 ${MASTER_DAYS} 天・加官方 LINE 申請面試`, need: MASTER_DAYS, last: true },
