@@ -1,0 +1,89 @@
+/* 學院 UI 接進遊戲本體用的「宿主」樣式：只處理放進面板／浮層時的容器差異。
+   卡片、題目、按鈕、動畫的樣式全部來自 UI BOT 的 assets/acad-ui/css/academy.css（不改它）。 */
+.ac-root.ac-host{min-height:0;overflow:visible;background:none;line-height:1.6}
+#acLayer{position:fixed;left:0;top:0;width:0;height:0;overflow:visible;z-index:9000}
+.ac-inpanel{margin:0 -4px;padding:2px 2px 6px;border-radius:16px;
+  background:radial-gradient(600px 360px at 80% -10%,rgba(124,92,255,.16),transparent 60%),radial-gradient(500px 300px at 0% 100%,rgba(34,211,238,.10),transparent 60%)}
+.ac-inpanel > * + *{margin-top:14px}
+.ac-inpanel .ac-h2{font-size:1.25rem}
+/* 面板寬度只有手機寬（桌機 420px）：一律用 UI BOT 的手機版排版 */
+.ac-inpanel .ac-stage{grid-template-columns:minmax(0,1fr);gap:14px}
+.ac-inpanel .ac-list{grid-column:1/-1;flex-direction:row;overflow-x:auto;max-height:none;padding-bottom:6px}
+.ac-inpanel .ac-mini{flex:none;max-width:180px}
+.ac-inpanel .ac-card{max-width:290px;margin-left:auto;margin-right:auto}
+.ac-inpanel .ac-hallhead,.ac-inpanel .ac-dexhead,.ac-inpanel .ac-door,.ac-inpanel .ac-share,.ac-inpanel .ac-calc,.ac-inpanel .ac-wall,.ac-inpanel .ac-floor{grid-template-columns:minmax(0,1fr)}
+.ac-inpanel .ac-floor{gap:12px}
+.ac-inpanel .ac-booth{min-height:0;padding:14px 16px;width:100%}
+.ac-inpanel .ac-booth.is-locked{opacity:.55;filter:saturate(.4)}
+.ac-inpanel .ac-route{grid-template-columns:repeat(var(--n,3),minmax(0,1fr))}
+.ac-inpanel .ac-route:has(> :nth-child(4)){display:flex;overflow-x:auto;padding-bottom:6px}
+.ac-inpanel .ac-route:has(> :nth-child(4)) .ac-route__node{flex:0 0 108px}
+.ac-inpanel .ac-route__node{flex-direction:column;text-align:center;padding:10px 4px;margin-right:14px;gap:6px}
+.ac-inpanel .ac-route__node b{white-space:normal;font-size:.8rem;line-height:1.3}
+.ac-inpanel .ac-route__node small{font-size:.68rem}
+.ac-inpanel .ac-route__txt{width:100%}
+.ac-inpanel .ac-dex{grid-template-columns:repeat(2,1fr);gap:12px}
+.ac-inpanel .ac-dex .ac-card{max-width:none}
+.ac-inpanel .ac-dexcard{cursor:pointer;min-width:0}
+.ac-inpanel .ac-dex__h{grid-column:1/-1}
+.ac-inpanel .ac-door__gate{display:grid;grid-template-columns:90px 1fr;align-items:center;text-align:left;border-radius:60px 20px 20px 60px;padding:12px}
+.ac-inpanel .ac-door__gate .ac-niuma{width:84px}
+.ac-inpanel .ac-share__img{max-width:260px;margin:0 auto}
+.ac-inpanel .ac-cmpstrip{grid-template-columns:1fr 1fr;font-size:.8rem}
+.ac-inpanel .ac-wall,.ac-inpanel .ac-wall > *{min-width:0}
+.ac-inpanel .ac-quotes{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.ac-inpanel .ac-quote{font-size:.72rem;padding:6px}
+.ac-inpanel .ac-hero__sign{margin-bottom:6px}
+.ac-inpanel .ac-hero__sign b{font-size:.92rem;letter-spacing:.06em}
+/* 徽章當按鈕（設稱號） */
+.ac-badgebtn{all:unset;box-sizing:border-box;cursor:pointer;display:block;border-radius:14px;min-width:0}
+.ac-badgebtn:disabled{cursor:default}
+.ac-badgebtn.is-cur .ac-badge{box-shadow:inset 0 0 0 2px var(--ac-gold),0 0 18px rgba(255,214,107,.35)}
+.ac-badgebtn:focus-visible{outline:2px solid var(--ac-cyan);outline-offset:2px}
+.ac-mist__ans{display:block;color:#7cffb2 !important;margin-top:2px}
+.ac-dq__score{display:flex;align-items:baseline;gap:6px;margin:10px 0}
+/* 選單 */
+.ac-menu{display:grid;gap:10px}
+.ac-menuitem{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:center;padding:12px 14px;border-radius:16px;background:var(--ac-glass);box-shadow:inset 0 0 0 1px var(--ac-line);transition:box-shadow .2s var(--ac-ease),transform .2s var(--ac-ease)}
+.ac-menuitem .ac-ico{width:30px;height:30px;color:var(--ac-cyan)}
+.ac-menuitem b{display:block;color:var(--ac-ink);font-size:.95rem}
+.ac-menuitem small{display:block;color:var(--ac-mute);font-size:.75rem}
+.ac-menuitem:active{transform:scale(.98)}
+.ac-menuitem:focus-visible{outline:2px solid var(--ac-cyan)}
+/* 均線示範 */
+.ac-ma canvas{width:100%;height:auto;border-radius:12px;background:rgba(0,0,0,.25);margin:8px 0}
+.ac-ma input[type=range]{width:100%;accent-color:#22d3ee;height:28px}
+/* 導覽：不擋遊戲操作，固定在底部選單上方（單手可按） */
+#acTour.ac-tour{pointer-events:none}
+.ac-tour__box--dock{left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+.ac-tour__card .ac-kicker{margin:0 0 4px;font-size:.7rem;color:#5b4bd6}
+.ac-tour__btns button{min-height:36px}
+.ac-star__card{display:grid;place-items:center}
+
+/* ---- UI BOT 2026-11-27：補齊 academy.js 有用到、元件表尚未涵蓋的 class；不改遊戲 style.css ---- */
+.ac-lock{text-align:center;padding:22px 16px}
+.ac-lock .ac-kicker{justify-content:center}
+.ac-lock .ac-h2{margin:8px 0}
+.ac-lock .ac-btn{margin-top:14px}
+.ac-ma-n{color:var(--ac-gold,#ffc85a);font-family:var(--ac-disp,"Clash Display",sans-serif);font-variant-numeric:tabular-nums}
+.ac-ma-range{width:100%;accent-color:#3ef2ff;height:28px;margin-top:6px}
+.ac-ma__cv,.ac-ma canvas.ac-ma__cv{width:100%;height:auto;display:block;border-radius:12px;background:rgba(0,0,0,.28);box-shadow:inset 0 0 0 1px rgba(62,242,255,.22);margin:8px 0}
+.ac-inpanel .ac-cmpstrip{animation:acHostIn .55s var(--ac-ease,cubic-bezier(.23,1,.32,1)) both}
+.ac-inpanel .ac-cmpstrip div:first-child{animation:acHostL .55s var(--ac-ease,cubic-bezier(.23,1,.32,1)) both}
+.ac-inpanel .ac-cmpstrip div:last-child{animation:acHostR .55s var(--ac-ease,cubic-bezier(.23,1,.32,1)) both}
+@keyframes acHostIn{from{opacity:0}to{opacity:1}}
+@keyframes acHostL{from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:none}}
+@keyframes acHostR{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+.ac-booth--academy{box-shadow:inset 0 0 0 1px rgba(255,200,90,.55),0 0 28px rgba(255,200,90,.18)}
+.ac-quiz h3{margin:0 0 6px;color:#ffe3a0;font-size:1.02rem;font-family:var(--ac-disp,"Clash Display",sans-serif)}
+.ac-inpanel .ac-mist{position:relative}
+.ac-inpanel .ac-mist::before{content:"待辦退件";position:absolute;top:-8px;left:12px;font-size:.62rem;letter-spacing:.14em;font-weight:800;color:#ff9aa6;background:#0a0810;padding:0 6px}
+body.gm .ac-inpanel,body[data-gm] .ac-inpanel{box-shadow:inset 0 0 0 1px rgba(255,200,90,.28)}
+/* 畫面上若還有裝飾用英文 class，一律藏起來（館名已是中文） */
+.ac-en{display:none!important}
+@media (prefers-reduced-motion:reduce){
+  .ac-inpanel .ac-cmpstrip,.ac-inpanel .ac-cmpstrip div{animation:none}
+}
+
+.ac-inpanel .ac-route__node{min-width:0;overflow:hidden}
+.ac-inpanel .ac-route__txt,.ac-inpanel .ac-route__txt b,.ac-inpanel .ac-route__txt small{overflow:hidden;max-width:100%;word-break:break-word}
