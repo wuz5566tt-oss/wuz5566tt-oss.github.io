@@ -63,6 +63,8 @@ export const NPCS = [
   { id: 'n_lec_f4', floor: 'f4', gender: 'm', outfit: 'vest', avatar: '🐴', name: 'STAR史塔財商講師 正遠', line: '交易的盡頭不是技術，是概率。', pose: 'stand', slot: 'D', talk: 'academy' },
   { id: 'n_lec_f5', floor: 'f5', gender: 'f', outfit: 'blouse', avatar: '🐴', name: 'STAR史塔財商講師 沐橙', line: '長期的紀律，比一次的好運重要。', pose: 'stand', slot: 'F', talk: 'academy' },
   { id: 'n_lec_f6', floor: 'f6', gender: 'm', outfit: 'suit', avatar: '🐴', name: 'STAR史塔財商講師 景行', line: '先想好停損，再談進場。', pose: 'stand', slot: 'A', talk: 'academy' },
+  // 7 樓工位旁的講師馬：每日 3 題（talk: 'quiz'，題目與發薪在 academy.js；不進任務列）
+  { id: 'n_lec_f7', floor: 'f7', gender: 'm', outfit: 'suit', avatar: '🐴', name: 'STAR史塔財商講師馬 明哲', line: '每天 3 題，答錯的我明天再考你。', pose: 'stand', stand: [1.75, -4.75], face: -Math.PI * 0.42, talk: 'quiz' },
   // 7 樓同期學員馬：只說話、工位等級固定，不進任務列
   ...CLASSMATES.map(c => ({
     id: c.id, floor: 'f7', gender: c.gender, outfit: c.outfit, avatar: '🐴',
