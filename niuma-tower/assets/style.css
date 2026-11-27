@@ -611,3 +611,20 @@ body[data-floor=f6] .chip.floor{box-shadow:inset 0 0 0 1px rgba(46,255,196,.55),
 .checkin-cal .cal-cell.marked{background:linear-gradient(160deg,rgba(255,200,90,.28),rgba(255,200,90,.1));box-shadow:inset 0 0 0 1px rgba(255,200,90,.6),0 0 10px rgba(255,200,90,.16);color:var(--gold);font-weight:800}
 .checkin-cal .cal-cell.today{box-shadow:inset 0 0 0 1px var(--gold),0 0 12px rgba(255,200,90,.3)}
 .checkin-cal .cal-cell.marked.today{box-shadow:inset 0 0 0 1.5px var(--gold),0 0 14px rgba(255,200,90,.4)}
+
+/* ===== 11/27 藍圖：入職第一天、捏牛馬、下班複盤、突發行情、展廳（career.js） ===== */
+.cr-more { margin: 10px 0 0; text-align: center; font-weight: 700; color: var(--gold, #ffc85a); font-size: .92rem; letter-spacing: .02em; }
+.cr-steps li .btn.sm { padding: 4px 10px; }
+.cr-badge.on { border-color: rgba(255, 200, 90, .6); box-shadow: 0 0 0 1px rgba(255, 200, 90, .25) inset; }
+.cr-opts { flex-wrap: wrap; }
+.cr-opts button { display: inline-flex; align-items: center; gap: 6px; }
+.cr-opts button[disabled] { opacity: .45; }
+.cr-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; box-shadow: 0 0 0 1px rgba(255,255,255,.35); }
+.cr-flash.dn { border-color: rgba(47, 211, 138, .55); }
+.cr-flash.upc { border-color: rgba(255, 84, 104, .55); }
+.cr-ex h3, .cr-flash h3 { font-size: 1.05rem; }
+.cr-vsrow { display: flex; justify-content: space-between; align-items: baseline; margin-top: 10px; gap: 8px; }
+.cr-vsrow em { font-style: normal; font-weight: 800; font-size: 1.15rem; }
+.cr-bar { height: 10px; border-radius: 6px; background: rgba(255,255,255,.08); overflow: hidden; margin-top: 4px; }
+.cr-bar i { display: block; height: 100%; border-radius: 6px; }
+.reveal .pending { color: var(--gold, #ffc85a); }
