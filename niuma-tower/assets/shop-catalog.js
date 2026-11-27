@@ -187,6 +187,10 @@ export const SHOP = [
   I('tsmc-watch', [J, ...N], 'watch', '台積電 2330 漲停手錶', 0, { type: 'watch', color: 0x3a1014, color2: 0xff3a4c, pattern: 'tsmc', metal: .5 }, { series: 'tsmc', badge: '首發免費', featured: true }),
   I('tsmc-necklace', [J, ...N], 'necklace', '台積電 2330 漲停項鍊', 0, { type: 'necklace', shape: 'candle', color: 0xff3a4c, color2: 0xffe3a0, pattern: 'tsmc', metal: .6 }, { series: 'tsmc', badge: '首發免費', featured: true }),
 
+  /* ---- 高階：鎏光敘物飾品（站內虛擬裝扮，用站內薪水兌換；不是實品販售） ---- */
+  I('lg-necklace-first', [J, ...N], 'necklace', '鎏光敘物・首發款項鍊', 6800, { type: 'necklace', shape: 'pendant', color: 0xe6c27a, color2: 0xf3efe6, metal: .95 }, { series: 'liuguang', badge: '高階', featured: true }),
+  I('lg-necklace-cross', [J, ...N], 'necklace', '鎏光敘物・十字項鍊', 8800, { type: 'necklace', shape: 'cross', color: 0xd9b25f, color2: 0xe9edf2, metal: .95 }, { series: 'liuguang', badge: '高階', featured: true }),
+
   /* ---- 套裝 ---- */
   I('set-yageo', [SET, ...N], 'set', '國巨（2327）跌停・綠油油套裝', 0, { color: 0x2fd38a, pattern: 'yageo' }, {
     series: 'yageo', badge: '首發免費', featured: true,
