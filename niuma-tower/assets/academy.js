@@ -6,7 +6,7 @@ import * as UI from './acad-ui/js/ac-ui.js';
 import * as FX from './acad-ui/js/ac-fx.js';
 import { GLOSSARY } from './acad-ui/js/ac-glossary.js';
 import { calcPanel, renderCalcResult } from './acad-ui/js/ac-widgets.js';
-import { mountSnippet, drawIdCard, drawPayslip } from './uikit.js'; // UI BOT ui-kit 加件（特展預告、工作證、薪資單）
+import { mountSnippet, drawIdCard, drawPayslip, LINE_ID, LEO_HEAD, lineCtaHTML } from './uikit.js'; // UI BOT ui-kit 加件（特展預告、工作證、薪資單）
 let X = null; // app.js 注入
 const esc = UI.esc;
 const IMG = 'assets/img/star-neon-512.webp'; // 與 acad-ui 內同一張圖（位元組相同），用站內既有檔
@@ -154,7 +154,7 @@ function renderHall(el, hallId, opt) {
       <div class="ac-list">${list.map(id => UI.miniCard(L.CARDS[id], { collected: L.cardDone(A, id), locked: !L.cardOpen(A, id, gm()), active: id === cid })).join('')}</div>
       <div class="ac-viewer">${UI.card(c, { collected: L.cardDone(A, cid), locked, compare: isVs, flipped: view.flipped })}
         <div class="ac-viewer__nav"><button type="button" class="ac-arrow" data-step="-1" aria-label="上一張" ${list.indexOf(cid) ? '' : 'disabled'}>‹</button><span>${list.indexOf(cid) + 1} / ${list.length}</span><button type="button" class="ac-arrow" data-step="1" aria-label="下一張" ${list.indexOf(cid) < list.length - 1 ? '' : 'disabled'}>›</button></div>
-        <p class="cr-more">想更深入？私訊『成長』</p></div>
+        <div class="cr-more nm-line nm-line--compact"><img class="nm-line__av" src="${LEO_HEAD}" width="44" height="44" alt="董事長 LEO易凡 上課中"><span>想更深入？加入 LINE　ID wuzakakak</span></div></div>
       ${quiz}</div>
     ${tool === 'compound' ? `<div data-tool="compound">${calcPanel()}</div>` : tool === 'ma' ? maPanel() : ''}
     <p class="ac-na">${h.id === 'mkt' ? '卡片數字都照資料檔的真實日期與數據。' : ''}僅供學習，非投資建議。</p>`, 'ac-hall-' + h.id);
@@ -232,7 +232,7 @@ function mountMA(el) {
   sl.addEventListener('input', draw); draw();
 }
 
-/* ---------- 學院展位（1、5共振：內容準備中）＋語錄牆（留空）＋私訊「成長」 ---------- */
+/* ---------- 學院展位（1、5共振：內容準備中）＋語錄牆（留空）＋加入 LINE ---------- */
 function renderStar(el) {
   el.innerHTML = wrap(`<div class="ac-hallhead"><div><p class="ac-kicker">學院展位</p><h2 class="ac-h2">STAR史塔財商 學院展位</h2><p class="ac-sub" style="margin:0">「1、5共振」展位內容準備中。</p></div></div>
     <div class="ac-star__exhibit" id="acExhibit"></div>
@@ -354,7 +354,7 @@ export function drawShare(cv, st) {
   };
   box(900, '稱號', st.title, '#c9b8ff'); box(1050, '連續打卡', `${st.streak} 天`, '#9ff3ff'); box(1200, '本月打卡', `${st.month} 天`, '#9ff3ff'); box(1350, '今日講師馬測驗', st.quiz, '#ffd66b');
   x.fillStyle = '#fff'; x.font = `700 44px ${F}`; x.fillText('想學完整版？來 STAR史塔財商', 540, 1600);
-  x.fillStyle = '#ffd66b'; x.font = `700 40px ${F}`; x.fillText('私訊「成長」', 540, 1666);
+  x.fillStyle = '#ffd66b'; x.font = `700 40px ${F}`; x.fillText('加入 LINE  wuzakakak', 540, 1666);
   x.fillStyle = '#5d6f90'; x.font = `400 28px ${F}`; x.fillText('薪水為站內虛擬點數・僅供學習，非投資建議', 540, 1800);
   return cv;
 }
@@ -398,7 +398,7 @@ function renderMenu(el) {
     ${item('ac_book', 'basket', '知識卡圖鑑', `${tot.lit}/${tot.total} 張・徽章 ${L.badgesOf(A).length}`)}
     ${item('acwrong', 'receipt', '錯題本', `${L.wrongList(A).length} 題`)}
     ${item('acshare', 'flow', '分享成績圖／工作證／薪資單', '9:16 直式圖片')}
-    ${item('ukwall', 'eye', '外牆影音看板', 'IG 限動・Threads @wuz200200')}
+    ${item('ukwall', 'eye', '外牆影音看板', '加入 LINE wuzakakak')}
     ${item('tour', 'compound', '重看 30 秒新手導覽', '打卡・工位・講師馬・展覽館・知識卡')}</div>`);
   el.querySelectorAll('[data-m]').forEach(b => b.onclick = () => {
     const m = b.dataset.m;
