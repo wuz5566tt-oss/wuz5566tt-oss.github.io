@@ -80,6 +80,35 @@ export async function create3D(canvas, hooks) {
   }
   const rng = (s => () => (s = (s * 16807) % 2147483647) / 2147483647)(42);
 
+  /* ---------- UI BOT ui-kit 加件：輪播廣告屏（IG／Threads 封面待提供框，@wuz200200）。只加新物件，不動既有招牌 ---------- */
+  const UK_IMG = 'assets/ui-kit/img/';
+  const UK_REDUCED = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const ukScreens = [], ukMeshes = []; // ukMeshes：點廣告屏 → 開外牆影音看板（IG @wuz200200）
+  function ukScreen(files, w, h, cap, x, y, z, parent, ry = 0) {
+    const portrait = h > w, W = portrait ? 540 : 1024, Hh = portrait ? 960 : 576;
+    const tex = canvasTex(W, Hh, g => { g.fillStyle = '#05070d'; g.fillRect(0, 0, W, Hh); });
+    let i = 0;
+    const imgs = files.map(f => { const im = new Image(); im.onload = () => { if (imgs[i] === im) draw(); }; im.src = UK_IMG + f; return im; });
+    function draw() {
+      const g = tex._g, im = imgs[i], pad = 18, bar = portrait ? 92 : 70;
+      g.fillStyle = '#05070d'; g.fillRect(0, 0, W, Hh);
+      if (im.complete && im.naturalWidth) {
+        const bw = W - pad * 2, bh = Hh - pad * 2 - bar, r = Math.min(bw / im.naturalWidth, bh / im.naturalHeight);
+        const dw = im.naturalWidth * r, dh = im.naturalHeight * r; g.drawImage(im, pad + (bw - dw) / 2, pad + (bh - dh) / 2, dw, dh);
+      }
+      g.fillStyle = 'rgba(8,14,32,.96)'; g.fillRect(0, Hh - bar - 6, W, bar + 6);
+      g.textBaseline = 'middle'; g.textAlign = 'left'; g.fillStyle = '#9ff3ff'; g.font = `800 ${portrait ? 34 : 30}px ${FONT}`; g.fillText(cap, 26, Hh - bar / 2 - 3);
+      g.textAlign = 'right'; g.fillStyle = '#ffd66b'; g.fillText('@wuz200200', W - 26, Hh - bar / 2 - 3);
+      g.strokeStyle = '#3ef2ff'; g.lineWidth = 8; g.strokeRect(4, 4, W - 8, Hh - 8);
+      for (let k = 0; k < files.length; k++) { g.fillStyle = k === i ? '#3ef2ff' : 'rgba(255,255,255,.25)'; g.fillRect(W / 2 - files.length * 14 + k * 28, Hh - bar - 22, 18, 6); }
+      tex.needsUpdate = true;
+    }
+    draw();
+    ukScreens.push(() => { i = (i + 1) % imgs.length; draw(); });
+    const m = plane(w, h, tex, x, y, z, parent, ry); m.userData.uk = cap; ukMeshes.push(m); return m;
+  }
+  const ukTimer = UK_REDUCED ? 0 : setInterval(() => ukScreens.forEach(f => f()), 6000);
+
   const FX = { t: { value: 0 } }; // 特效共用時間
   /* ---------- 天空、星星、城市 ---------- */
   const world = new THREE.Group(); scene.add(world);
@@ -176,6 +205,7 @@ export async function create3D(canvas, hooks) {
     const pole = cyl(.15, .2, 7, 8, std(0x1b2440, { metalness: .8 }), 10, 3.5, 9, streetClassic);
     const bb = textTex(['今天也要準時上班', '牛馬交易上班日・每天打卡領薪水'], { w: 1024, h: 384, size: 110, color: '#ffe3a0', border: '#3ef2ff' });
     plane(6, 2.25, bb, 10, 7.8, 9, streetClassic, -0.5);
+    ukScreen(['reels-cover-01.svg', 'reels-cover-02.svg', 'threads-quote-01.svg', 'threads-quote-02.svg'], 1.5, 2.66, '限動・封面待提供', 9.88, 3.3, 9.22, streetClassic, -0.5); // ui-kit 加件
   }
 
   /* ---------- 大樓外觀 ---------- */
@@ -230,6 +260,8 @@ export async function create3D(canvas, hooks) {
   // 招牌與雨遮
   const signTex = textTex(['史塔金融大樓', '牛馬交易上班日・交易大廳'], { w: 1024, h: 300, size: 132 });
   plane(9.4, 2.75, signTex, 0, 8.2, 0.12, tower);
+  ukScreen(['reels-cover-01.svg', 'reels-cover-02.svg', 'reels-cover-03.svg', 'reels-cover-04.svg'], 5.2, 2.92, '外牆・IG 限動', -6.3, 15, 0.16, tower); // ui-kit 加件
+  ukScreen(['threads-quote-01.svg', 'threads-quote-02.svg', 'threads-quote-03.svg'], 5.2, 2.92, '外牆・Threads 引言', 6.3, 15, 0.16, tower);
   box(8.6, .3, 3.4, armor2, 0, 6.15, 1.7, tower);
   box(8.6, .06, .1, cyanGlow, 0, 5.98, 3.38, tower);
   [-1, 1].forEach(s => cyl(.14, .14, 6, 8, armor, s * 4.1, 3, 3.2, tower));
@@ -438,9 +470,10 @@ export async function create3D(canvas, hooks) {
     f5: { acc: '120,170,255', hex: 0x78aaff, base: '#0a0f22', emb: '目標', fog: 0x0a1028, bg: 0x050818, back: 0xc890ff, wall: 0x141a36 },
     f6: { acc: '46,255,196', hex: 0x2effc4, base: '#03120f', emb: '實驗', fog: 0x03141a, bg: 0x020b0d, back: 0x2effc4, wall: 0x0a2024 },
     f7: { acc: '212,168,75', hex: 0xd4a84b, base: '#120e08', emb: '辦公', fog: 0x120c08, bg: 0x0a0806, back: 0xd4a84b, wall: 0x1a140c },
+    f8: { acc: '255,214,138', hex: 0xffd68a, base: '#16110c', emb: '學院', fog: 0x15100c, bg: 0x0c0907, back: 0xffc85a, wall: 0x231a12 },
     insider: { acc: '255,200,90', hex: C.gold, base: '#140f1e', emb: '自己人', fog: 0x120c1e, bg: 0x07060f, back: 0xb070ff, wall: 0x161226 },
   };
-  const FNUM = { lobby: 1, f2: 2, f3: 3, f4: 4, f5: 5, f6: 6, f7: 7, insider: 68 };
+  const FNUM = { lobby: 1, f2: 2, f3: 3, f4: 4, f5: 5, f6: 6, f7: 7, f8: 8, insider: 68 };
   const floorTex = f => canvasTex(1024, 1024, (g, w, h) => {
     const P = PAL[f], acc = P.acc;
     g.fillStyle = P.base; g.fillRect(0, 0, w, h);
@@ -452,6 +485,7 @@ export async function create3D(canvas, hooks) {
     if (f === 'f3') { g.strokeStyle = `rgba(${acc},.6)`; g.lineWidth = 8; g.strokeRect(120, 120, w - 240, h - 200); g.beginPath(); g.moveTo(120, h * .47); g.lineTo(w - 120, h * .47); g.stroke(); }
     if (f === 'f4') { const gr = g.createLinearGradient(w / 2 - 110, 0, w / 2 + 110, 0); gr.addColorStop(0, 'rgba(150,20,40,.0)'); gr.addColorStop(.15, 'rgba(150,20,40,.75)'); gr.addColorStop(.85, 'rgba(150,20,40,.75)'); gr.addColorStop(1, 'rgba(150,20,40,0)'); g.fillStyle = gr; g.fillRect(w / 2 - 110, 0, 220, h); g.strokeStyle = 'rgba(255,200,90,.6)'; g.lineWidth = 4; g.strokeRect(w / 2 - 96, -10, 192, h + 20); }
     if (f === 'f5') { g.strokeStyle = `rgba(${acc},.35)`; g.lineWidth = 2; const R = 46; for (let yy = 0; yy < h + R; yy += R * 1.5) for (let xx = 0; xx < w + R; xx += R * 1.732) { const ox = ((yy / (R * 1.5)) % 2) * R * .866; g.beginPath(); for (let k = 0; k < 6; k++) { const an = Math.PI / 6 + k * Math.PI / 3; g[k ? 'lineTo' : 'moveTo'](xx + ox + R * Math.cos(an), yy + R * Math.sin(an)); } g.closePath(); g.stroke(); } }
+    if (f === 'f8') { g.strokeStyle = 'rgba(255,214,138,.22)'; g.lineWidth = 3; for (let r = 230; r < 760; r += 90) { g.beginPath(); g.arc(w / 2, h * (7.5 / 16), r, 0, 7); g.stroke(); } g.fillStyle = 'rgba(255,200,90,.10)'; g.fillRect(w / 2 - 70, h * .6, 140, h * .4); }
     if (f === 'f6') { g.lineWidth = 3; [[.22, 'rgba(46,255,196,.32)', 9], [.78, 'rgba(255,200,90,.22)', 5]].forEach(([yy, col, fq]) => { g.strokeStyle = col; g.beginPath(); for (let x = 0; x <= w; x += 8) { const v = h * yy + Math.sin(x / w * Math.PI * fq) * 34 + Math.sin(x / w * Math.PI * fq * 3.1) * 12; x ? g.lineTo(x, v) : g.moveTo(x, v); } g.stroke(); });
       g.fillStyle = 'rgba(46,255,196,.22)'; for (let y = 32; y < h; y += 64) for (let x = 32; x < w; x += 64) g.fillRect(x - 2, y - 2, 4, 4); }
     const cx = w / 2, cy = h * (7.5 / 16);
@@ -485,6 +519,7 @@ export async function create3D(canvas, hooks) {
   box(2.4, .1, 2.2, cabMat, 7.2, 0, -17.4, cab); box(2.4, .1, 2.2, cabMat, 7.2, 3.3, -17.4, cab);
   box(.1, 3.3, 2.2, cabMat, 6.0, 1.65, -17.4, cab); box(.1, 3.3, 2.2, cabMat, 8.4, 1.65, -17.4, cab); box(2.4, 3.3, .1, cabMat, 7.2, 1.65, -18.5, cab);
   box(2, .05, .05, glow(0xfff1cf, 2), 7.2, 3.16, -17.4, cab);
+  ukScreen(['reels-cover-03.svg', 'threads-quote-03.svg', 'reels-cover-04.svg'], .82, 1.46, '電梯廣告', 7.2, 1.85, -18.43, cab); // ui-kit 加件
   // 電梯門與框
   box(2.5, .14, .2, goldGlow, 7.2, 3.25, -15.95, hall); [-1, 1].forEach(s => box(.14, 3.3, .2, goldGlow, 7.2 + s * 1.18, 1.65, -15.95, hall));
   const doorMat = std(0x9aa6bf, { metalness: 1, roughness: .2, envMapIntensity: 1 });
@@ -601,6 +636,19 @@ export async function create3D(canvas, hooks) {
     defaultHorns.push(hb, ht);
   });
   const wearHead = new THREE.Group(); head.add(wearHead);
+  // 捏自己的牛馬（11/27 加件）：髮型群組＋預設領帶／工牌換色（材質各自複製，不影響場景其他發光物）
+  const hairRoot = new THREE.Group(); head.add(hairRoot);
+  defaultTie.material = defaultTie.material.clone(); defaultBadge.material = defaultBadge.material.clone();
+  function applyLook(L = {}) {
+    clearGroup(hairRoot);
+    const hm = std(0x3a2414, { roughness: .7 });
+    if (L.hair === 'bangs') { box(.74, .1, .62, hm, 0, .33, -.01, hairRoot); box(.66, .14, .12, hm, 0, .27, .3, hairRoot); }
+    else if (L.hair === 'slick') { rbox(.78, .14, .66, .06, hm, 0, .36, -.03, hairRoot); box(.34, .1, .34, hm, -.12, .44, .06, hairRoot); }
+    else if (L.hair === 'spiky') { [[-.22, -.05], [0, -.1], [.22, -.05], [-.11, .14], [.11, .14], [0, .2]].forEach(([x, z]) => { const c = cyl(.005, .09, .24, 6, hm, x, .44, z, hairRoot); c.rotation.x = z * .9; }); box(.7, .06, .56, hm, 0, .32, 0, hairRoot); }
+    else if (L.hair === 'curly') { for (let i = -2; i <= 2; i++) for (let j = -1; j <= 1; j++) { const b = new THREE.Mesh(keep(new THREE.SphereGeometry(.1, 8, 6)), hm); b.position.set(i * .14, .36 + (j === 0 ? .03 : 0), j * .18); hairRoot.add(b); } }
+    if (L.tie != null) defaultTie.material.color.setHex(L.tie).multiplyScalar(1.6);
+    if (L.badge != null) defaultBadge.material.color.setHex(L.badge).multiplyScalar(2.0);
+  }
   const wearRoot = new THREE.Group(); body.add(wearRoot);
   const klineTexCache = {};
   function klineTex(mode) {
@@ -849,6 +897,7 @@ export async function create3D(canvas, hooks) {
         const ring = cyl(thick ? .23 : .2, thick ? .23 : .2, thick ? .07 : .035, 18, nm, 0, 1.58, .04, wearRoot);
         ring.rotation.x = Math.PI / 2;
         if (look.shape === 'pendant') box(.08, .1, .04, lookMat({ ...look, color: look.color2 || look.color }), 0, 1.46, .22, wearRoot);
+        if (look.shape === 'cross') { const cm2 = lookMat({ ...look, color: look.color2 || look.color }); box(.035, .16, .035, cm2, 0, 1.43, .23, wearRoot); box(.11, .035, .035, cm2, 0, 1.46, .23, wearRoot); }
       }
     }
 
@@ -1020,7 +1069,7 @@ export async function create3D(canvas, hooks) {
   const entL = new THREE.PointLight(0xffe2b0, 22, 14, 1.4); entL.position.set(0, 5, 3); scene.add(entL);
 
   /* ---------- 區域物件 ---------- */
-  const floors = { lobby: new THREE.Group(), f2: new THREE.Group(), f3: new THREE.Group(), f4: new THREE.Group(), f5: new THREE.Group(), f6: new THREE.Group(), f7: new THREE.Group(), insider: new THREE.Group() };
+  const floors = { lobby: new THREE.Group(), f2: new THREE.Group(), f3: new THREE.Group(), f4: new THREE.Group(), f5: new THREE.Group(), f6: new THREE.Group(), f7: new THREE.Group(), f8: new THREE.Group(), insider: new THREE.Group() };
   Object.values(floors).forEach(g => { hall.add(g); g.visible = false; });
   const zoneObj = {}; const hitBoxes = []; const publicScreens = [];
   const hitMat = keep(new THREE.MeshBasicMaterial({ visible: false }));
@@ -1032,7 +1081,7 @@ export async function create3D(canvas, hooks) {
     rg.rotation.x = -Math.PI / 2; rg.position.set(s.spot[0], .05, s.spot[1]); parent.add(rg); g.userData.ring = rg;
     return g;
   }
-  const L = floors.lobby, F2 = floors.f2, F3 = floors.f3, F4 = floors.f4, F5 = floors.f5, F6 = floors.f6, F7 = floors.f7, I = floors.insider;
+  const L = floors.lobby, F2 = floors.f2, F3 = floors.f3, F4 = floors.f4, F5 = floors.f5, F6 = floors.f6, F7 = floors.f7, F8 = floors.f8, I = floors.insider;
   const darkPanel = std(0x151d33, { metalness: .7, roughness: .35 });
   const goldM = std(0xd9a441, { metalness: 1, roughness: .28, envMapIntensity: 1.1 });
   const wood = std(0x3a2414, { roughness: .45, metalness: .1 });
@@ -1272,7 +1321,7 @@ export async function create3D(canvas, hooks) {
     const t = textTex(lines, { w: 1024, h: 300, size: 96, color: '#ffd68a', border: '#d4a84b', glowC: '#d4a84b', sub: '#fff4d2' });
     plane(2.7, .82, t, W - .05, 5.22, -5.8, parent, -Math.PI / 2);
   }
-  [L, F2, F3, F4, F5, F6, F7, I].forEach((fg, i) => starBoard(fg, i));
+  [L, F2, F3, F4, F5, F6, F7, I, F8].forEach((fg, i) => starBoard(fg, i));
 
   // ---- 7 樓：個人交易室＋STAR史塔財商教室 ----
   function chartTex(seed) {
@@ -1467,10 +1516,25 @@ export async function create3D(canvas, hooks) {
     };
     return g;
   }
+  // ui-kit 工位牆（uk-deskwall 的 3D 版）：稱號＋已收藏知識卡格
+  const deskWall = { tex: null, st: { title: '實習牛馬', lit: 0, total: 0 } };
+  function drawDeskWall() {
+    if (!deskWall.tex) return; const g = deskWall.tex._g, W = 768, H = 300, st = deskWall.st;
+    g.clearRect(0, 0, W, H); g.fillStyle = 'rgba(14,10,4,.94)'; g.fillRect(0, 0, W, H);
+    g.strokeStyle = '#d4a84b'; g.lineWidth = 6; g.strokeRect(6, 6, W - 12, H - 12);
+    g.textBaseline = 'middle'; g.textAlign = 'left'; g.fillStyle = '#ffd68a'; g.font = `900 54px ${FONT}`; g.fillText(st.title || '實習牛馬', 30, 58);
+    g.textAlign = 'right'; g.fillStyle = '#fff4d2'; g.font = `700 32px ${FONT}`; g.fillText(`已收藏 ${st.lit} 張`, W - 30, 58);
+    const n = 8, on = Math.min(n, st.lit), sw = 72, gap = (W - 60 - n * sw) / (n - 1);
+    for (let k = 0; k < n; k++) { const x = 30 + k * (sw + gap), y = 112;
+      g.fillStyle = k < on ? '#ffd66b' : 'rgba(255,255,255,.06)'; g.shadowColor = '#ffd66b'; g.shadowBlur = k < on ? 18 : 0; g.fillRect(x, y, sw, 150); g.shadowBlur = 0;
+      g.strokeStyle = k < on ? '#fff1c2' : 'rgba(212,168,75,.45)'; g.lineWidth = 3; g.strokeRect(x, y, sw, 150); }
+    deskWall.tex.needsUpdate = true;
+  }
   const officeNbors = new THREE.Group(); F7.add(officeNbors);
   { const g = zoneGroup('desk', 'J', F7);
     const t = textTex(['我的工位', '紙箱升到頂樓交易室'], { w: 768, h: 240, size: 104, color: '#ffd68a', border: '#d4a84b', glowC: '#d4a84b' });
-    plane(1.55, .48, t, 0, 2.12, .58, g); }
+    plane(1.55, .48, t, 0, 2.12, .58, g);
+    deskWall.tex = canvasTex(768, 300, () => {}); plane(1.55, .6, deskWall.tex, 0, 2.78, .58, g); drawDeskWall(); }
   { const g = zoneGroup('academy', 'G', F7);
     const t = textTex(['STAR史塔財商教室', '私訊「成長」進教室'], { w: 1400, h: 640, size: 120, color: '#ffd68a', border: '#d4a84b', glowC: '#d4a84b', sub: '#fff4d2' });
     box(6.4, 4, .14, armor, 0, 3, .06, g); plane(6.2, 3.88, t, 0, 3, .15, g); box(6.6, .1, .2, goldGlow, 0, 5.05, .08, g); }
@@ -1510,14 +1574,56 @@ export async function create3D(canvas, hooks) {
   });
 
   // 每層都有電梯
-  [['lift_lobby', L], ['lift_f2', F2], ['lift_f3', F3], ['lift_f4', F4], ['lift_f5', F5], ['lift_f6', F6], ['lift_f7', F7], ['lift_insider', I]].forEach(([id, fg]) => { zoneGroup(id, 'H', fg); wallSign('電梯', '各樓層・職級', 'H', fg, true, 5.3); });
+  [['lift_lobby', L], ['lift_f2', F2], ['lift_f3', F3], ['lift_f4', F4], ['lift_f5', F5], ['lift_f6', F6], ['lift_f7', F7], ['lift_f8', F8], ['lift_insider', I]].forEach(([id, fg]) => { zoneGroup(id, 'H', fg); wallSign('電梯', '各樓層・職級', 'H', fg, true, 5.3); });
+
+  // ---- 8 樓：STAR史塔財商學院展覽館（三館＋學院展位，走進式展位） ----
+  const acFX = { cards: [], rings: [] };
+  function acCardTex(title, sub, col) {
+    return canvasTex(360, 504, (g, w, h) => {
+      const bg = g.createLinearGradient(0, 0, w, h); bg.addColorStop(0, '#2a1f10'); bg.addColorStop(.5, '#0d0a07'); bg.addColorStop(1, '#2a1f10'); g.fillStyle = bg; g.fillRect(0, 0, w, h);
+      const gd = g.createLinearGradient(0, 0, w, h); gd.addColorStop(0, '#8a6424'); gd.addColorStop(.45, '#ffe3a0'); gd.addColorStop(.55, '#fff4d2'); gd.addColorStop(1, '#8a6424');
+      g.strokeStyle = gd; g.lineWidth = 16; g.strokeRect(12, 12, w - 24, h - 24); g.lineWidth = 3; g.strokeRect(34, 34, w - 68, h - 68);
+      g.fillStyle = col; g.globalAlpha = .9; g.beginPath(); g.arc(w / 2, h * .4, 74, 0, 7); g.fill(); g.globalAlpha = 1;
+      g.strokeStyle = '#fff4d2'; g.lineWidth = 5; g.beginPath(); for (let k = 0; k < 5; k++) { const a = -Math.PI / 2 + k * Math.PI * 4 / 5; g[k ? 'lineTo' : 'moveTo'](w / 2 + Math.cos(a) * 52, h * .4 + Math.sin(a) * 52); } g.closePath(); g.stroke();
+      g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#ffe3a0'; g.font = `900 46px ${FONT}`; g.fillText(title, w / 2, h * .7);
+      g.fillStyle = '#d8c9a0'; g.font = `700 24px ${FONT}`; g.fillText(sub, w / 2, h * .8);
+    });
+  }
+  function acBooth(id, slotKey, title, sub, col, cardTitle) {
+    const g = zoneGroup(id, slotKey, F8), s = SLOT[slotKey], [fx] = s.f, side = fx !== 0;
+    const ry = side ? -fx * Math.PI / 2 : 0; // 展位正面朝大廳中央
+    const fr = new THREE.Group(); fr.rotation.y = ry; g.add(fr);
+    const pillar = std(0x2a2014, { metalness: .85, roughness: .3, envMapIntensity: 1 });
+    [-1.25, 1.25].forEach(x => { box(.18, 3.2, .18, pillar, x, 1.6, 0, fr); box(.06, 3.0, .06, glow(col, 1.6), x, 1.6, .1, fr); });
+    box(2.8, .2, .24, goldM, 0, 3.25, 0, fr); box(2.9, .05, .26, goldGlow, 0, 3.38, 0, fr);
+    const sign = textTex([title, sub], { w: 1024, h: 300, size: 104, color: '#ffe3a0', border: '#d4a84b', glowC: '#ffc85a', sub: '#fff4d2' });
+    plane(2.5, .74, sign, 0, 2.75, .14, fr);
+    cyl(.55, .65, .5, 28, darkPanel, 0, .25, .2, fr); cyl(.58, .58, .04, 28, glow(col, 1.8), 0, .51, .2, fr);
+    const card = plane(.9, 1.26, acCardTex(cardTitle, title, '#' + col.toString(16).padStart(6, '0')), 0, 1.45, .2, fr);
+    card.material.side = THREE.DoubleSide; acFX.cards.push(card);
+    const halo = new THREE.Mesh(keep(new THREE.TorusGeometry(.72, .02, 6, 48)), glow(col, 1.8)); halo.position.set(0, 1.45, .2); fr.add(halo); acFX.rings.push(halo);
+    return g;
+  }
+  acBooth('ac_intro', 'A', '入門觀念館', '工具・算錢・風險', 0x3ef2ff, '入門');
+  acBooth('ac_ta', 'B', '技術分析館', 'K線・均線・結構', 0xff7ae0, '看圖');
+  acBooth('ac_mkt', 'D', '市場觀察館', '台股・美股', 0x2fd38a, '市場');
+  acBooth('ac_book', 'C', '知識卡圖鑑', '收集・徽章', 0xffc85a, '圖鑑');
+  { const g = zoneGroup('ac_star', 'G', F8);
+    const t = textTex(['STAR史塔財商學院展位', '1、5共振・內容準備中'], { w: 1400, h: 640, size: 120, color: '#ffd68a', border: '#d4a84b', glowC: '#d4a84b', sub: '#fff4d2' });
+    box(6.4, 4, .14, armor, 0, 3, .06, g); plane(6.2, 3.88, t, 0, 3, .15, g); box(6.6, .1, .2, goldGlow, 0, 5.05, .08, g); }
+  { const t = textTex(['董事長 LEO易凡 語錄牆', '內容準備中'], { w: 1024, h: 300, size: 96, color: '#ffd68a', border: '#d4a84b', glowC: '#d4a84b', sub: '#fff4d2' }); plane(3.4, 1, t, -W + .05, 3.8, -12.4, F8, Math.PI / 2); }
+  acBooth('ac_gate', 'F', '入口大廳', '3 題程度測驗', 0x9ff4ff, '測驗');
+  { const t = textTex(['STAR史塔財商學院展覽館', '入門・技術・市場三館'], { w: 1024, h: 300, size: 92, color: '#ffd68a', border: '#d4a84b', glowC: '#d4a84b', sub: '#fff4d2' }); plane(3.4, 1, t, W - .05, 4.1, -8.6, F8, -Math.PI / 2); }
+  plant(-7.8, -14.6, F8); plant(7.8, -5.6, F8);
 
   // ---- 68 樓 ----
   { const g = zoneGroup('boss', 'A', I);
     rbox(1.4, .9, 3.2, .1, wood, 0, .45, 0, g); box(1.44, .05, 3.24, goldGlow, 0, .92, 0, g);
     rbox(.8, 1.5, .8, .15, std(0x1a1414, { roughness: .4 }), -.9, .75, 0, g);
     const plaque = textTex(['掌門辦公室', '董事長 LEO易凡'], { w: 768, h: 260, size: 100 }); plane(1.2, .4, plaque, .72, .62, 0, g, Math.PI / 2);
-    wallSign('掌門辦公室', '董事長 LEO易凡', 'A', I, true); }
+    wallSign('掌門辦公室', '董事長 LEO易凡', 'A', I, true);
+    const intro = textTex(['董事長 LEO易凡', '13 年全職交易・經歷過三次牛熊轉換・私訊『成長』'], { w: 1024, h: 360, size: 96, color: '#ffe3a0', border: '#d4a84b', glowC: '#d4a84b', sub: '#fff4d2' });
+    plane(1.9, .67, intro, -1.55, 2.1, 0, g, Math.PI / 2); } // ui-kit 加件：董事長室介紹
   { const g = zoneGroup('hall', 'B', I);
     rbox(1.3, 1, 3, .1, darkPanel, 0, .5, 0, g); box(1.34, .05, 3.04, cyanGlow, 0, 1.02, 0, g);
     const board = textTex(['公告欄', '即將公開'], { w: 768, h: 520, size: 110, color: '#9ff4ff', border: '#3ef2ff', glowC: '#3ef2ff', sub: '#ffd68a' });
@@ -1981,8 +2087,12 @@ export async function create3D(canvas, hooks) {
   /* ---------- 主要 API ---------- */
   const api = {
     kind: '3d',
+    setDeskWall(st = {}) { Object.assign(deskWall.st, st); drawDeskWall(); },
     _dbg: () => ({ x: avatar.position.x, z: avatar.position.z, mode, moving: path.length > 0, floor: floorNow, yaw: orbitYaw, pitch: orbitPitch, dist: orbitDist, cyber: CYBER, walkTarget: walkTargetId }),
     setOutfit(eq) { applyOutfit(eq); },
+    setLook(L) { applyLook(L); },
+    lookInfo() { return { hair: hairRoot.children.length, tie: '#' + defaultTie.material.color.getHexString(), badge: '#' + defaultBadge.material.color.getHexString() }; }, // 測試用
+    adScreens() { const v = new THREE.Vector3(); return ukMeshes.map(m => { let o = m, vis = true; for (; o; o = o.parent) if (!o.visible) vis = false; m.getWorldPosition(v); return { cap: m.userData.uk, vis, x: +v.x.toFixed(2), y: +v.y.toFixed(2), z: +v.z.toFixed(2) }; }); }, // 測試用：廣告屏位置（拍特寫）
     setSteer(x, y) { steerX = x; steerY = y; if (Math.hypot(x, y) > .08) { if (playerSitting) standUp(); pokeCam(); cancelAutoWalk(); } },
     setOrbit(o = {}) { if (o.yaw != null) orbitYaw = o.yaw; if (o.pitch != null) orbitPitch = o.pitch; if (o.dist != null) orbitDist = o.dist; clampOrbit(); pokeCam(); if (mode === 'sit') sitCam(); else playCam(); camPos.copy(camPosT); camLook.copy(camLookT); camera.position.copy(camPos); camera.lookAt(camLook); },
     setZoom(kind) {
@@ -2130,6 +2240,7 @@ export async function create3D(canvas, hooks) {
       if (kind === 'fortune') { shakeT = 1.0; }
     },
     dispose() {
+      clearInterval(ukTimer);
       cancelAnimationFrame(raf); removeEventListener('resize', onResize);
       canvas.removeEventListener('pointerdown', onDown); canvas.removeEventListener('pointerup', onUp);
       canvas.removeEventListener('pointermove', onMove); canvas.removeEventListener('wheel', onWheel);
@@ -2198,6 +2309,8 @@ export async function create3D(canvas, hooks) {
     ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera);
     const cand = hitBoxes.filter(h => h.userData.active).concat(npcHits.filter(h => h.userData.fg === floors[floorNow]));
     const hit = ray.intersectObjects(cand, false)[0];
+    const adHit = ray.intersectObjects(ukMeshes.filter(m => { for (let o = m; o; o = o.parent) if (!o.visible) return false; return true; }), false)[0];
+    if (adHit && (!hit || adHit.distance < hit.distance)) { dispatchEvent(new CustomEvent('niuma-ad', { detail: adHit.object.userData.uk })); return; }
     if (hit) return hit.object.userData.npc ? api.goNpc(hit.object.userData.npc) : api.go(hit.object.userData.zone);
     const fh = ray.intersectObject(fl)[0];
     if (fh) { document.getElementById('panelClose').click(); mode = 'follow'; activeZone = null; walkTargetId = null; const p = clampAvatar(fh.point.clone().setY(0)); walkTo([p], () => overview()); }
@@ -2329,6 +2442,7 @@ export async function create3D(canvas, hooks) {
     spine.color.setRGB(.4, 1.8 + Math.sin(tAll * 2) * .6, 2 + Math.sin(tAll * 2) * .6);
     ring.rotation.z += dt * .2;
     f5Rings.forEach((r, i) => { r.rotation.x = tAll * (.5 + i * .3); r.rotation.y = tAll * (.4 - i * .2); });
+    if (floorNow === 'f8') { acFX.cards.forEach((c, i) => { c.rotation.y = Math.sin(tAll * .8 + i) * .45; c.position.y = 1.45 + Math.sin(tAll * 1.6 + i) * .06; }); acFX.rings.forEach((r, i) => { r.rotation.z += dt * (.6 + i * .05); }); }
     if (floorNow === 'f6') {
       labFX.knobs.forEach(k => { k.m.position.z = 1.7 + Math.sin(tAll * .8 + k.ph) * .32; });
       labFX.holos.forEach((h, i) => { h.rotation.y += dt * (.8 + i * .1); h.rotation.x += dt * .4; h.position.y += Math.sin(tAll * 2 + i) * .002; });
