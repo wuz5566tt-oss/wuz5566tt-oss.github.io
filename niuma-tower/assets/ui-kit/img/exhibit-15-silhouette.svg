@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 900">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="55%" r="50%">
+      <stop offset="0" stop-color="#ffc85a" stop-opacity=".55"/>
+      <stop offset="1" stop-color="#ffc85a" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="800" height="900" fill="transparent"/>
+  <circle cx="400" cy="460" r="280" fill="url(#glow)"/>
+  <g fill="#050a18" stroke="#ffe3a0" stroke-width="6" opacity=".95">
+    <!-- abstract overlapping 1 and 5 as silhouettes -->
+    <path d="M250 220 L330 220 L330 620 L250 620 Z" opacity=".9"/>
+    <path d="M250 220 L420 180 L420 250 L330 280 Z"/>
+    <path d="M430 240 C560 230 650 300 640 390 C630 470 560 500 490 510 L620 700 L520 700 L400 520 L430 510 C500 500 540 470 545 400 C550 340 500 300 430 310 Z"/>
+  </g>
+  <g fill="none" stroke="#3ef2ff" stroke-width="3" opacity=".5">
+    <path d="M200 500 Q400 360 600 500"/>
+    <path d="M200 540 Q400 680 600 540"/>
+  </g>
+</svg>
