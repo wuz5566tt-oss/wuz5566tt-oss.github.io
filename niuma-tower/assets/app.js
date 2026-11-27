@@ -9,7 +9,7 @@ import { LAB_RENDER, LAB_ICON, initLab, labTodos } from './lab.js';
 import { ACAD_RENDER, initAcademy, renderLecturerQuiz, shouldTour, startTour, acadTodos, acad } from './academy.js';
 import { normAcademy } from './academy-logic.js';
 import { CAREER_PANELS, CAREER_ICON, RENDER_CAREER, normCareer, initCareer, careerTodos, lookColor } from './career.js';
-import { mountSnippet, deskWallHTML } from './uikit.js';
+import { mountSnippet, deskWallHTML, LINE_ID, LINE_ADD, LEO_HEAD, lineCtaHTML, lineAddBtn } from './uikit.js';
 import { NPCS, npcsOn, questNpcsOn, questById, normQuests, pruneQuests, evalQuest, markClaimed, rewardText } from './quests.js';
 export { SHOP };
 
@@ -17,7 +17,7 @@ export { SHOP };
 import { GATE_HASH, SEALED } from './insider-data.js';
 import { modelStates, encodeQual, last7, addDays, RULE_MIN, VALID_DAYS, LADDER, TARGET_DAYS, MASTER_DAYS } from './qual.js';
 applyBrand();
-const IG = 'https://instagram.com/wuz200200';
+const IG = LINE_ADD; // 舊變數名保留給 careerCtx 相容；實際已改為加入 LINE
 const LINE_OA = 'https://page.line.me/803kongz';
 const LINE_OA_NAME = 'S.T.A.R 機構級交易系統';
 // 公開戰報（陌生人也能看）；A股戰報與總控台只在 68 樓，連結加密在 insider-data.js
@@ -76,9 +76,9 @@ export const ZONES = [
   { id: 'reports', floor: 'f4', slot: 'G', name: '戰報牆', kicker: '台股・美股每日戰報' },
   { id: 'heroes', floor: 'f4', slot: 'F', name: 'STAR史塔財商榮譽牆', kicker: 'STAR史塔財商', gold: true },
   { id: 'honor', floor: 'f4', slot: 'C', name: '職級榮譽牆', kicker: '升職之路', gold: true },
-  { id: 'cta', floor: 'f4', slot: 'B', name: '私訊『成長』', kicker: '我的資格・加入自己人', gold: true },
+  { id: 'cta', floor: 'f4', slot: 'B', name: '加入 LINE', kicker: '我的資格・加入自己人', gold: true },
   { id: 'target', floor: 'f5', slot: 'G', name: '目標值系統', kicker: '最高獎勵', gold: true },
-  { id: 'cta5', type: 'cta', floor: 'f5', slot: 'B', flatSlot: 'E', name: '私訊『成長』', kicker: '領取目標值系統', gold: true },
+  { id: 'cta5', type: 'cta', floor: 'f5', slot: 'B', flatSlot: 'E', name: '加入 LINE', kicker: '領取目標值系統', gold: true },
   { id: 'labsim', floor: 'f6', slot: 'G', name: '參數實驗台', kicker: '拖動參數・看結構變化', gold: true },
   { id: 'labdrill', floor: 'f6', slot: 'D', name: '實戰演練', kicker: '進場・停損・目標評分', gold: true },
   { id: 'labwiki', floor: 'f6', slot: 'C', name: '概念圖鑑', kicker: '結構・流動性・二次突破' },
@@ -91,7 +91,7 @@ export const ZONES = [
   { id: 'ac_book', floor: 'f8', slot: 'C', name: '知識卡圖鑑', kicker: '收集・徽章・稱號' },
   { id: 'ac_star', floor: 'f8', slot: 'G', name: 'STAR史塔財商學院展位', kicker: '1、5共振・內容準備中', gold: true },
   { id: 'acwrong', floor: '_ui', slot: 'A', name: '錯題本', kicker: '講師馬隔天重考' },
-  { id: 'ukwall', floor: '_ui', slot: 'A', name: '外牆影音看板', kicker: 'IG 限動・Threads @wuz200200' },
+  { id: 'ukwall', floor: '_ui', slot: 'A', name: '外牆影音看板', kicker: '加入 LINE wuzakakak' },
   { id: 'acshare', floor: '_ui', slot: 'A', name: '分享成績圖', kicker: '9:16・非投資建議' },
   { id: 'acmenu', floor: '_ui', slot: 'A', name: '選單', kicker: 'STAR史塔財商學院' },
   { id: 'boss', floor: 'insider', slot: 'A', name: '掌門辦公室', kicker: '自己人專區', gold: true },
@@ -706,17 +706,19 @@ function bindQuestButtons(el) {
   });
 }
 function academyCtaHTML() {
-  return `<div class="card" style="margin-top:12px"><div class="row between"><b>想學完整版？來 STAR史塔財商</b><span class="tag">私訊「成長」</span></div>
-    <p class="note" style="margin:8px 0 10px">課程介紹在 7 樓 STAR史塔財商教室。報名入口與全樓「私訊『成長』」相同，不會另開新網址。</p>
-    <div class="row" style="gap:8px;flex-wrap:wrap">
+  return `<div class="card nm-line" style="margin-top:12px"><div class="row" style="align-items:center;gap:12px">
+      <img class="nm-line__av" src="${LEO_HEAD}" width="72" height="72" alt="董事長 LEO易凡 上課中">
+      <div style="flex:1;min-width:0"><div class="row between"><b>想學完整版？來 STAR史塔財商</b><span class="tag">加入 LINE</span></div>
+        <p class="note" style="margin:6px 0 0">加入 LINE，ID ${LINE_ID}。課程介紹在 7 樓 STAR史塔財商教室。報名入口全樓相同，不會另開新網址。</p></div></div>
+    <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px">
       <button type="button" class="btn cyan sm" data-go-floor="f7">前往 7 樓教室</button>
-      <button type="button" class="btn ghost sm" id="cpGrow">複製關鍵字「成長」</button>
-      <a class="btn primary sm" href="${IG}" target="_blank" rel="noopener">前往 IG 私訊 @wuz200200</a>
+      <button type="button" class="btn ghost sm" id="cpGrow">複製 LINE ID</button>
+      ${lineAddBtn()}
     </div></div>`;
 }
 function bindAcademyCta(el) {
   const cp = el.querySelector('#cpGrow');
-  cp && (cp.onclick = async ev => { ev.stopPropagation(); try { await navigator.clipboard.writeText('成長'); toast('已複製「成長」'); } catch { toast('請手動輸入「成長」'); } });
+  cp && (cp.onclick = async ev => { ev.stopPropagation(); try { await navigator.clipboard.writeText(LINE_ID); toast('已複製 LINE ID'); } catch { toast('請手動輸入 ' + LINE_ID); } });
   el.querySelectorAll('[data-go-floor]').forEach(b => b.onclick = ev => { ev.stopPropagation(); const to = b.dataset.goFloor; closePanel(); if (floorOpen(to)) ride(to); else toast('這層樓還沒解鎖'); });
 }
 function renderLecturer(el, n) {
@@ -1077,7 +1079,7 @@ const RENDER = {
       <div class="card"><b>範例圖</b>
         <div class="ex-ph"><span>即將公開</span></div>
         <p class="note">陸續更新中。</p></div>
-      <button class="btn primary" id="toCta5" style="width:100%">去登記・私訊『成長』</button>`;
+      <button class="btn primary" id="toCta5" style="width:100%">去登記・加入 LINE</button>`;
     el.querySelector('#toCta5').onclick = () => world ? world.go('cta5') : openPanel('cta5');
   },
   shop(el) { renderShop(el); },
@@ -1098,7 +1100,7 @@ const RENDER = {
     el.innerHTML = `<p style="margin:0">每天收盤後更新的多空戰報，點下去直接看。</p>
       <div class="screens" style="margin-top:12px">${a(PUBLIC_REPORTS.tw, '台股每日多空戰報', '每天收盤後更新', 'tw')}${a(PUBLIC_REPORTS.us, '美股（納斯達克）每日多空戰報', '美股收盤後更新', 'us')}
       <div class="screen lockedrow"><div class="row between"><h3>A股戰報</h3><span class="tag">68樓自己人專區</span></div><div class="note">搭電梯，輸入暗號上樓查看</div></div></div>
-      <div class="card row between cta"><span>想加入自己人？私訊『成長』</span><a class="btn primary sm" href="${IG}" target="_blank" rel="noopener">前往 IG</a></div>`;
+      ${lineCtaHTML('想加入自己人？加入 LINE')}`;
   },
   honor(el) { el.innerHTML = ladderHTML(); },
   cta(el) { guideHTML(el, true); },
@@ -1114,7 +1116,7 @@ const RENDER = {
         <label class="note" for="pass">68 樓・請輸入自己人暗號</label>
         <div class="row" style="margin-top:6px"><input id="pass" class="passin ${err ? 'wrong' : ''}" type="password" autocapitalize="characters" spellcheck="false" placeholder="暗號"><button class="btn primary" type="submit">上樓</button></div>
         <div class="err">${err ? '暗號有誤，請向掌門確認' : ''}</div>
-        <p class="note" style="margin:6px 0 0">還不是自己人？私訊「成長」申請開通。</p></form>
+        <p class="note" style="margin:6px 0 0">還不是自己人？加入 LINE（ID wuzakakak）申請開通。</p></form>
       ${insiderLinks ? '<button class="btn ghost sm" id="lockout" style="width:100%">登出自己人（這台裝置）</button>' : ''}`;
     el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => {
       const f = b.dataset.go;
@@ -1132,7 +1134,7 @@ const RENDER = {
   },
   /* ----- 68 樓・自己人專區 ----- */
   boss(el) {
-    el.innerHTML = `<div class="card" style="text-align:center"><div class="ph-portrait"></div><b style="font-size:1.1rem">董事長 LEO易凡</b><div class="note">掌門辦公室</div></div>
+    el.innerHTML = `<div class="card" style="text-align:center"><img class="nm-portrait" src="${LEO_HEAD}" width="84" height="84" alt="董事長 LEO易凡 上課中"><b style="font-size:1.1rem">董事長 LEO易凡</b><div class="note">掌門辦公室</div></div>
       <h3 style="margin:14px 0 4px;font-size:1rem">本週掌門的話</h3>${comingCard('即將公開')}`;
   },
   hall(el) {
@@ -1144,7 +1146,7 @@ const RENDER = {
   },
   course(el) {
     el.innerHTML = `<div class="card"><div class="row between"><b>STAR史塔財商教室入口</b><span class="tag">68 樓</span></div>
-      <p style="margin:8px 0 0">這裡從「傳功課程」改成 STAR史塔財商教室的入口。完整課程介紹在 7 樓教室，報名仍走全樓統一的私訊「成長」，不另開新網址。</p></div>
+      <p style="margin:8px 0 0">這裡從「傳功課程」改成 STAR史塔財商教室的入口。完整課程介紹在 7 樓教室，報名仍走全樓統一的加入 LINE（ID wuzakakak），不另開新網址。</p></div>
       ${academyCtaHTML()}
       <p class="note">內容非投資建議。</p>`;
     bindAcademyCta(el);
@@ -1154,7 +1156,7 @@ const RENDER = {
   academy(el) {
     el.innerHTML = `<div class="card"><div class="row between"><b>STAR史塔財商教室</b><span class="tag">7 樓</span></div>
       <p style="margin:10px 0 0">這裡是 7 樓的 STAR史塔財商教室。牆上會看到董事長 LEO易凡 的心法：先結構、再進場，先停損、再談目標。</p>
-      <p class="note" style="margin:10px 0 0">教室提供課程介紹與報名入口。報名方式與全樓「私訊『成長』」相同。</p></div>
+      <p class="note" style="margin:10px 0 0">教室提供課程介紹與報名入口。報名方式與全樓相同：加入 LINE（ID wuzakakak）。</p></div>
       ${academyCtaHTML()}
       <p class="note">內容非投資建議。薪水是站內虛擬點數，不能換現金。</p>`;
     bindAcademyCta(el);
@@ -1197,7 +1199,14 @@ const RENDER = {
   RENDER.lift = function (el, ...a) { _lift.call(this, el, ...a); mountSnippet(el, 'elevator-ads'); };
   RENDER.boss = function (el, ...a) { _boss.call(this, el, ...a); mountSnippet(el, 'chairman-office'); };
   RENDER.desk = function (el, ...a) { _desk.call(this, el, ...a); const A = S.academy || {}; el.insertAdjacentHTML('beforeend', `<h3 style="margin:14px 0 6px;font-size:1rem">工位牆</h3>${deskWallHTML({ title: A.title, lit: (A.lit || []).length })}`); };
-  RENDER.ukwall = el => { el.innerHTML = '<p class="note" style="margin:0 0 10px">大樓外牆與一樓看板的輪播，點封面會開 @wuz200200 的 IG／Threads。封面尚未提供。</p>'; mountSnippet(el, 'wall-ads'); }; }
+  RENDER.ukwall = el => { el.innerHTML = `<section class="uk-root uk-wall nm-wall" aria-label="外牆影音看板">
+      <div class="nm-line nm-line--hero card">
+        <img class="nm-line__av nm-line__av--lg" src="${LEO_HEAD}" width="120" height="120" alt="董事長 LEO易凡 上課中">
+        <div class="nm-line__txt"><p class="note" style="margin:0">STAR史塔金融大樓・外牆</p>
+          <b>加入 LINE</b>
+          <p class="note" style="margin:6px 0 0">LINE ID ${LINE_ID}　董事長 LEO易凡。點大頭或按鈕就能加入。</p></div>
+        ${lineAddBtn('btn primary')}</div>
+    </section>`; }; }
 var deskWallKey = ''; // var：refreshHud 可能在這行之前就被呼叫
 function syncDeskWall() {
   const A = S.academy || {}, st = { title: A.title || '實習牛馬', lit: (A.lit || []).length }, k = st.title + '|' + st.lit;
@@ -1240,11 +1249,12 @@ function guideHTML(el, isCta) {
   const master = ms.find(x => x.id === 'master');
   const masterSt = master.state === 0 ? `再打卡 ${master.short} 天可申請（累積 ${MASTER_DAYS} 天）` : master.state === 1 ? `累積 ${MASTER_DAYS} 天已達成，可以申請` : master.state === 2 ? `有效・到期日 ${master.exp.replace(/-/g, '/')}` : master.state === 4 ? '可重新啟動' : '已到期';
   const modelNote = m => m.state === 0 ? `再打卡 ${m.short} 天可領（累積 ${m.need} 天）`
-    : m.state === 1 ? (m.need ? `累積 ${m.need} 天已達成，私訊「成長」後登記` : m.how)
+    : m.state === 1 ? (m.need ? `累積 ${m.need} 天已達成，加入 LINE 後登記` : m.how)
     : m.state === 4 ? '已暫停，近 7 天已達標，可重新啟動'
     : `領取日 ${m.claim.replace(/-/g, '/')}${m.renew ? `・已續期 ${m.renew} 次` : ''}`;
-  el.innerHTML = `<div class="card" style="text-align:center"><div class="note">第一天見面禮・私訊關鍵字</div><div class="kw">成長</div><div>私訊「成長」進群，就送「美指模型」</div>
-      <div class="row" style="justify-content:center;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn ghost sm" id="cp">複製關鍵字</button><a class="btn primary sm" href="${IG}" target="_blank" rel="noopener">前往 IG 私訊 @wuz200200</a></div></div>
+  el.innerHTML = `<div class="card nm-line" style="text-align:center"><img class="nm-line__av" src="${LEO_HEAD}" width="88" height="88" alt="董事長 LEO易凡 上課中" style="margin:4px auto 8px">
+      <div class="note">第一天見面禮</div><div class="kw">LINE ${LINE_ID}</div><div>加入 LINE，就送「美指模型」</div>
+      <div class="row" style="justify-content:center;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn ghost sm" id="cp">複製 LINE ID</button>${lineAddBtn()}</div></div>
     ${ladderBoardHTML()}
     <div class="card qual"><div class="row between"><b style="font-size:1.05rem">我的資格</b><span class="tag cyan">訪客編號 ${S.vid}</span></div>
       <div class="qgrid"><div><small>累積打卡</small><b>${realDays()} 天</b></div><div><small>連續打卡</small><b>${streakNow()} 天</b></div><div><small>職級</small><b>${RANKS[rankIndex()].name}</b></div><div><small>近 7 天</small><b class="${l7 >= RULE_MIN ? 'ok' : 'warn'}">${l7}/7</b></div></div>
@@ -1263,8 +1273,8 @@ function guideHTML(el, isCta) {
     <div class="card"><div class="row between"><b>備份與還原</b><span class="tag">換機用</span></div>
       <p class="note" style="margin:8px 0 10px">進度只存在這支手機。建議先備份，換手機再還原。</p>
       <button class="btn ghost" id="openBak" style="width:100%">打開備份進度</button></div>
-    ${isCta ? '' : '<p class="note" style="text-align:center">打開 IG 後，私訊輸入「成長」就會收到；申請掌門面試請走官方 LINE。</p>'}`;
-  el.querySelector('#cp').onclick = async () => { try { await navigator.clipboard.writeText('成長'); toast('已複製「成長」'); } catch { toast('請手動輸入「成長」'); } };
+    ${isCta ? '' : '<p class="note" style="text-align:center">加入 LINE（ID wuzakakak）就會收到見面禮；申請掌門面試請走官方 LINE。</p>'}`;
+  el.querySelector('#cp').onclick = async () => { try { await navigator.clipboard.writeText(LINE_ID); toast('已複製 LINE ID'); } catch { toast('請手動輸入 ' + LINE_ID); } };
   const ob = el.querySelector('#openBak'); ob && (ob.onclick = () => openPanel('backup'));
   el.querySelectorAll('[data-claim]').forEach(b => b.onclick = () => { if (blockGmProgress('GM 模式不能登記領取')) return; S.claims[b.dataset.claim] = today(); save(); toast(`已登記領取，${VALID_DAYS} 天內有效`); guideHTML(el, isCta); });
   const q = el.querySelector('#qcode'), cpq = el.querySelector('#cpq'), genq = el.querySelector('#genq');
@@ -1746,9 +1756,9 @@ function maybeGmGate() {
 var careerCtx = { get S() { return S; }, save, addXP, toast, blip, isGM, block: blockGmProgress, esc, today, refreshHud: () => refreshHud(), open: (id, opt) => openPanel(id, opt),
   goZone: id => acGoZone(id), equipped: () => equipped(), setLook: l => applyLook(l), celebrate: () => world && world.celebrate && world.celebrate('checkin'),
   results: () => resultsInfo(), prices: () => pricesInfo(), settled: (d, m) => !!marketResult(d, m), tpe: () => tpeFin(), weekKey: () => weekKey(), weekPts: () => weekPts(),
-  guessStat: () => (S.office && S.office.guessStat) || {}, PUBLIC_REPORTS, IG, lookDraft: null };
+  guessStat: () => (S.office && S.office.guessStat) || {}, PUBLIC_REPORTS, IG: LINE_ADD, LINE_ADD, LINE_ID, LEO_HEAD, lookDraft: null };
 initCareer(careerCtx);
-addEventListener('niuma-ad', () => openPanel('ukwall')); // 點 3D 廣告屏 → 外牆影音看板（連到 IG @wuz200200）
+addEventListener('niuma-ad', () => openPanel('ukwall')); // 點 3D 廣告屏 → 外牆影音看板（加入 LINE wuzakakak）
 initFin({ get S() { return S; }, save, addXP, toast, blip, isGM, block: blockGmProgress, esc, refreshHud, PUBLIC_REPORTS,
   rankName: () => RANKS[rankIndex()].name, insider: () => insiderLinks });
 async function acGoZone(id) {
