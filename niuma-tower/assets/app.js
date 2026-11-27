@@ -3,9 +3,13 @@ import { applyBrand, STAR_LOGO_UI, TOWER_NAME, EVENT_NAME, isCyber } from './bra
 import { encodeBackup, decodeBackup, applySnapshot, hasProgress, normCheckinDays } from './backup.js';
 import { GM_HASH } from './gm.js';
 import { SHOP, TABS, itemById, itemsInTab, cssHex } from './shop-catalog.js';
-import { FIN_PANELS, FIN_ICON, RENDER_FIN, normFin, finTodos, initFin, finSync, marketResult, resultsInfo, ensureResults, tpe as tpeFin } from './fin.js';
+import { FIN_PANELS, FIN_ICON, RENDER_FIN, normFin, finTodos, initFin, finSync, marketResult, resultsInfo, pricesInfo, ensureResults, tpe as tpeFin } from './fin.js';
 import { DESK_LEVELS, DESK_ITEMS, DESK_DECOR, GUESS_WIN, GUESS_STREAK_STEP, GUESS_STREAK_CAP, WEEK_PT, normOffice, nextDesk, deskOf, itemUnlocked, guessPick, tipFor, decorOf, ownsDecor } from './office.js';
 import { LAB_RENDER, LAB_ICON, initLab, labTodos } from './lab.js';
+import { ACAD_RENDER, initAcademy, renderLecturerQuiz, shouldTour, startTour, acadTodos, acad } from './academy.js';
+import { normAcademy } from './academy-logic.js';
+import { CAREER_PANELS, CAREER_ICON, RENDER_CAREER, normCareer, initCareer, careerTodos, lookColor } from './career.js';
+import { mountSnippet, deskWallHTML } from './uikit.js';
 import { NPCS, npcsOn, questNpcsOn, questById, normQuests, pruneQuests, evalQuest, markClaimed, rewardText } from './quests.js';
 export { SHOP };
 
@@ -51,9 +55,10 @@ export const FLOORS = {
   f5: { name: '5 樓・目標值研究室', num: 5, need: TARGET_DAYS },
   f6: { name: '6 樓・交易實驗室', num: 6, need: 0 },
   f7: { name: '7 樓・個人交易室', num: 7, need: 0 },
+  f8: { name: '8 樓・學院展覽館', num: 8, need: 0 }, // 場景與面板寫全名「STAR史塔財商學院展覽館」；HUD 用短名避免擠出畫面
   insider: { name: '68 樓・自己人專區', num: 68, pass: true },
 };
-const FLOOR_ORDER = ['insider', 'f7', 'f6', 'f5', 'f4', 'f3', 'f2', 'lobby'];
+const FLOOR_ORDER = ['insider', 'f8', 'f7', 'f6', 'f5', 'f4', 'f3', 'f2', 'lobby'];
 export const ZONES = [
   { id: 'checkin', floor: 'lobby', slot: 'A', name: '打卡櫃台', kicker: '每日上班', gold: true },
   { id: 'guide', floor: 'lobby', slot: 'B', name: '接引櫃台', kicker: '我的資格・新人報到', gold: true },
@@ -79,6 +84,16 @@ export const ZONES = [
   { id: 'labwiki', floor: 'f6', slot: 'C', name: '概念圖鑑', kicker: '結構・流動性・二次突破' },
   { id: 'desk', floor: 'f7', slot: 'J', name: '我的工位', kicker: '用紙箱一路升到頂樓交易室', gold: true },
   { id: 'academy', floor: 'f7', slot: 'G', name: 'STAR史塔財商教室', kicker: 'STAR史塔財商', gold: true },
+  { id: 'ac_gate', floor: 'f8', slot: 'F', flatSlot: 'E', name: '入口大廳', kicker: '3 題程度測驗・學院導覽', gold: true },
+  { id: 'ac_intro', floor: 'f8', slot: 'A', name: '入門觀念館', kicker: '認識工具・學會算錢・看懂風險', gold: true },
+  { id: 'ac_ta', floor: 'f8', slot: 'B', name: '技術分析館', kicker: 'K 線・均線・成交量・市場結構', gold: true },
+  { id: 'ac_mkt', floor: 'f8', slot: 'D', name: '市場觀察館', kicker: '台股・美股知識卡' },
+  { id: 'ac_book', floor: 'f8', slot: 'C', name: '知識卡圖鑑', kicker: '收集・徽章・稱號' },
+  { id: 'ac_star', floor: 'f8', slot: 'G', name: 'STAR史塔財商學院展位', kicker: '1、5共振・內容準備中', gold: true },
+  { id: 'acwrong', floor: '_ui', slot: 'A', name: '錯題本', kicker: '講師馬隔天重考' },
+  { id: 'ukwall', floor: '_ui', slot: 'A', name: '外牆影音看板', kicker: 'IG 限動・Threads @wuz200200' },
+  { id: 'acshare', floor: '_ui', slot: 'A', name: '分享成績圖', kicker: '9:16・非投資建議' },
+  { id: 'acmenu', floor: '_ui', slot: 'A', name: '選單', kicker: 'STAR史塔財商學院' },
   { id: 'boss', floor: 'insider', slot: 'A', name: '掌門辦公室', kicker: '自己人專區', gold: true },
   { id: 'hall', floor: 'insider', slot: 'B', name: '執事堂', kicker: '公告與排程' },
   { id: 'library', floor: 'insider', slot: 'C', name: '藏經閣講義', kicker: '三卷九章', gold: true },
@@ -126,7 +141,7 @@ const QUOTES = [
   '策略不等於執行，重點是做到',
   '大道至簡，盈虧同源',
 ];
-const MARKETS = [{ id: 'tw', name: '台股' }, { id: 'us', name: '美股' }];
+const MARKETS = [{ id: 'tw', name: '台股加權指數（日班）' }, { id: 'us', name: '美股 ^IXIC・夜班加班費' }];
 const MOODS = ['平靜', '開心', '焦慮', '後悔', '充實'];
 
 ICON.directory = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h8M8 19h4" stroke="#3ef2ff"/></svg>';
@@ -139,10 +154,12 @@ ICON.cta5 = ICON.guide;
 ICON.shop = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 8 5 21h14L18 8M4 8h16"/><path d="M9 8a3 3 0 0 1 6 0" stroke="#ffc85a"/><path d="M9 13h3"/></svg>';
 ICON.backup = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5" stroke="#3ef2ff"/></svg>';
 Object.keys(FLOORS).forEach(f => ICON['lift_' + f] = ICON.elevator);
-Object.assign(ICON, FIN_ICON, LAB_ICON);
+Object.assign(ICON, FIN_ICON, LAB_ICON, CAREER_ICON);
 ICON.quests = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M17 4v6M17 13v.5" stroke="#ffc85a" stroke-width="2.2"/></svg>';
 ICON.desk = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 14h16v6H4z"/><path d="M8 14V8h8v6" stroke="#ffc85a"/><path d="M7 18h2M15 18h2"/></svg>';
 ICON.academy = ICON.course;
+ICON.acmenu = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/><circle cx="19" cy="17" r="2" stroke="#ffc85a"/></svg>'; ICON.acwrong = ICON.review; ICON.acshare = ICON.reports; ICON.ukwall = ICON.reports;
+ICON.ac_gate = ICON.course; ICON.ac_intro = ICON.library; ICON.ac_ta = ICON.kline; ICON.ac_mkt = ICON.reports; ICON.ac_book = ICON.heroes; ICON.ac_star = ICON.boss;
 
 
 
@@ -175,7 +192,12 @@ const shopState = () => {
   return S.shop;
 };
 const equipped = () => shopView().eq;
-function wearAll() { world && world.setOutfit && world.setOutfit(equipped()); paintAvatars(); }
+function wearAll() { world && world.setOutfit && world.setOutfit(equipped()); applyLook(); paintAvatars(); }
+// 捏自己的牛馬：髮型、預設領帶、工牌顏色（GM 只預覽、不存檔）
+function applyLook(l) {
+  const c = normCareer(S.career), L = l || (careerCtx && careerCtx.lookDraft) || c.look;
+  world && world.setLook && world.setLook({ hair: L.hair, tie: lookColor('tie', L.tie), badge: lookColor('badge', L.badge) });
+}
 function paintAvatars() { document.querySelectorAll('[data-avatar]').forEach(a => { a.innerHTML = avatarSVG(equipped()); }); }
 
 
@@ -227,7 +249,7 @@ const dstr = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate()
 const today = () => dstr(new Date());
 const yesterday = () => { const d = new Date(); d.setDate(d.getDate() - 1); return dstr(d); };
 const hash = s => { let h = 2166136261; for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return h >>> 0; };
-const fresh = () => ({ coins: 0, xp: 0, streak: 0, last: null, days: [], guesses: {}, fortune: null, reviews: {}, pref: {}, week: {}, claims: {}, vid: null, games: {}, shop: { owned: [], eq: {} }, bak: { seen: false, last: null, snooze: null, remindDays: 0 }, quests: normQuests(), fin: normFin(), office: normOffice() });
+const fresh = () => ({ coins: 0, xp: 0, streak: 0, last: null, days: [], guesses: {}, fortune: null, reviews: {}, pref: {}, week: {}, claims: {}, vid: null, games: {}, shop: { owned: [], eq: {} }, bak: { seen: false, last: null, snooze: null, remindDays: 0 }, quests: normQuests(), fin: normFin(), office: normOffice(), academy: normAcademy(), career: normCareer() });
 let S; try { S = Object.assign(fresh(), JSON.parse(localStorage.getItem(KEY) || '{}')); } catch { S = fresh(); }
 const save = () => { if (isGM()) return; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
 if (!S.vid) { S.vid = String(100000 + Math.floor(Math.random() * 900000)); save(); }
@@ -235,6 +257,8 @@ const fixQuests = () => { S.quests = pruneQuests(normQuests(S.quests), today());
 fixQuests();
 S.fin = normFin(S.fin);
 S.office = normOffice(S.office);
+S.academy = normAcademy(S.academy);
+S.career = normCareer(S.career);
 {
   const before = JSON.stringify(S.days || []);
   normCheckinDays(S);
@@ -246,6 +270,24 @@ const effDays = () => Math.max(realDays(), QS.has('days') ? (+QS.get('days') || 
 const floorOpen = f => isGM() ? true : (FLOORS[f].pass ? !!insiderLinks : effDays() >= FLOORS[f].need);
 const weekKey = () => { const d = new Date(); const t = new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7)); return dstr(t); };
 const weekPts = () => S.week[weekKey()] || 0;
+// 猜盤桌：最近 7 天還沒開獎、但收盤資料已到的（美股夜班要隔天才有資料）
+function guessReady() {
+  const out = [];
+  Object.keys(S.guesses || {}).sort().slice(-7).forEach(d => MARKETS.forEach(m => {
+    const rec = S.guesses[d][m.id], pick = guessPick(rec);
+    if (pick && !(rec && typeof rec === 'object' && rec.settled) && marketResult(d, m.id)) out.push([d, m.id]);
+  }));
+  return out;
+}
+function pendingHTML() {
+  const rows = [];
+  Object.keys(S.guesses || {}).sort().reverse().filter(d => d !== today()).slice(0, 5).forEach(d => MARKETS.forEach(m => {
+    const rec = S.guesses[d][m.id], pick = guessPick(rec); if (!pick) return;
+    const st = rec && typeof rec === 'object' && rec.settled ? (rec.win ? '<b style="color:var(--gold)">猜中</b>' : '<span class="note">沒猜中</span>') : marketResult(d, m.id) ? '<span class="tag">可開獎</span>' : '<span class="tag">待開獎</span>';
+    rows.push(`<li><b>${d.slice(5).replace('-', '/')}</b><span>${m.id === 'us' ? '美股夜班' : '台股'}・猜${pick === 'up' ? '收紅' : '收黑'}</span><em class="st">${st}</em></li>`);
+  }));
+  return rows.length ? `<h3 style="margin:12px 0 4px;font-size:1rem">前幾天的猜盤</h3><ol class="floors" id="gPast">${rows.join('')}</ol>` : '';
+}
 function boardRows() {
   return [{ name: '你', pts: weekPts(), me: true, rank: 1 }];
 }
@@ -282,6 +324,8 @@ const todos = () => ({
   quests: questReadyCount(floor) > 0,
   ...finTodos(floor),
   ...labTodos(floor),
+  ...acadTodos(),
+  ...careerTodos(floor),
 });
 
 /* ---------- 每層樓 NPC 任務 ---------- */
@@ -355,13 +399,14 @@ function coinBurst(from) {
   }
 }
 function buildDock() {
-  $('#dockTrack').innerHTML = `<button data-zone="quests">${ICON.quests}<span>任務</span></button>` + FIN_PANELS.filter(p => p.floor === floor).map(p => `<button data-zone="${p.id}" data-direct="1">${ICON[p.id]}<span>${p.name}</span></button>`).join('') + zonesOn(floor).map(z => `<button data-zone="${z.id}">${ICON[z.id]}<span>${z.name}</span></button>`).join('');
+  $('#dockTrack').innerHTML = `<button data-zone="acmenu" data-direct="1">${ICON.acmenu}<span>選單</span></button><button data-zone="quests">${ICON.quests}<span>任務</span></button>` + FIN_PANELS.concat(CAREER_PANELS).filter(p => p.floor === floor).map(p => `<button data-zone="${p.id}" data-direct="1">${ICON[p.id]}<span>${p.name}</span></button>`).join('') + zonesOn(floor).map(z => `<button data-zone="${z.id}">${ICON[z.id]}<span>${z.name}</span></button>`).join('');
   $('#dockTrack').querySelectorAll('button').forEach(b => b.onclick = () => (b.dataset.zone === 'quests' || b.dataset.direct) ? openPanel(b.dataset.zone) : world && world.go(b.dataset.zone));
   $('#hudFloor').textContent = FLOORS[floor].name;
   document.body.dataset.floor = floor;
   refreshHud();
 }
 function refreshHud() {
+  syncDeskWall();
   $('#hudCoins').textContent = isGM() ? '∞' : S.coins.toLocaleString('zh-TW');
   $('#hudRank').textContent = RANKS[rankIndex()].name;
   $('#hudStreak').textContent = streakNow();
@@ -515,7 +560,7 @@ export function openPanel(id, opt) {
   }
   const npcFocus = typeof id === 'string' && id.startsWith('npc:') ? NPCS.find(n => n.id === id.slice(4)) : null;
   questFocus = npcFocus ? npcFocus.id : null;
-  const z = (npcFocus ? { id, type: 'quests', name: npcFocus.name, kicker: FLOORS[npcFocus.floor].name + '・在這裡完成' } : null) || ZONES.find(z => z.id === id) || (id === 'quests' ? { id, name: 'NPC 任務', kicker: FLOORS[floor].name } : null) || FIN_PANELS.find(p => p.id === id);
+  const z = (npcFocus ? { id, type: 'quests', name: npcFocus.name, kicker: FLOORS[npcFocus.floor].name + '・在這裡完成' } : null) || ZONES.find(z => z.id === id) || (id === 'quests' ? { id, name: 'NPC 任務', kicker: FLOORS[floor].name } : null) || FIN_PANELS.find(p => p.id === id) || CAREER_PANELS.find(p => p.id === id);
   if (!z) return;
   $('#panelKicker').textContent = z.kicker; $('#panelTitle').textContent = z.name;
   RENDER[z.type || id]($('#panelBody'), opt);
@@ -686,6 +731,7 @@ function renderQuests(el, opt) {
   const order = FLOOR_ORDER.slice().reverse();
   if (!gmv || !questTab || !FLOORS[questTab]) questTab = floor;
   const focusN = questFocus ? NPCS.find(n => n.id === questFocus) : null;
+  if (focusN && focusN.talk === 'quiz') { renderLecturerQuiz(el, focusN); return; }
   if (focusN && focusN.talk && !focusN.quest) { renderLecturer(el, focusN); return; }
   if (focusN && !gmv) maybeClaimFocused({ refreshCard: false, force: true });
   const f = focusN ? focusN.floor : questTab, c = questCtx(), list = focusN ? (focusN.quest ? [focusN] : []) : questNpcsOn(f);
@@ -720,6 +766,7 @@ function renderShop(el) {
       it.series === 'kline' ? `<em class="shop-badge kline">K線系列</em>` : '',
       it.series === 'yageo' ? `<em class="shop-badge yageo">國巨 2327</em>` : '',
       it.series === 'tsmc' ? `<em class="shop-badge tsmc">漲停 2330</em>` : '',
+      it.series === 'liuguang' ? `<em class="shop-badge kline">鎏光敘物</em>` : '',
     ].join('');
     const sw = cssHex(it.look && it.look.color);
     const preview = it.series === 'yageo' ? `<div class="shop-preview yageo"><strong>國巨 2327</strong><em>跌停</em></div>`
@@ -818,6 +865,7 @@ function doRestore(data, say) {
   say('進度已還原', true); toast('進度已還原');
 }
 function maybeRemind() {
+  if (isGM()) { const t = document.getElementById('bakTip'); if (t) t.hidden = true; return; } // GM 不寫存檔，也不跳「先備份」提示（會蓋住學院面板）
   const b = S.bak || (S.bak = { seen: false, last: null, snooze: null, remindDays: 0 });
   if (b.snooze === today()) return;
   let show = false;
@@ -965,20 +1013,16 @@ const RENDER = {
       if (!pick) reveal = '選一邊，先留下今天的看法。台北時間台股 14:00、美股等收盤資料出來後，依實際收盤開獎。';
       else if (rec && rec.settled) reveal = rec.win ? `已開獎：你猜「${pick === 'up' ? '看漲' : '看跌'}」，實際「${rec.settled === 'up' ? '收紅' : rec.settled === 'down' ? '收綠' : '平盤'}」，猜中了。` : `已開獎：你猜「${pick === 'up' ? '看漲' : '看跌'}」，實際「${rec.settled === 'up' ? '收紅' : rec.settled === 'down' ? '收綠' : '平盤'}」，沒猜中。平盤不算猜中。`;
       else if (r) reveal = `已選「${pick === 'up' ? '看漲' : '看跌'}」，收盤結果已到，可以開獎。`;
-      else reveal = `已選「${pick === 'up' ? '看漲' : '看跌'}」，等真實收盤資料。`;
+      else reveal = `已選「${pick === 'up' ? '看漲' : '看跌'}」・<b class="pending">待開獎</b>（${m.id === 'us' ? '美股收盤約台北隔天清晨，資料出來就能領夜班加班費' : '台北 14:00 後依收盤開獎'}）。`;
       return `<div class="card mkt"><h3>${m.name}</h3>
         <button class="btn up ${pick === 'up' ? 'sel' : ''}" data-m="${m.id}" data-v="up" ${pick ? 'disabled' : ''}>看漲</button>
         <button class="btn down ${pick === 'down' ? 'sel' : ''}" data-m="${m.id}" data-v="down" ${pick ? 'disabled' : ''}>看跌</button>
         <div class="reveal">${reveal}</div></div>`;
     }).join('');
-    const ready = MARKETS.filter(m => {
-      const rec = raw[m.id];
-      const pick = guessPick(rec);
-      return pick && !(rec && rec.settled) && marketResult(day, m.id);
-    });
+    const ready = guessReady();
     const tip = tipFor(day);
     const st = (S.office.guessStat || {});
-    el.innerHTML = `<p style="margin:0">晨會開始！猜猜今天台股、美股收盤是漲還是跌。只猜方向，不給點位，純粹練盤感。開獎用與「市場溫度計」同一套真實收盤資料，不編造數字。</p>${rows}
+    el.innerHTML = `<p style="margin:0">晨會開始！猜猜今天台股加權指數、美股那斯達克（^IXIC）收紅還是收黑。美股是夜班，猜中算「夜班加班費」。只猜方向，不給點位，純粹練盤感。開獎用與「市場溫度計」同一套真實收盤資料，沒有資料就顯示「待開獎」，不編造數字。</p>${rows}${pendingHTML()}
       ${ready.length ? `<button class="btn primary" id="gClaim" style="width:100%">開獎・領取薪水（${ready.length} 筆）</button>` : ''}
       <div class="card"><b>STAR史塔財商心法</b><p style="margin:8px 0 0">「${tip}」</p><p class="note" style="margin:8px 0 0">— 董事長 LEO易凡</p></div>
       <div class="card row between"><span>你本週積分</span><b class="stat" style="font-size:1.4rem">${weekPts()}</b></div>
@@ -993,17 +1037,13 @@ const RENDER = {
     const cb = el.querySelector('#gClaim');
     cb && (cb.onclick = () => {
       if (blockGmProgress('GM 模式不能開獎領薪水')) return;
-      const day2 = today();
-      const g = S.guesses[day2] || (S.guesses[day2] = {});
-      let wins = 0, n = 0, coins = 0;
-      MARKETS.forEach(m => {
-        const pick = guessPick(g[m.id]);
-        const rec = g[m.id] && typeof g[m.id] === 'object' ? g[m.id] : null;
-        const r = marketResult(day2, m.id);
-        if (!pick || !r || (rec && rec.settled)) return;
+      let wins = 0, n = 0, coins = 0, night = 0;
+      guessReady().forEach(([d, mid]) => {
+        const g = S.guesses[d], pick = guessPick(g[mid]), r = marketResult(d, mid);
+        if (!pick || !r) return;
         const win = pick === r.dir;
-        g[m.id] = { pick, settled: r.dir, win, paid: 0 };
-        n++; if (win) wins++;
+        g[mid] = { pick, settled: r.dir, win, paid: win ? GUESS_WIN : 0 };
+        n++; if (win) { wins++; if (mid === 'us') night++; }
       });
       if (!n) { toast('沒有可以開獎的盤'); return; }
       S.office = normOffice(S.office);
@@ -1014,12 +1054,13 @@ const RENDER = {
       coins = wins * GUESS_WIN + bonus;
       if (wins) S.week[weekKey()] = (S.week[weekKey()] || 0) + wins * WEEK_PT;
       addXP(0, coins, cb);
-      toast(wins ? `開獎完成！猜中 ${wins} 筆，薪水 +${coins}${bonus ? `（含連對加成 +${bonus}）` : ''}` : '開獎完成，這次沒猜中。平盤也不算猜中。');
+      toast(wins ? `開獎完成！猜中 ${wins} 筆，薪水 +${coins}${night ? `（含夜班加班費 +${night * GUESS_WIN}）` : ''}${bonus ? `（含連對加成 +${bonus}）` : ''}` : '開獎完成，這次沒猜中。平盤也不算猜中。');
       refreshHud();
       RENDER.guess(el);
     });
   },
-  leader(el) {
+  leader(el) { return RENDER_CAREER.leaderLocal(el); },
+  leaderOld(el) {
     el.innerHTML = `<div class="card row between"><span>你本週猜盤積分</span><b class="stat" style="font-size:1.5rem">${weekPts()} 分</b></div>
       <div class="card"><div class="row between"><span>連對天數</span><b>${(S.office.guessStat || {}).streak || 0} 天</b></div>
         <div class="row between" style="margin-top:8px"><span>最佳連對</span><b>${(S.office.guessStat || {}).best || 0} 天</b></div></div>
@@ -1042,6 +1083,7 @@ const RENDER = {
   shop(el) { renderShop(el); },
   quests(el, opt) { renderQuests(el, opt); },
   ...RENDER_FIN,
+  ...RENDER_CAREER,
   ...LAB_RENDER,
   backup(el) { renderBackup(el); },
   kline(el) { klineGame(el); },
@@ -1108,6 +1150,7 @@ const RENDER = {
     bindAcademyCta(el);
   },
   desk(el) { renderDesk(el); },
+  ...ACAD_RENDER,
   academy(el) {
     el.innerHTML = `<div class="card"><div class="row between"><b>STAR史塔財商教室</b><span class="tag">7 樓</span></div>
       <p style="margin:10px 0 0">這裡是 7 樓的 STAR史塔財商教室。牆上會看到董事長 LEO易凡 的心法：先結構、再進場，先停損、再談目標。</p>
@@ -1149,6 +1192,18 @@ const RENDER = {
     };
   },
 };
+// ---- UI BOT ui-kit 加件（只加不改：原本的電梯、掌門辦公室、工位內容保留，片段接在後面） ----
+{ const _lift = RENDER.lift, _boss = RENDER.boss, _desk = RENDER.desk;
+  RENDER.lift = function (el, ...a) { _lift.call(this, el, ...a); mountSnippet(el, 'elevator-ads'); };
+  RENDER.boss = function (el, ...a) { _boss.call(this, el, ...a); mountSnippet(el, 'chairman-office'); };
+  RENDER.desk = function (el, ...a) { _desk.call(this, el, ...a); const A = S.academy || {}; el.insertAdjacentHTML('beforeend', `<h3 style="margin:14px 0 6px;font-size:1rem">工位牆</h3>${deskWallHTML({ title: A.title, lit: (A.lit || []).length })}`); };
+  RENDER.ukwall = el => { el.innerHTML = '<p class="note" style="margin:0 0 10px">大樓外牆與一樓看板的輪播，點封面會開 @wuz200200 的 IG／Threads。封面尚未提供。</p>'; mountSnippet(el, 'wall-ads'); }; }
+var deskWallKey = ''; // var：refreshHud 可能在這行之前就被呼叫
+function syncDeskWall() {
+  const A = S.academy || {}, st = { title: A.title || '實習牛馬', lit: (A.lit || []).length }, k = st.title + '|' + st.lit;
+  let w = null; try { w = world; } catch { return; } // world 還沒宣告（初始化中）就先跳過
+  if (k === deskWallKey || !w || !w.setDeskWall) return; deskWallKey = k; w.setDeskWall(st);
+}
 function slipHTML(i) { return `<div class="no">第 ${i + 1}／${QUOTES.length} 籤・今日心法</div><p>${QUOTES[i]}</p><small>— 董事長 LEO易凡</small>`; }
 
 /* ---------- 樓層清單 ---------- */
@@ -1544,6 +1599,7 @@ let ready;
 async function switchTo(kind, inLobby) {
   closePanel();
   if (world) { world.dispose(); world = null; }
+  deskWallKey = ""; // 新場景要重畫工位牆
   try { world = await make(kind); }
   catch (e) { console.warn('立體版啟動失敗，改用平面版', e); world = createFlat(); if (kind !== 'flat') toast('這台裝置跑不動立體版，已切換為省電平面版'); }
   setModeLabel(); buildDock();
@@ -1555,7 +1611,8 @@ function showLobbyUI() {
   if (joy) joy.hidden = !(world && world.kind === '3d');
   document.body.classList.toggle('play3d', !!(world && world.kind === '3d'));
   wearAll();
-  setTimeout(maybeRemind, 700);
+  if (shouldTour(hasProgress(S))) setTimeout(() => startTour(false, () => setTimeout(maybeRemind, 400)), 700);
+  else setTimeout(maybeRemind, 700);
 }
 function bindJoy() {
   const root = document.getElementById('joy'); if (!root) return;
@@ -1636,6 +1693,9 @@ function logoutGm() {
   try { S = Object.assign(fresh(), JSON.parse(localStorage.getItem(KEY) || '{}')); } catch {}
   fixQuests();
   S.fin = normFin(S.fin);
+  S.office = normOffice(S.office);
+  S.academy = normAcademy(S.academy);
+  S.career = normCareer(S.career);
   syncGmUi();
   toast('已離開 GM 模式');
   if (here !== 'lobby' && !floorOpen(here)) {
@@ -1683,9 +1743,27 @@ function maybeGmGate() {
   if (q.get('gm') === '1' && !isGM()) showGmPrompt();
 }
 
+var careerCtx = { get S() { return S; }, save, addXP, toast, blip, isGM, block: blockGmProgress, esc, today, refreshHud: () => refreshHud(), open: (id, opt) => openPanel(id, opt),
+  goZone: id => acGoZone(id), equipped: () => equipped(), setLook: l => applyLook(l), celebrate: () => world && world.celebrate && world.celebrate('checkin'),
+  results: () => resultsInfo(), prices: () => pricesInfo(), settled: (d, m) => !!marketResult(d, m), tpe: () => tpeFin(), weekKey: () => weekKey(), weekPts: () => weekPts(),
+  guessStat: () => (S.office && S.office.guessStat) || {}, PUBLIC_REPORTS, IG, lookDraft: null };
+initCareer(careerCtx);
+addEventListener('niuma-ad', () => openPanel('ukwall')); // 點 3D 廣告屏 → 外牆影音看板（連到 IG @wuz200200）
 initFin({ get S() { return S; }, save, addXP, toast, blip, isGM, block: blockGmProgress, esc, refreshHud, PUBLIC_REPORTS,
   rankName: () => RANKS[rankIndex()].name, insider: () => insiderLinks });
+async function acGoZone(id) {
+  const z = ZONES.find(x => x.id === id); if (!z) return;
+  if (z.floor !== floor && z.floor !== '_ui') {
+    if (!floorOpen(z.floor)) { toast('這層樓還沒解鎖'); return; }
+    closePanel(); await ride(z.floor);
+  }
+  openPanel(id);
+}
+initAcademy({ get S() { return S; }, save, addXP, toast, blip, isGM, today, refreshHud: () => refreshHud(), open: (id, opt) => openPanel(id, opt), close: closePanel,
+  goZone: acGoZone, goNpc: id => goToQuestNpc(id), rideTo: f => { if (floor === f) return; if (!floorOpen(f)) { toast('這層樓還沒解鎖'); return; } ride(f); },
+  streak: () => streakNow(), monthDays: () => { const m = today().slice(0, 7); return new Set((S.days || []).filter(d => d.startsWith(m))).size; },
+  ctaHTML: () => academyCtaHTML(), bindCta: el => bindAcademyCta(el), avatarSVG: () => avatarSVG(equipped()) });
 initLab({ get S() { return S; }, save, addXP, toast, blip, isGM, questLog, today, refreshHud, open: (id, opt) => openPanel(id, opt) });
-window.__niuma = { get world() { return world; }, get floor() { return floor; }, openPanel, closePanel, ride, goToQuestNpc, maybeClaimFocused, questLog, get ready() { return ready; }, SHOP, encodeBackup, decodeBackup, applySnapshot, maybeRemind, get isGM() { return isGM(); }, get office() { return S.office; }, get coins() { return S.coins; }, get days() { return [...(S.days || [])]; }, get last() { return S.last; }, get streak() { return streakNow(); }, today, realDays, buyDecor, equipDecorChair, sitAtDesk: () => world && world.sitAtDesk && world.sitAtDesk(), standUp: () => world && world.standUp && world.standUp(), isSitting: () => !!(world && world.isSitting && world.isSitting()) };
+window.__niuma = { get world() { return world; }, get floor() { return floor; }, openPanel, closePanel, ride, goToQuestNpc, maybeClaimFocused, questLog, get ready() { return ready; }, SHOP, encodeBackup, decodeBackup, applySnapshot, maybeRemind, get isGM() { return isGM(); }, get office() { return S.office; }, get academy() { return S.academy; }, acad, startTour, get coins() { return S.coins; }, get days() { return [...(S.days || [])]; }, get last() { return S.last; }, get streak() { return streakNow(); }, today, realDays, buyDecor, equipDecorChair, sitAtDesk: () => world && world.sitAtDesk && world.sitAtDesk(), standUp: () => world && world.standUp && world.standUp(), isSitting: () => !!(world && world.isSitting && world.isSitting()) };
 ready = (async () => { await restoreInsider(); await switchTo(startFlat ? 'flat' : '3d', false); maybeGmGate(); })();
 if (qs.has('lobby')) skip();
