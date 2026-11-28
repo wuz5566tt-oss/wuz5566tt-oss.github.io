@@ -7,6 +7,7 @@ import * as FX from './acad-ui/js/ac-fx.js';
 import { GLOSSARY } from './acad-ui/js/ac-glossary.js';
 import { calcPanel, renderCalcResult } from './acad-ui/js/ac-widgets.js';
 import { mountSnippet, drawIdCard, drawPayslip, LINE_ID, LEO_HEAD, lineCtaHTML } from './uikit.js'; // UI BOT ui-kit 加件（特展預告、工作證、薪資單）
+import { isDay1 } from './career.js';
 let X = null; // app.js 注入
 const esc = UI.esc;
 const IMG = 'assets/img/star-neon-512.webp'; // 與 acad-ui 內同一張圖（位元組相同），用站內既有檔
@@ -43,6 +44,19 @@ function pay(coins, el, why) {
   if (gm()) { X.toast(`GM 預覽：${why}（不發薪水）`); return; }
   X.addXP(1, coins, el); X.toast(`${why}・薪水 +${coins}`);
 }
+export const FIRST_CARD = L.FIRST_CARD; // 生存課第一張「學交易是學生存」；第一天在接引櫃台直接送，不必上 8 樓
+export function giftFirstCard() {
+  const A = acad();
+  if ((A.lit || []).includes(FIRST_CARD)) return false;
+  A.lit.push(FIRST_CARD);
+  const c = L.CARDS[FIRST_CARD];
+  if (c && c.quiz) c.quiz.forEach(q => { if (q.id && !A.ok.includes(q.id)) A.ok.push(q.id); });
+  const coins = L.payOnce(A, 'card:' + FIRST_CARD, L.REWARD.card);
+  persist();
+  pay(coins, null, `見面禮：收下知識卡「${c.title}」`);
+  if (!coins) X.toast(`見面禮：知識卡「${c.title}」已收下`);
+  return true;
+}
 function burst(el) {
   if (!el) return;
   FX.burst(el);
@@ -72,6 +86,15 @@ const HALL_ICON = { intro: 'compound', ta: 'kline', mkt: 'globe', star: 'star' }
 const qCard = id => { const q = L.QUESTIONS[id]; const c = L.CARDS[q.card]; return { c, qi: c.quiz.findIndex(x => x.id === id) }; };
 function renderGate(el) {
   const A = acad();
+  if (isDay1(X.S, X.today()) && !A.place) {
+    const got = (A.lit || []).includes(FIRST_CARD);
+    el.innerHTML = wrap(`<div class="ac-panel" data-mode="entrance"><p class="ac-kicker">8 樓・STAR史塔財商學院</p>
+      <h2 class="ac-h2">明天再來做程度測驗</h2>
+      <p class="ac-sub">第一天不必上 8 樓。第一張知識卡${got ? '「學交易是學生存」已在 1 樓接引櫃台送給你' : '請到 1 樓接引櫃台，打卡後領取「學交易是學生存」'}。學交易是學生存：平時靠紀律，恐慌時再進場有價資產。這不是進場指令，不保證獲利。</p>
+      <div class="ac-row" style="margin-top:14px"><button type="button" class="ac-btn" id="acBackGuide">回 1 樓接引櫃台</button></div></div>${NA}`);
+    el.querySelector('#acBackGuide').onclick = () => X.goZone ? X.goZone('guide') : (X.close && X.close(), X.open && X.open('guide'));
+    return;
+  }
   if (!A.place) {
     const i = placeAns.length;
     if (i >= L.PLACEMENT.length) { finishPlace(el, L.placeResult(placeAns)); return; }
@@ -128,28 +151,40 @@ function curCard(A, h) {
 }
 function renderHall(el, hallId, opt) {
   const A = acad(), h = L.hallById(hallId);
-  if (!L.hallOpen(A, hallId, gm())) {
+  if (opt && opt.panic) view.panic = true;
+  const panic = !!(opt && opt.panic) || !!view.panic;
+  if (!L.hallOpen(A, hallId, gm()) && !(panic && hallId === 'intro')) {
     el.innerHTML = wrap(`<div class="ac-panel ac-lock"><p class="ac-kicker">${esc(h.en)}</p><h2 class="ac-h2">${esc(h.name)}還沒開放</h2><p class="ac-sub">${A.place ? '入門觀念館第三關「看懂風險」收齊，或技術分析館收齊，就會開放。' : '先到入口大廳做 3 題程度測驗。'}</p><button type="button" class="ac-btn" id="acToGate">前往入口大廳</button></div>`);
     el.querySelector('#acToGate').onclick = () => X.goZone('ac_gate'); return;
   }
   if (opt && opt.card && L.CARDS[opt.card]) { view.card[hallId] = opt.card; view.flipped = false; }
   const cid = curCard(A, h); view.card[hallId] = cid;
-  const c = L.CARDS[cid], lv = h.levels.find(l => l.id === c.level), p = L.hallProgress(A, h);
-  const locked = !L.cardOpen(A, cid, gm()), isVs = lv.layout === 'vs';
-  // 路線圖：多關的館顯示關卡，單一關的館（技術館）顯示每張卡
-  const nodes = h.levels.length > 1
-    ? h.levels.map((l, i) => ({ key: l.cards[0], name: l.name.replace(/^第.關・/, ''), label: h.id === 'intro' && i < 3 ? `第 ${i + 1} 關・` : '', done: L.levelDone(A, l), open: L.levelOpen(A, h.id, l.id, gm()), on: l === lv, sub: `${l.cards.filter(x => L.cardDone(A, x)).length}/${l.cards.length} 張` }))
-    : L.hallCards(h).map((id, i) => ({ key: id, name: L.CARDS[id].title.split(/[：（]/)[0], label: '', done: L.cardDone(A, id), open: L.cardOpen(A, id, gm()), on: id === cid, sub: `第 ${i + 1} 站` }));
+  const c = L.CARDS[cid], lv = h.levels.find(l => l.id === c.level) || h.levels[0], p = L.hallProgress(A, h);
+  const locked = !L.cardOpen(A, cid, gm(), { panic }), isVs = lv.layout === 'vs';
+  const routeLevels = h.id === 'intro' ? h.levels.filter(l => l.id !== 'survive') : h.levels;
+  const nodes = routeLevels.length > 1
+    ? routeLevels.map((l, i) => ({ key: l.cards[0], name: l.name.replace(/^第.關・/, ''), label: h.id === 'intro' && i < 3 ? `第 ${i + 1} 關・` : '', done: L.levelDone(A, l), open: L.levelOpen(A, h.id, l.id, gm()), on: l === lv, sub: `${l.cards.filter(x => L.cardDone(A, x)).length}/${l.cards.length} 張` }))
+    : L.hallCards(h).filter(id => !String(id).startsWith('sv')).map((id, i) => ({ key: id, name: L.CARDS[id].title.split(/[：（]/)[0], label: '', done: L.cardDone(A, id), open: L.cardOpen(A, id, gm()), on: id === cid, sub: `第 ${i + 1} 站` }));
   const route = `<div class="ac-route">${nodes.map((n, i) => `<button type="button" class="ac-route__node${n.on ? ' is-on' : ''}${n.done ? ' is-done' : ''}${n.open ? '' : ' is-locked'}" data-node="${n.key}">
     <span class="ac-route__num">${n.done ? '✓' : n.open ? i + 1 : '🔒'}</span><span class="ac-route__txt"><b>${esc(n.label)}<wbr>${esc(n.name)}</b><small>${n.sub}${n.open ? '' : '・完成上一關解鎖'}</small></span></button>`).join('')}</div>`;
   const list = lv.cards;
   const quiz = locked ? `<div class="ac-panel ac-quiz"><div class="ac-empty">🔒 先收下前一張卡，這張就會打開。</div></div>`
     : `<div class="ac-panel ac-quiz" data-mode="hall"><h3>30 秒小測驗・${c.quiz.length} 題</h3><p class="ac-sub">${L.cardDone(A, cid) ? '已收藏，收進知識卡圖鑑了。' : `全對就收下這張卡（薪水 +${L.REWARD.card}）；答錯會進錯題本，講師馬明天再考你。`}</p>
        ${c.quiz.map((q, qi) => UI.question(c, qi, qState(A, q))).join('')}${L.cardDone(A, cid) ? nextCardBtn(A, c) : ''}</div>`;
-  const tool = lv.tool === 'compound' || (h.id === 'intro' && L.levelOpen(A, 'intro', 'money', gm()) && lv.id !== 'index') ? 'compound' : lv.tool === 'ma' ? 'ma' : '';
+  const day1 = isDay1(X.S, X.today());
+  const tool = day1 ? '' : (lv.tool === 'compound' || (h.id === 'intro' && L.levelOpen(A, 'intro', 'money', gm()) && lv.id !== 'index') ? 'compound' : lv.tool === 'ma' ? 'ma' : '');
+  const surviveHTML = h.id !== 'intro' ? '' : `<section class="uk-root uk-survive" data-uk="survive" aria-label="生存課">
+      <header class="uk-plaque"><small>入門館・生存課</small><b>生存課</b></header>
+      <p class="uk-f1__lead">只要三張卡。記住三句：學交易是學生存、平時靠紀律、恐慌時再進場有價資產。這不是進場指令，不保證獲利。</p>
+      <ol class="uk-survive__cards">${['sv1','sv2','sv3'].map((id, i) => {
+        const sc = L.CARDS[id]; const open = L.cardOpen(A, id, gm(), { panic: panic && id === 'sv3' });
+        return `<li class="${L.cardDone(A, id) ? 'is-done' : ''} ${id === cid ? 'is-now' : ''}"><button type="button" data-goto="${id}" ${open ? '' : 'disabled'}><em>第 ${i + 1} 張</em><b>${esc(sc.title)}</b><span>${esc(sc.lead)}</span></button></li>`;
+      }).join('')}</ol>
+      <p class="uk-note">學完這三張，才算把入門館這段知識學完。非投資建議。</p>
+    </section>`;
   el.innerHTML = wrap(`<div class="ac-hallhead"><div><p class="ac-kicker">${esc(lv.name)}${gm() ? ' <span class="ac-chip ac-chip--ur">GM 全開預覽</span>' : ''}</p><p class="ac-sub" style="margin:0">${esc(h.desc)}</p></div>
     ${UI.progressBar(p.lit, p.total, '本館收集進度')}</div>
-    ${route}${isVs ? '<div class="ac-cmpstrip"><div>左邊：<b>個股</b>，一家公司的事自己扛</div><div>右邊：<b>大盤</b>，很多公司一起分攤</div></div>' : ''}
+    ${surviveHTML}${route}${isVs ? '<div class="ac-cmpstrip"><div>左邊：<b>個股</b>，一家公司的事自己扛</div><div>右邊：<b>大盤</b>，很多公司一起分攤</div></div>' : ''}
     <div class="ac-stage">
       <div class="ac-list">${list.map(id => UI.miniCard(L.CARDS[id], { collected: L.cardDone(A, id), locked: !L.cardOpen(A, id, gm()), active: id === cid })).join('')}</div>
       <div class="ac-viewer">${UI.card(c, { collected: L.cardDone(A, cid), locked, compare: isVs, flipped: view.flipped })}
@@ -250,17 +285,34 @@ function renderBook(el) {
     <div class="ac-panel">${UI.progressBar(tot.lit, tot.total, '全部知識卡')}<div style="height:14px"></div>
       <div class="ac-badges">${L.BADGES.map(b => { const on = got.some(x => x.id === b.id), cur = A.title === b.name;
         return `<button type="button" class="ac-badgebtn${on ? ' is-on' : ''}${cur ? ' is-cur' : ''}" data-badge="${esc(b.name)}" ${on ? '' : 'disabled'}>${UI.badge({ name: b.name, hint: on ? (cur ? '使用中・再點取消' : '點一下當稱號') : b.how, got: on })}</button>`; }).join('')}</div></div></div>
-    <div class="ac-dex">${L.HALLS.map(h => { const p = L.hallProgress(A, h);
-      return `<div class="ac-dex__h"><b>${esc(h.name)}</b><span>${p.lit}/${p.total}</span></div>` + L.hallCards(h).map(id => L.cardDone(A, id)
-        ? `<div class="ac-dexcard" data-open="${id}">${UI.card(L.CARDS[id], { collected: true, compare: !!L.CARDS[id].compare })}</div>`
-        : `<div class="ac-ghost" data-open="${id}"><div><b>？</b>${esc(L.CARDS[id].title)}<br>尚未收藏</div></div>`).join(''); }).join('')}</div>
+    <div class="ac-dex">${(() => {
+      const owned = [];
+      const seen = new Set();
+      L.HALLS.forEach(h => L.hallCards(h).forEach(id => { if (L.cardDone(A, id) && !seen.has(id)) { seen.add(id); owned.push(id); } }));
+      const cardEl = id => `<div class="ac-dexcard" data-open="${id}">${UI.card(L.CARDS[id], { collected: true, compare: !!L.CARDS[id].compare })}</div>`;
+      const ownedBlock = owned.length
+        ? `<div class="ac-dex__h"><b>已收藏</b><span>${owned.length}</span></div>` + owned.map(cardEl).join('')
+        : '';
+      const halls = L.HALLS.map(h => {
+        const p = L.hallProgress(A, h);
+        const ids = L.hallCards(h).slice().sort((a, b) => (L.cardDone(A, b) ? 1 : 0) - (L.cardDone(A, a) ? 1 : 0));
+        return `<div class="ac-dex__h"><b>${esc(h.name)}</b><span>${p.lit}/${p.total}</span></div>` + ids.map(id => L.cardDone(A, id)
+          ? cardEl(id)
+          : `<div class="ac-ghost" data-open="${id}"><div><b>？</b>${esc(L.CARDS[id].title)}<br>尚未收藏</div></div>`).join('');
+      }).join('');
+      return ownedBlock + halls;
+    })()}</div>
     <div class="ac-row" style="margin-top:14px"><button type="button" class="ac-btn ac-btn--gold ac-btn--sm" data-acgo="acshare">分享成績圖</button><button type="button" class="ac-btn ac-btn--ghost ac-btn--sm" data-acgo="acwrong">錯題本</button></div>
     <p class="ac-na">卡片稀有度：青＝精良、紫＝稀有、金＝傳說、彩虹＝學院限定。僅供學習，非投資建議。</p>`);
   el.querySelectorAll('[data-badge]').forEach(b => b.onclick = () => { const A2 = acad(); A2.title = A2.title === b.dataset.badge ? '' : b.dataset.badge; persist(); renderBook(el); X.toast(A2.title ? `稱號：${A2.title}` : '已取消稱號'); });
+  const flipOwned = c => { const card = c.querySelector('.ac-card'); if (card) card.classList.toggle('is-flipped'); };
   el.querySelectorAll('[data-open]').forEach(c => c.onclick = ev => {
-    if (ev.target.closest('[data-act="flip"]')) { ev.stopPropagation(); c.querySelector('.ac-card') && c.querySelector('.ac-card').classList.toggle('is-flipped'); return; }
-    const cd = L.CARDS[c.dataset.open]; if (!L.hallOpen(acad(), cd.hall, gm())) { X.toast('這個館還沒開放'); return; }
-    if (!L.cardOpen(acad(), cd.id, gm())) { X.toast('先收下前一張卡'); return; }
+    if (ev.target.closest('[data-act="flip"]')) { ev.stopPropagation(); flipOwned(c); return; }
+    const cd = L.CARDS[c.dataset.open]; if (!cd) return;
+    const A2 = acad();
+    if (L.cardDone(A2, cd.id)) { flipOwned(c); return; }
+    if (!L.hallOpen(A2, cd.hall, gm())) { X.toast('這個館還沒開放'); return; }
+    if (!L.cardOpen(A2, cd.id, gm())) { X.toast('先收下前一張卡'); return; }
     X.open('ac_' + cd.hall, { card: cd.id });
   });
   el.querySelectorAll('[data-acgo]').forEach(b => b.onclick = () => X.open(b.dataset.acgo));
@@ -283,6 +335,11 @@ function renderWrong(el) {
 
 /* ---------- 講師馬每日 3 題 ---------- */
 export function renderLecturerQuiz(el, n) {
+  if (isDay1(X.S, X.today())) {
+    el.innerHTML = wrap(`<div class="ac-door"><div class="ac-door__gate"><div>${UI.niuma('teacher')}</div><div><small>7 樓・工位旁</small><b>${esc(n.name)}</b>
+      <p class="ac-sub" style="margin:4px 0 0;font-size:.82rem">講師馬每日 3 題從第二天開始。今天先把 1 樓的入職做完，明天再來。</p></div></div></div>${NA}`);
+    return;
+  }
   const A = acad(), td = X.today(), d = L.ensureDaily(A, td), sc = L.dailyScore(d), all = L.dailyAllDone(d), coins = L.dailyCoins(sc);
   const wl = L.wrongList(A);
   const body = view.lecTab === 'book' ? wrongRows(A) : d.ids.map((id, i) => {
@@ -399,7 +456,7 @@ function renderMenu(el) {
     ${item('acwrong', 'receipt', '錯題本', `${L.wrongList(A).length} 題`)}
     ${item('acshare', 'flow', '分享成績圖／工作證／薪資單', '9:16 直式圖片')}
     ${item('ukwall', 'eye', '外牆影音看板', '加入 LINE wuzakakak')}
-    ${item('tour', 'compound', '重看 30 秒新手導覽', '打卡・工位・講師馬・展覽館・知識卡')}</div>`);
+    ${item('tour', 'compound', '重看新手導覽', '領模型・學知識・拜師')}</div>`);
   el.querySelectorAll('[data-m]').forEach(b => b.onclick = () => {
     const m = b.dataset.m;
     if (m === 'hall') { X.close(); X.rideTo('f8'); }
@@ -411,11 +468,9 @@ function renderMenu(el) {
 
 /* ---------- 30 秒新手導覽（UI BOT ac-tour 樣式；不擋操作） ---------- */
 const TOUR = [
-  { k: '打卡', t: '每天先打卡', p: '1 樓櫃台小美幫你打卡領薪水，連續越久領越多。' },
-  { k: '工位', t: '升級你的工位', p: '7 樓個人交易室，用薪水把紙箱一路升到頂樓交易室、買小擺設。' },
-  { k: '講師馬', t: '講師馬每日 3 題', p: '7 樓工位旁的講師馬每天出 3 題，答對領薪水，答錯明天再考。' },
-  { k: '展覽館', t: '8 樓學院展覽館', p: '進門 3 題程度測驗，帶你去入門觀念館或技術分析館闖關。' },
-  { k: '知識卡', t: '收集精品知識卡', p: '每張卡 3 題小考，全對就收進圖鑑，收齊一關拿徽章。' },
+  { k: '領模型', t: '接引櫃台加 LINE，領美指模型', p: '到 1 樓接引櫃台加入 LINE（ID wuzakakak），當天領美指模型。打卡之後再回這裡領第一張知識卡「學交易是學生存」，第一天不必上 8 樓。' },
+  { k: '打卡與猜盤', t: '打卡、領卡，再上 2 樓猜盤', p: '先打卡領薪水，再回接引領第一張知識卡「學交易是學生存」，最後上 2 樓猜一次盤。做完一件才開下一件。' },
+  { k: '拜師之路', t: '這條路走到拜師', p: '明天回來打卡、晨會、看今日戰報，把入門館學完（含生存課另外兩張卡）。7 天領台指、學完技術館和市場館、30 天領目標值、60 天申請拜師。一次只做眼前這一件。' },
 ];
 let tourT = null;
 export function shouldTour(hasProgress) { return !gm() && !acad().tour && !hasProgress; }
@@ -448,5 +503,5 @@ export const ACAD_RENDER = {
 };
 export function acadTodos() {
   const A = acad(), d = A.daily && A.daily.date === X.today() ? A.daily : null;
-  return { ac_gate: !A.place, acmenu: !(d && (d.claimed || (L.dailyAllDone(d) && !L.dailyScore(d)))) };
+  return { ac_gate: !isDay1(X.S, X.today()) && !A.place, acmenu: !(d && (d.claimed || (L.dailyAllDone(d) && !L.dailyScore(d)))) };
 }

@@ -1,12 +1,21 @@
 // STAR史塔財商學院展覽館：存檔正規化與闖關／計分／錯題本／徽章邏輯（純函式，不碰畫面）
 // 存檔 S.academy = { v, place, ok, lit, wrong, paid, daily, hist, tour, title }
 import { ACAD_DATA } from './academy-data.js';
+import { SURVIVE_CARDS, SURVIVE_LEVEL, SURVIVE_IDS } from './survival-data.js';
 export const ACAD_VER = 1;
 export const REWARD = { card: 20, level: 50, hall: 100, place: 30, dailyEach: 20, dailyBonus: 10 };
 const D = ACAD_DATA;
 export const CARDS = D.cards;
+Object.assign(CARDS, SURVIVE_CARDS);
+const introHall = D.halls.find(h => h.id === 'intro');
+if (introHall && !introHall.levels.some(l => l.id === 'survive')) {
+  introHall.levels.push(SURVIVE_LEVEL);
+  introHall.desc = '先記住：學交易是學生存。平時靠紀律，恐慌時再進場有價資產。這不是進場指令，不保證獲利。' + introHall.desc;
+}
+export const FIRST_CARD = 'sv1';
 export const HALLS = D.halls;
 export const STAR = D.star; // 學院展位「1、5共振」（內容準備中，不出題）
+export { SURVIVE_IDS, SURVIVE_LEVEL };
 export const QUESTIONS = {};
 Object.values(CARDS).forEach(c => c.quiz.forEach(q => { QUESTIONS[q.id] = { ...q, card: c.id }; }));
 export const BANK = Object.keys(QUESTIONS);
@@ -51,11 +60,13 @@ export function levelOpen(A, hallId, levelId, gm = false) {
   const h = hallById(hallId); const i = h.levels.findIndex(l => l.id === levelId);
   if (i < 0) return false;
   if (hallId !== 'intro') return true; // 入門館依序三關＋大盤區；其他館各區同時開
+  if (levelId === 'survive') return true; // 生存課在入門館內，不擋住原四關
   return i === 0 || levelDone(A, h.levels[i - 1]);
 }
-export function cardOpen(A, cardId, gm = false) {
+export function cardOpen(A, cardId, gm = false, { panic = false } = {}) {
   if (gm) return true;
   const c = CARDS[cardId]; if (!c) return false;
+  if (cardId === 'sv3' && panic) return true; // 今日恐慌課可直接看第三張；不是進場指令
   if (!levelOpen(A, c.hall, c.level)) return false;
   const lv = hallById(c.hall).levels.find(l => l.id === c.level);
   if (lv.layout === 'vs') return true; // 左右對照區一次全開

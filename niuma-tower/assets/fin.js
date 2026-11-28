@@ -19,10 +19,10 @@ export const REWARD = {
 
 export const FIN_PANELS = [
   { id: 'thermo', floor: 'lobby', name: '市場溫度計', kicker: '今日台股偏多還偏空' },
-  { id: 'wealth', floor: 'lobby', name: '財富榜', kicker: '玩家總薪水排名' },
-  { id: 'predict', floor: 'f2', name: '預測擂台', kicker: '台股・美股猜漲跌' },
-  { id: 'quiz', floor: 'f4', name: '戰報抽考', kicker: '讀完戰報答 3 題' },
-  { id: 'sim', floor: 'f5', name: '模擬資金', kicker: '100 萬虛擬資金挑戰' },
+  { id: 'wealth', floor: 'lobby', name: '財富榜', kicker: '玩家總薪水排名', hidden: true },
+  { id: 'predict', floor: 'f2', name: '預測擂台', kicker: '台股・美股猜漲跌', hidden: true },
+  { id: 'quiz', floor: 'f4', name: '戰報抽考', kicker: '讀完戰報答 3 題', hidden: true },
+  { id: 'sim', floor: 'f5', name: '模擬資金', kicker: '100 萬虛擬資金挑戰', hidden: true },
 ];
 export const FIN_ICON = {
   thermo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M10 14.5V5a2 2 0 0 1 4 0v9.5a4 4 0 1 1-4 0z"/><circle cx="12" cy="17.5" r="1.6" fill="#ff5468" stroke="#ff5468"/><path d="M12 16V9" stroke="#ff5468"/></svg>',
@@ -87,6 +87,56 @@ function resultFor(date, m, t = tpe()) {
   if (date === t.date && t.min < SETTLE[m]) return null; // 當天還沒到開獎時間
   return r;
 }
+export const PANIC_PCT = -3;
+export function isClosedDay(m, todayStr, all) {
+  const dow = new Date(todayStr + 'T12:00:00+08:00').getDay();
+  if (dow === 0 || dow === 6) return true;
+  const hol = (D.results && D.results.holidays && D.results.holidays[m]) || [];
+  if (hol.includes(todayStr)) return true;
+  const rec = all && all[todayStr] && all[todayStr][m];
+  if (rec && rec.closed) return true;
+  return false;
+}
+function addDate(dateStr, n) {
+  const d = new Date(dateStr + 'T12:00:00+08:00');
+  d.setDate(d.getDate() + n);
+  return tpe(d).date;
+}
+/** 從 fromStr 起（含當天）下一個該市場開市日；週末與 holidays 會跳過。 */
+export function nextOpenDate(m, fromStr) {
+  const all = D.results && D.results.results;
+  let d = fromStr;
+  for (let i = 0; i < 14; i++) {
+    if (!isClosedDay(m, d, all)) return d;
+    d = addDate(d, 1);
+  }
+  return fromStr;
+}
+
+/** 該市場在 todayStr 當天（或休市／尚未收盤時的上一個交易日）的真實收盤。不編造數字。 */
+export function lastSession(m, todayStr) {
+  const all = D.results && D.results.results;
+  if (!all || !todayStr) return null;
+  const t = tpe();
+  const dates = Object.keys(all).filter(d => d <= todayStr && all[d] && all[d][m] && !all[d][m].closed).sort();
+  for (let i = dates.length - 1; i >= 0; i--) {
+    const date = dates[i];
+    if (date === todayStr && date === t.date && t.min < SETTLE[m]) continue;
+    const r = all[date][m];
+    if (!r || !Number.isFinite(r.close) || !Number.isFinite(r.pct)) continue;
+    const closed = date !== todayStr;
+    const label = closed ? (isClosedDay(m, todayStr, all) ? '休市' : '尚未收盤') : '今日已更新';
+    return { date, close: r.close, chg: r.chg, pct: r.pct, dir: r.dir, closed, label };
+  }
+  return null;
+}
+export function isPanicSession(todayStr) {
+  for (const m of ['tw', 'us']) {
+    const s = lastSession(m, todayStr);
+    if (s && !s.closed && typeof s.pct === 'number' && s.pct <= PANIC_PCT) return Object.assign({ market: m }, s);
+  }
+  return null;
+}
 
 let C = null; // app.js 傳進來的介面
 const busy = new Set();
@@ -99,6 +149,9 @@ export function initFin(ctx) {
 // 把自己的成績同步到排行榜（social.js 會防抖、合併；GM 不會送）
 export function finSync() {
   if (!C || C.isGM()) return;
+  if (C.testHook && C.testHook()) return; // 測試進度帳號不上正式榜
+  // 公開樓層只留本週猜盤總榜；週分數欄位等老闆核准後再接到現有專案。不再把財富／擂台連勝／勝率／模擬資金寫進正式榜。
+  return;
   const st = F().arenaStat;
   if (!((C.S.coins | 0) > 0 || st.n > 0 || F().nick || F().sim.trades.length)) return; // 還沒開始玩就不上榜
   const snap = { nick: nickOf(), rank: C.rankName(), wealth: C.S.coins | 0, streak: st.streak | 0, best: st.best | 0, win: st.win | 0, n: st.n | 0 };
@@ -138,9 +191,6 @@ export function finTodos(floor) {
   const t = tpe(), f = F();
   return {
     thermo: floor === 'lobby' && ((canPick('tw', t) && !f.thermo[t.date]) || thermoReady().length > 0),
-    predict: floor === 'f2' && (MK_ORDER.some(m => canPick(m, t) && !(f.arena[t.date] || {})[m]) || arenaReady().length > 0),
-    quiz: floor === 'f4' && !!(D.quiz && D.quiz.id && !f.quiz[D.quiz.id]),
-    sim: floor === 'f5' && simMonthsReady().length > 0,
   };
 }
 
@@ -160,7 +210,7 @@ async function thermo(el) {
     return `<li><b>${md(d)}</b><span>投 ${dirTxt(v.pick)}${r ? `・實際 ${dirTxt(r.dir)}` : ''}</span><em class="st">${st}</em></li>`;
   }).join('');
   el.innerHTML = `<div class="card"><div class="row between"><b>今日台股溫度計（${md(t.date)}）</b><span class="tag">${open ? `投票到 13:30` : isWeekend(t) ? '週末休市' : '今日已截止'}</span></div>
-    <p class="note" style="margin:8px 0 0">每人每天一票，猜今天台股加權指數收盤偏多（漲）還是偏空（跌）。投票就有 ${REWARD.thermoVote} 薪水；台北時間 14:00 後依實際收盤開獎，猜中再加 ${REWARD.thermoWin}。只猜方向、不給點位。</p></div>
+    <p class="note" style="margin:8px 0 0">${isWeekend(t) ? `今天台股休市，溫度計暫停投票。下一個交易日再猜當天收盤偏多或偏空。` : `每人每天一票，猜今天台股加權指數收盤偏多（漲）還是偏空（跌）。投票就有 ${REWARD.thermoVote} 薪水；台北時間 14:00 後依官方收盤開獎，猜中再加 ${REWARD.thermoWin}。只猜方向、不給點位。`}</p></div>
     <div class="card mkt"><h3>台股</h3>
       <button class="btn up ${mine && mine.pick === 'up' ? 'sel' : ''}" data-tv="up" ${mine || !open ? 'disabled' : ''}>偏多</button>
       <button class="btn down ${mine && mine.pick === 'down' ? 'sel' : ''}" data-tv="down" ${mine || !open ? 'disabled' : ''}>偏空</button></div>

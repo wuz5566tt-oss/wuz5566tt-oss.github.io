@@ -166,7 +166,7 @@ function draw(cv, bars, an, o = {}) {
     const X = x(s.i), b = B[s.i], Y = s.dir > 0 ? y(b.l) + 10 : y(b.h) - 10;
     g.fillStyle = GD; g.shadowColor = GD; g.shadowBlur = 10; g.beginPath();
     if (s.dir > 0) { g.moveTo(X, Y - 6); g.lineTo(X - 5, Y + 3); g.lineTo(X + 5, Y + 3); } else { g.moveTo(X, Y + 6); g.lineTo(X - 5, Y - 3); g.lineTo(X + 5, Y - 3); }
-    g.fill(); g.shadowBlur = 0; pill(g, X, Y + (s.dir > 0 ? 14 : -14), '二次突破', GD, 9, true);
+    g.fill(); g.shadowBlur = 0; pill(g, X, Y + (s.dir > 0 ? 14 : -14), '結構延續', GD, 9, true);
   });
   // 演練的進場／停損／目標
   if (o.lines) {
@@ -216,7 +216,7 @@ function labsim(el, preset) {
     <div class="lab-chips" role="group" aria-label="圖層">
       <button type="button" class="lab-chip${SIM.show.st ? ' on' : ''}" data-ly="st"><i style="background:${UP}"></i>市場結構</button>
       <button type="button" class="lab-chip${SIM.show.lq ? ' on' : ''}" data-ly="lq"><i style="background:${MG}"></i>流動性</button>
-      <button type="button" class="lab-chip${SIM.show.sb ? ' on' : ''}" data-ly="sb"><i style="background:${GD}"></i>二次突破</button></div>
+      </div>
     <div class="lab-read" id="labRead"></div>
     <div class="lab-sliders">${PARAMS.map(P => `<label class="lab-sl" data-k="${P.k}"><div class="row between"><span>${P.name}</span><b id="lv_${P.k}"></b></div>
       <input type="range" min="${P.min}" max="${P.max}" step="1" value="${SIM.p[P.k]}" data-p="${P.k}" aria-label="${P.name}"><small id="ld_${P.k}"></small></label>`).join('')}</div>
@@ -241,7 +241,6 @@ function labsim(el, preset) {
       <div class="lr"><small>結構狀態</small><b style="color:${STATE_COL[s]}">${STATE_TXT[s]}</b></div>
       <div class="lr"><small>高低點</small><b><span style="color:${UP}">高高 ${an.lab.HH}・高低 ${an.lab.HL}</span><br><span style="color:${DN}">低高 ${an.lab.LH}・低低 ${an.lab.LL}</span></b></div>
       <div class="lr"><small>流動性掃單</small><b style="color:${MG}">${an.sweeps.length} 次</b></div>
-      <div class="lr"><small>二次突破訊號</small><b style="color:${GD}">${an.sb.length} 次</b></div>
       <div class="lr"><small>結構突破／轉折</small><b>${an.ev.filter(e => e.kind === '突破').length}／${an.ev.filter(e => e.kind === '轉折').length}</b></div>
       <div class="lr"><small>平均波幅</small><b style="color:${TL}">${f2(an.atr)} 點</b></div>`;
     PARAMS.forEach(P => { const v = SIM.p[P.k]; el.querySelector('#lv_' + P.k).textContent = P.k === 'trend' && v > 0 ? '+' + v : v; el.querySelector('#ld_' + P.k).textContent = P.desc(v);
@@ -250,8 +249,7 @@ function labsim(el, preset) {
     if (s === 'up' || s === 'turnUp') tips.push('目前高點、低點一路墊高，是<b style="color:var(--up)">多頭結構</b>；只要沒跌破最近的「更高低」，結構就還在。');
     else if (s === 'down' || s === 'turnDown') tips.push('目前高點、低點一路下移，是<b style="color:var(--down)">空頭結構</b>；站回最近的「更低高」之前，結構不算改變。');
     else tips.push('高低點沒有一致方向，屬於<b style="color:var(--gold)">區間震盪</b>；區間上下緣常是流動性堆積的地方。');
-    if (an.sweeps.length) tips.push(`這段走勢有 ${an.sweeps.length} 次<b style="color:${MG}">刺破前高／前低又收回</b>，是典型的掃流動性，追突破的人容易被洗出場。`);
-    if (an.sb.length) tips.push(`出現 ${an.sb.length} 次<b style="color:var(--gold)">二次突破</b>：第一次突破後回測不破，再次突破才進場，停損放回測的高低點外。`);
+    if (an.sweeps.length) tips.push(`這段走勢有 ${an.sweeps.length} 次<b style="color:${MG}">刺破前高／前低又收回</b>，是典型的掃流動性，重點看收盤站不站得住。`);
     el.querySelector('#labExplain').innerHTML = `<b class="lab-et">實驗室解讀</b><p>${tips.join('</p><p>')}</p>`;
   };
   const rebuild = (smooth = true) => { const old = bars; bars = gen(SIM.seed, SIM.p); an = analyze(bars); el.querySelector('#labSeed').textContent = `種子 #${SIM.seed}`; readout(); smooth ? morph(old, bars) : render(); };
@@ -314,83 +312,52 @@ export function scoreTrade(D, res) {
   return { score, grade, gname, items };
 }
 function labdrill(el, opt) {
-  el.dataset.lab = 'drill';
-  if (!DR || DR.phase === 'done' || (opt && opt.p)) newDrill(opt && opt.p);
-  const D = DR, gm = C.isGM(), left = Math.max(0, LAB_REWARD.dayCap - earnedToday());
-  el.innerHTML = `<div class="lab">
-    <div class="lab-head"><span class="lab-live"><i></i>練習盤 #${D.seed}</span><span class="tag">${gm ? 'GM 預覽' : `今日演練薪水 ${earnedToday()}／${LAB_REWARD.dayCap}`}</span></div>
-    <p class="note" style="margin:4px 0 0">看前 ${SHOWN} 根判斷方向，在圖上<b style="color:var(--ink)">拖動三條線</b>設定進場、停損、目標，按「開始播放」看後面 ${FUT} 根怎麼走。</p>
-    <div class="lab-screen tall"><canvas class="labcv tall" id="drcv"></canvas></div>
-    <div class="lab-side" role="group" aria-label="方向"><button type="button" class="btn up sm${D.lines.side > 0 ? ' sel' : ''}" data-side="1">做多</button><button type="button" class="btn down sm${D.lines.side < 0 ? ' sel' : ''}" data-side="-1">做空</button>
-      <span class="lab-st">盤面：<b style="color:${STATE_COL[D.an0.state]}">${STATE_TXT[D.an0.state]}</b></span></div>
-    <div class="lab-read four" id="drRead"></div>
-    <div class="row" id="drCtl" style="gap:8px"><button class="btn primary" id="drGo" style="flex:2">開始播放</button><button class="btn ghost sm" id="drFast" style="flex:1" disabled>快轉</button></div>
+  const seed = (Math.random() * 1e9) | 0;
+  const bars = gen(seed);
+  const cut = Math.max(24, bars.length - 16);
+  const seen = bars.slice(0, cut);
+  const rest = bars.slice(cut);
+  const up = rest[rest.length - 1].c >= seen[seen.length - 1].c;
+  let answered = false;
+  const cvId = 'drCv';
+  el.innerHTML = `<div class="row between"><b>結構觀察</b><span class="tag">只看結構，不練習進出場</span></div>
+    <p class="note" style="margin:8px 0 0">看左邊這段走勢，判斷後面比較可能偏多還是偏空，再按播放對答案。這是看結構的練習，不設進場、停損或目標。</p>
+    <canvas id="${cvId}" class="lab-cv" width="640" height="300" style="width:100%;margin-top:10px"></canvas>
+    <div class="row" style="gap:8px;margin-top:10px">
+      <button type="button" class="btn up" style="flex:1" data-side="1">偏多</button>
+      <button type="button" class="btn down" style="flex:1" data-side="-1">偏空</button>
+    </div>
     <div id="drRes"></div>
-    ${gmTag()}${disc}</div>`;
-  const cv = el.querySelector('#drcv');
-  let drag = null, geo = null, timer = null, fast = false;
-  const paint = () => { geo = draw(cv, D.bars, D.phase === 'plan' ? D.an0 : analyze(D.bars, D.upto), { show: { st: true, lq: true, sb: true }, upto: D.upto, slots: SHOWN + FUT, future: SHOWN, lines: D.lines, lineFrom: SHOWN - 1, drag, trade: D.res, range: D.range }); };
-  const read = () => {
-    const L = D.lines, ok = valid(L), R = rr(L), risk = Math.abs(L.entry - L.stop);
-    const live = D.phase === 'play' && D.live ? `<div class="lr"><small>即時損益</small><b style="color:${D.live.R >= 0 ? 'var(--up)' : 'var(--down)'}">${D.live.txt}</b></div>` : `<div class="lr"><small>風報比</small><b style="color:${R >= 2 ? TL : R >= 1 ? GD : '#ff8a4c'}">${ok ? '1 : ' + R.toFixed(1) : '—'}</b></div>`;
-    el.querySelector('#drRead').innerHTML = `<div class="lr"><small>進場</small><b style="color:${GD}">${f2(L.entry)}</b></div><div class="lr"><small>停損</small><b style="color:#ff8a4c">${f2(L.stop)}</b><small>${f2(risk / D.an0.atr)} 倍波幅</small></div><div class="lr"><small>目標</small><b style="color:${TL}">${f2(L.target)}</b></div>${live}`;
-    el.querySelector('#drGo').disabled = D.phase !== 'plan' || !ok;
-  };
-  const setSide = s => { const L = D.lines, a = D.an0.atr; if (L.side === s) return; L.side = s; L.stop = L.entry - s * a * 1.5; L.target = L.entry + s * a * 3; el.querySelectorAll('[data-side]').forEach(b => b.classList.toggle('sel', +b.dataset.side === s)); paint(); read(); C.blip(880); };
-  el.querySelectorAll('[data-side]').forEach(b => b.onclick = () => { if (D.phase === 'plan') setSide(+b.dataset.side); });
-  const clampLine = (k, v) => { const L = D.lines, s = L.side, gap = D.an0.atr * .1;
-    if (k === 'entry') { v = s > 0 ? Math.min(Math.max(v, L.stop + gap), L.target - gap) : Math.max(Math.min(v, L.stop - gap), L.target + gap); }
-    if (k === 'stop') v = s > 0 ? Math.min(v, L.entry - gap) : Math.max(v, L.entry + gap);
-    if (k === 'target') v = s > 0 ? Math.max(v, L.entry + gap) : Math.min(v, L.entry - gap);
-    return v; };
-  const pos = e => { const r = cv.getBoundingClientRect(); return { px: e.clientX - r.left, py: e.clientY - r.top }; };
-  cv.onpointerdown = e => { if (D.phase !== 'plan' || !geo) return; const { py } = pos(e); let best = null, bd = 26;
-    ['entry', 'stop', 'target'].forEach(k => { const d = Math.abs(geo.y(D.lines[k]) - py); if (d < bd) { bd = d; best = k; } });
-    if (!best) return; drag = best; D.range = [geo.hi, geo.lo]; cv.setPointerCapture && cv.setPointerCapture(e.pointerId); e.preventDefault(); paint(); C.blip(700); };
-  cv.onpointermove = e => { if (!drag) return; const { py } = pos(e); D.lines[drag] = clampLine(drag, geo.inv(py)); paint(); read(); };
-  const up = () => { if (!drag) return; drag = null; D.range = null; paint(); read(); };
-  cv.onpointerup = up; cv.onpointercancel = up;
-  const finish = () => {
-    clearTimeout(timer); if (D.phase === 'done' || !cv.isConnected) return; D.phase = 'done'; D.upto = D.bars.length; const res = D.res, sc = scoreTrade(D, res); D.sc = sc;
-    let coins = 0, xp = Math.round(sc.score / 25), capped = false;
-    if (!gm) {
+    ${disc}`;
+  const cv = el.querySelector('#' + cvId);
+  const an = analyze(seen, seen.length);
+  draw(cv, seen, an, {});
+  el.querySelectorAll('[data-side]').forEach(b => b.onclick = () => {
+    if (answered) return; answered = true;
+    el.querySelectorAll('[data-side]').forEach(x => x.disabled = true);
+    const pickUp = b.dataset.side === '1';
+    const ok = pickUp === up;
+    const score = ok ? 100 : 40;
+    draw(cv, bars, analyze(bars, bars.length), {});
+    const coins = C.isGM() ? 0 : Math.min(20, Math.max(0, Math.floor(score / 5)));
+    if (!C.isGM()) {
       const L = labState(), d = L.day[today()] || (L.day[today()] = { plays: 0, coins: 0, best: 0 });
-      const want = Math.floor(sc.score / LAB_REWARD.perScore); coins = Math.max(0, Math.min(want, LAB_REWARD.dayCap - (d.coins | 0))); capped = coins < want;
-      d.plays++; d.coins = (d.coins | 0) + coins; d.best = Math.max(d.best | 0, sc.score);
-      L.plays++; L.total += sc.score; L.best = Math.max(L.best | 0, sc.score); if (res.out === 'target') L.wins++;
-      C.questLog('labPlays', 1, 'add'); C.questLog('labBest', sc.score);
-      C.addXP(xp, coins, el.querySelector('#drGo')); if (!coins && !xp) C.save();
+      const room = Math.max(0, LAB_REWARD.dayCap - (d.coins | 0));
+      const pay = Math.min(coins, room);
+      d.plays++; d.coins = (d.coins | 0) + pay; d.best = Math.max(d.best | 0, score);
+      L.plays++; L.total += score; L.best = Math.max(L.best | 0, score); if (ok) L.wins++;
+      C.questLog('labPlays', 1, 'add'); C.questLog('labBest', score);
+      if (pay) C.addXP(1, pay);
+      C.save();
     }
-    paint(); read(); el.querySelector('#drCtl').hidden = true;
-    const outTxt = { target: '命中目標', stop: '停損出場', nofill: '沒有成交', time: '時間到出場' }[res.out];
-    const pay = gm ? '<span class="note">GM 預覽不發薪水</span>' : coins ? `<b style="color:var(--gold)">薪水 +${coins}</b>${capped ? '<small class="note">（已達今日上限）</small>' : ''}` : `<span class="note">${earnedToday() >= LAB_REWARD.dayCap ? '今日演練薪水已達上限，明天再來' : '這局沒有薪水'}</span>`;
-    el.querySelector('#drRes').innerHTML = `<div class="card lab-result g${sc.grade}" id="labResult">
-      <div class="lab-grade"><b>${sc.gname}</b><span><small>本局評分</small><em>${sc.score}</em><small>／100</small></span></div>
-      <div class="row between" style="margin:6px 0"><b>${outTxt}${res.fill != null ? `・${res.R >= 0 ? '+' : ''}${res.R.toFixed(1)} 倍` : ''}</b>${pay}</div>
-      <ol class="lab-items">${sc.items.map(i => `<li><span>${i.n}</span><i><s style="width:${i.v / i.max * 100}%"></s></i><b>${i.v}／${i.max}</b><small>${i.t}</small></li>`).join('')}</ol>
-      <p class="note" style="margin:6px 0 0">倍數＝以停損距離當 1 倍計算的盈虧。練的是先想好停損再進場的習慣，不是預測走勢。</p></div>
-      <button class="btn primary" id="drAgain" style="width:100%">再練一局</button>`;
-    el.querySelector('#drAgain').onclick = () => { DR = null; labdrill(el); };
-    C.blip(sc.score >= 60 ? 1175 : 523);
-    C.refreshHud && C.refreshHud();
-  };
-  const tick = () => {
-    if (!cv.isConnected) { clearTimeout(timer); return; }
-    D.upto++; const res = D.res, i = D.upto - 1, b = D.bars[i];
-    if (res.fill != null && i >= res.fill) { const px = res.exit != null && i >= res.exit ? res.exitPx : b.c, R = (px - res.entry) * res.side / Math.abs(res.entry - D.lines.stop); D.live = { R, txt: `${R >= 0 ? '+' : ''}${R.toFixed(2)} 倍` }; }
-    else D.live = { R: 0, txt: '等待成交' };
-    paint(); read();
-    if ((res.exit != null && i >= res.exit) || D.upto >= D.bars.length) { setTimeout(finish, 350); return; }
-    timer = setTimeout(tick, fast ? 45 : 150);
-  };
-  el.querySelector('#drGo').onclick = () => { if (D.phase !== 'plan' || !valid(D.lines)) return; D.phase = 'play'; D.res = simulate(D); el.querySelector('#drGo').disabled = true; el.querySelector('#drFast').disabled = false; C.blip(990); tick(); };
-  el.querySelector('#drFast').onclick = () => { fast = true; el.querySelector('#drFast').disabled = true; };
-  requestAnimationFrame(() => { paint(); read(); });
-  if (D.phase === 'play') { el.querySelector('#drFast').disabled = false; timer = setTimeout(tick, 200); } // 播放中重開面板：接著播
+    el.querySelector('#drRes').innerHTML = `<div class="card"><b>${ok ? '方向看對了' : '這段走勢跟判斷不一樣'}</b>　本局 ${score} 分
+      <p class="note" style="margin:6px 0 0">後面實際收在「${up ? '偏多' : '偏空'}」。練的是把結構看清楚，不是預測或進出場。${C.isGM() ? 'GM 預覽不發薪水。' : ''}</p></div>
+      <button type="button" class="btn primary" id="drAgain" style="width:100%;margin-top:8px">再觀察一局</button>`;
+    el.querySelector('#drAgain').onclick = () => labdrill(el);
+    C.toast(C.isGM() ? `GM 預覽：本局 ${score} 分（不發薪水）` : `結構觀察 ${score} 分`);
+  });
 }
 
-/* ---------- 概念圖鑑 ---------- */
-// 手工設計的示意走勢（價格是示意點數，不代表任何商品）
 function pathBars(pts, seed = 7) {
   const r = rng(seed), out = []; let p = pts[0][1];
   for (let k = 1; k < pts.length; k++) { const [n, to] = pts[k], st = (to - p) / n; for (let i = 0; i < n; i++) { const o = p, c = p + st + (r() - .5) * .25; out.push({ o, c, h: Math.max(o, c) + r() * .25, l: Math.min(o, c) - r() * .25 }); p = c; } }
@@ -400,9 +367,7 @@ const CONCEPTS = [
   { id: 'st', name: '市場結構', col: UP, pts: [[0, 100], [4, 103], [3, 101.5], [4, 105], [3, 103.2], [4, 107], [3, 105], [4, 102]], show: { st: true }, preset: { trend: 7, depth: 4, sweep: 2, vol: 4 },
     txt: '高點一個比一個高、低點也一個比一個高，就是<b style="color:var(--up)">多頭結構</b>（更高高、更高低）。一旦收盤跌破最近的「更高低」，結構就可能<b>轉折</b>。空頭結構反過來看。' },
   { id: 'lq', name: '流動性', col: MG, pts: [[0, 100], [4, 104], [3, 101.5], [3, 104], [3, 101.6], [2, 104.6], [1, 103.5], [4, 100.4], [2, 101]], show: { lq: true }, preset: { trend: 0, depth: 6, sweep: 9, vol: 5 },
-    txt: '前高、前低附近常堆著別人的停損單，也就是<b style="color:#ff7ae0">流動性</b>。價格常先刺破前高或前低、把停損掃掉再拉回；重點是<b>收盤站不站得住</b>，刺破又收回往往是陷阱。' },
-  { id: 'sb', name: '二次突破進場', col: GD, pts: [[0, 100], [4, 103], [3, 101.4], [4, 104], [3, 102.8], [3, 105.2], [4, 107.5]], show: { sb: true, lq: true }, preset: { trend: 5, depth: 6, sweep: 3, vol: 4 },
-    txt: '第一次突破前高先不追，等它<b>回測不破</b>、再次創高時才進場，這就是<b style="color:var(--gold)">二次突破</b>。停損放在回測的低點下方，錯了就小賠出場。' },
+    txt: '前高、前低附近常堆著成交，也就是<b style="color:#ff7ae0">流動性</b>。價格常先刺破前高或前低再拉回；重點是<b>收盤站不站得住</b>，刺破又收回往往只是路過，不是結構真的轉了。' },
 ];
 function labwiki(el) {
   el.dataset.lab = 'wiki';
