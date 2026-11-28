@@ -1,7 +1,7 @@
 /* 牛馬交易上班日｜最小網路優先 Service Worker（相對路徑，可掛在 /niuma-tower/） */
 'use strict';
 
-const CACHE = 'niuma-tower-netfirst-v1';
+const CACHE = 'niuma-tower-netfirst-v4';
 const SCOPE = self.registration.scope;
 
 function isAudioRequest(request, url) {
