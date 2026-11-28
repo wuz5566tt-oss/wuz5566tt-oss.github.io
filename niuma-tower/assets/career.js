@@ -1,6 +1,7 @@
 // 老闆藍圖（11/27）：新手（入職第一天、新手禮包、捏自己的牛馬）｜每天（下班複盤 1 題、突發行情、每週前十本機版）｜展覽（華爾街歷史、大盤比個股、0050 定期定額示範、準備中展廳）｜置入（戰報看板）
 // 規則：薪水＝站內虛擬點數，不能換現金；GM 模式只預覽，不存檔、不發薪水；不做 A股；不帶單、不喊點位、非投資建議。
 import { lineCtaHTML } from './uikit.js';
+import { hallById, hallDone, hallCards, normAcademy, CARDS, FIRST_CARD } from './academy-logic.js';
 export const CAREER_VER = 1;
 export const REWARD_C = { badge: 100, gift: 200, offq: 20, flash: 10 };
 export const LOOK_OPT = {
@@ -17,13 +18,131 @@ export function normCareer(c) {
     v: CAREER_VER,
     badge: typeof o.badge === 'string' ? o.badge : null, // 「正式錄取」徽章取得日
     gift: typeof o.gift === 'string' ? o.gift : null, // 新手禮包領取日
-    look: { hair: pick('hair', lk.hair), tie: pick('tie', lk.tie), badge: pick('badge', lk.badge) },
+    look: { hair: pick('hair', lk.hair), tie: pick('tie', lk.tie), badge: pick('badge', lk.badge), name: typeof lk.name === 'string' ? lk.name.trim().slice(0, 10) : '' },
     lookSet: !!o.lookSet,
+    lookIntro: !!o.lookIntro, // 新帳號已做完第一次捏臉（主線第 1 步）
     offq: obj(o.offq), // { 'YYYY-MM-DD': { m, ans, ok, paid } }
     flash: Array.isArray(o.flash) ? o.flash.filter(x => typeof x === 'string').slice(-60) : [], // 已讀的突發行情 key
+    reportDays: Array.isArray(o.reportDays) ? o.reportDays.filter(d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)).slice(-90) : [],
+    testHook: !!o.testHook, // 本機 QA 測試進度帳號：不上正式榜
   };
 }
 export const lookColor = (k, v) => { const x = LOOK_OPT[k].find(y => y[0] === v); return x ? x[2] : null; };
+export function horseName(S) {
+  const n = S && S.career && S.career.look && S.career.look.name;
+  if (n && String(n).trim()) return String(n).trim().slice(0, 10);
+  const nick = S && S.fin && S.fin.nick;
+  if (nick && String(nick).trim()) return String(nick).trim().slice(0, 10);
+  return '牛馬' + String((S && S.vid) || '0000').slice(-4);
+}
+export function reportsViewedOn(S, todayStr) {
+  return !!((S && S.career && S.career.reportDays) || []).includes(todayStr);
+}
+
+
+/* ---------- 一條主線（總經理 10 步表）：一次只亮當下那一件，做完才開下一件 ---------- */
+export function isDay1(S, todayStr) {
+  return (S.days || []).filter(Boolean).every(d => d >= todayStr);
+}
+export function needsLook(S) {
+  const c = S.career || {};
+  if (c.lookSet) return false;
+  if ((S.days || []).length || (S.coins | 0) > 0) return false;
+  return true;
+}
+export const QUEST_STEPS = [
+  { id: 'look', n: 1, title: '捏一隻自己的牛馬', hint: '選好再開始後面的任務', go: 'mynm' },
+  { id: 'us', n: 2, title: '接引櫃台加 LINE，領美指模型', hint: '加入 ID wuzakakak，當天領取美指模型。', go: 'guide' },
+  { id: 'checkin', n: 3, title: '第一次打卡，領薪水', hint: '到 1 樓打卡櫃台上班打卡。', go: 'checkin' },
+  { id: 'card', n: 4, title: '領第一張知識卡「學交易是學生存」', hint: '回接引櫃台直接領取這張生存課第一張，不必先上 8 樓。', go: 'guide' },
+  { id: 'guess', n: 5, title: '上 2 樓猜一次盤', hint: '只猜方向，不給點位。做完提示「明天先來晨會」。', go: 'guess' },
+  { id: 'intro', n: 6, title: '回來打卡、晨會，把學院入門館學完', hint: '每天先打卡、晨會猜盤、再去 4 樓看今日戰報，然後把入門館學完（含生存課另外兩張：「平時靠紀律」「恐慌時再進場有價資產」）。', go: 'ac_gate' },
+  { id: 'tw', n: 7, title: '打卡滿 7 天，領台指模型', hint: '到 1 樓接引櫃台領取。', go: 'guide' },
+  { id: 'halls', n: 8, title: '學完技術分析館和市場觀察館', hint: '到 8 樓學院繼續學。', go: 'ac_gate' },
+  { id: 'target', n: 9, title: '打卡滿 30 天，上 5 樓領目標值系統', hint: '到 5 樓研究室領取，並在那裡產生資格碼。', go: 'target' },
+  { id: 'master', n: 10, title: '打卡滿 60 天，走官方 LINE 申請掌門面試', hint: '把資格碼傳給助理小編，申請拜師。', go: 'guide' },
+];
+const PATH_MILESTONES = [
+  { id: 'us', when: '今天', name: '美指模型', hint: '加 LINE（ID wuzakakak）當天領取' },
+  { id: 'tw', when: '打卡 7 天', name: '台指模型', hint: '連續來上班，到接引櫃台領取' },
+  { id: 'target', when: '打卡 30 天', name: '目標值系統', hint: '到 5 樓研究室領取，並在那裡產生資格碼' },
+  { id: 'master', when: '打卡 60 天', name: '申請拜師', hint: '走官方 LINE 申請掌門面試，成為徒弟' },
+];
+export function hallComplete(S, id) {
+  try {
+    const A = normAcademy(S.academy);
+    const h = hallById(id);
+    return !!(h && hallDone(A, h));
+  } catch { return false; }
+}
+const hasGuessPick = v => v && (typeof v === 'string' || v.pick);
+const guessedToday = (S, todayStr) => {
+  const bag = (S && S.guesses) || {};
+  if (Object.values(bag[todayStr] || {}).some(hasGuessPick)) return true;
+  return Object.values(bag).some(rec => rec && Object.values(rec).some(v => v && v.placedOn === todayStr && hasGuessPick(v)));
+};
+function pack(step, extra) {
+  const q = QUEST_STEPS.find(s => s.n === step);
+  return { id: q.id, step, title: q.title, go: q.go, next: q.hint, milestone: step <= 5 ? 'us' : step <= 7 ? 'tw' : step <= 9 ? 'target' : 'master', ...extra };
+}
+export function currentPath(S, todayStr) {
+  const n = new Set((S.days || []).filter(Boolean)).size;
+  const claims = S.claims || {};
+  const A = S.academy || {};
+  const gotCard = (A.lit || []).includes(FIRST_CARD);
+  const gotUs = !!claims.us;
+  const checkedToday = (S.days || []).includes(todayStr);
+  const day1 = isDay1(S, todayStr);
+  const guessed = guessedToday(S, todayStr);
+  const introDone = hallComplete(S, 'intro');
+  const taDone = hallComplete(S, 'ta');
+  const mktDone = hallComplete(S, 'mkt');
+
+  if (needsLook(S)) return pack(1, { next: '先捏一隻自己的牛馬，選好再開始後面的任務。服裝店不是必做。' });
+  if (!gotUs) return pack(2);
+  if (!checkedToday && (day1 || n === 0)) return pack(3);
+  if (!gotCard) return pack(4);
+  if (day1 && !guessed) return pack(5, { next: '到 2 樓猜盤桌猜一次台股。只猜方向，不給點位。' });
+  if (day1) return pack(5, { id: 'wait', title: '明天先來晨會', go: null, waiting: true,
+    next: '今天的入職完成了。明天先來晨會，並繼續走「領取與拜師之路」。' });
+
+  // 成長：先當天打卡、晨會、看今日戰報，再走當下那一步（戰報不是第 11 步，每天像打卡一樣刷新）
+  const growStep = () => (!introDone ? 6 : (n < 7 || !claims.tw) ? (n >= 7 && !claims.tw ? 7 : 6) : (!taDone || !mktDone) ? 8 : (n < 30 || !claims.target) ? (n >= 30 && !claims.target ? 9 : 8) : (n < 60 || !claims.master) ? (n >= 60 && !claims.master ? 10 : 9) : 10);
+  if (!checkedToday) return pack(growStep(), {
+    id: 'checkin', title: '先打卡', go: 'checkin', next: '先到 1 樓打卡櫃台上班，再繼續今天的學習。' });
+  if (!guessed) return pack(growStep() === 6 ? 6 : growStep(), { id: 'guess', title: '晨會猜盤', go: 'guess', next: '到 2 樓猜盤桌猜一次。只猜方向，不給點位。' });
+  if (!reportsViewedOn(S, todayStr)) {
+    const panic = C && C.isPanicDay && C.isPanicDay();
+    if (panic) return pack(growStep(), { id: 'panic', title: '今日恐慌課', go: 'panic',
+      next: '市場明顯動盪。去看生存課第三張「恐慌時再進場有價資產」，並看當天台股、美股戰報。這不是進場訊號，也不保證這時買會賺。' });
+    return pack(growStep(), { id: 'reports', title: '去 4 樓看今日戰報', go: 'reports',
+      next: '到 4 樓戰報樓看今天的台股、美股每日戰報。休市會標明，並帶上一個交易日的日期。非投資建議。' });
+  }
+
+  if (!introDone) return pack(6, { next: A.place ? '到 8 樓學院把入門觀念館學完（含生存課另外兩張卡）。' : '到 8 樓學院入口大廳做程度測驗，再把入門館學完（含生存課另外兩張卡）。' });
+  if (n < 7 || !claims.tw) {
+    if (n >= 7 && !claims.tw) return pack(7, { next: '累積打卡 7 天已達成。到 1 樓接引櫃台領取台指模型。' });
+    return pack(6, { id: 'continue', title: '繼續學知識', go: 'ac_gate',
+      next: `入門館已學完。下一個里程碑：再打卡 ${7 - n} 天，領取台指模型。` });
+  }
+  if (!taDone || !mktDone) {
+    const miss = [!taDone && '技術分析館', !mktDone && '市場觀察館'].filter(Boolean).join('和');
+    return pack(8, { next: `到 8 樓學院把${miss}學完。` });
+  }
+  if (n < 30 || !claims.target) {
+    if (n >= 30 && !claims.target) return pack(9, { next: '累積打卡 30 天已達成。到 5 樓目標值研究室領取，並在那裡產生資格碼。' });
+    return pack(8, { id: 'continue', title: '繼續學知識', go: 'ac_gate',
+      next: `技術館和市場館已學完。下一個里程碑：再打卡 ${30 - n} 天，上 5 樓領取目標值系統。` });
+  }
+  if (n < 60 || !claims.master) {
+    if (n >= 60 && !claims.master) return pack(10, { next: '累積打卡 60 天已達成。請加官方 LINE，申請掌門面試，把資格碼傳給助理小編。' });
+    return pack(9, { id: 'continue', title: '繼續學知識', go: 'ac_gate',
+      next: `再打卡 ${60 - n} 天，即可走官方 LINE 申請掌門面試。` });
+  }
+  return pack(10, { id: 'done', title: '已申請拜師', done: true, next: '你已走到申請拜師。請透過官方 LINE 完成掌門面試。' });
+}
+export function pathMilestones() { return PATH_MILESTONES; }
+
 
 /* ---------- 真實事件（來源記在這裡，畫面不顯示來源網址） ---------- */
 // 華爾街歷史展廳：雷曼、GE 為公開歷史；NVDA 取自本公司美股戰報 2026-11-23（Reuters、CNBC、每日經濟新聞）
@@ -34,13 +153,14 @@ export const WALL_ST = [
 ];
 // 大盤比個股對比牆：本公司美股戰報 2026-11-24（MarketWatch、Investopedia；指數取自開獎資料）
 export const VS_WALL = [
-  { date: '2026/11/24', stock: { name: '美光 MU', pct: -11.01, close: '629.79 美元', why: 'BNP Paribas 降評至中立' }, index: { name: '那斯達克綜合指數 ^IXIC', pct: -1.48, close: '23,733.54' } },
+  { date: '2026/11/24', stock: { name: '美光 MU', pct: -11.01, close: '629.79 美元', why: 'BNP Paribas 降評至中立' }, index: { name: '那斯達克綜合指數（^IXIC）', pct: -1.48, close: '23,733.54' } },
 ];
 /* ---------- 小工具 ---------- */
 const md = d => `${+d.slice(5, 7)}/${+d.slice(8, 10)}`;
 const fmt = (n, dp = 2) => Number(n).toLocaleString('zh-TW', { minimumFractionDigits: dp, maximumFractionDigits: dp });
 const pctTxt = v => `${v > 0 ? '+' : ''}${v.toFixed(2)}%`;
-const MKN = { tw: '台股加權指數', us: '那斯達克綜合指數 ^IXIC' };
+export const MKT_TITLE = { tw: '台股加權指數', us: '那斯達克綜合指數（^IXIC）' };
+const MKN = MKT_TITLE;
 const hash = s => { let h = 2166136261; for (const ch of String(s)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
 
 let C = null;
@@ -62,44 +182,93 @@ export function onboardSteps() {
   ];
 }
 function onboard(el) {
-  const k = K(), st = onboardSteps(), n = st.filter(s => s.done).length, all = n === st.length, gm = C.isGM();
-  el.innerHTML = `<div class="card"><div class="row between"><b>入職第一天清單</b><span class="tag ${all ? 'cyan' : ''}">${n} / ${st.length}</span></div>
-      <p class="note" style="margin:6px 0 0">四件事做完，就發「正式錄取」徽章＋薪水 ${REWARD_C.badge}。</p>
-      <div class="bar" style="margin-top:8px"><i style="width:${n / st.length * 100}%"></i></div></div>
-    <ol class="floors cr-steps">${st.map(s => `<li class="${s.done ? 'here' : ''}" data-step="${s.id}"><b>${s.done ? '✓' : '・'}</b><span>${s.name}<br><small class="note">${s.hint}</small></span><em class="st">${s.done ? '完成' : `<button type="button" class="btn ghost sm" data-crgo="${s.go}">去做</button>`}</em></li>`).join('')}</ol>
-    <div class="card cr-badge ${k.badge ? 'on' : ''}"><div class="row between"><b>「正式錄取」徽章</b><span class="tag ${k.badge ? 'cyan' : ''}">${k.badge ? `已取得・${md(k.badge)}` : all ? '可以領取' : '未取得'}</span></div>
-      ${!k.badge ? `<button type="button" class="btn primary" id="crBadge" style="width:100%;margin-top:8px" ${all ? '' : 'disabled'}>${all ? `領取徽章＋薪水 ${REWARD_C.badge}` : '四件事做完才能領'}</button>` : '<p class="note" style="margin:6px 0 0">恭喜轉正！明天開始就是正式牛馬了。</p>'}</div>
-    <div class="card"><div class="row between"><b>新手禮包</b><span class="tag">${k.gift ? `已領・${md(k.gift)}` : '一人一次'}</span></div>
-      <p class="note" style="margin:6px 0 0">薪水 ${REWARD_C.gift}＋解鎖「金色工牌」（在捏自己的牛馬裡換）。</p>
-      ${k.gift ? '' : '<button type="button" class="btn cyan" id="crGift" style="width:100%;margin-top:8px">打開新手禮包</button>'}</div>
-    <button type="button" class="btn ghost" id="crLook" style="width:100%">捏自己的牛馬（髮型・領帶・工牌顏色）</button>
-    <p class="note">${gm ? 'GM 預覽：可以看全部流程，不會存檔、也不會發薪水。' : '薪水是站內虛擬點數，只能在站內使用，不能換現金。'}</p>`;
-  el.querySelectorAll('[data-crgo]').forEach(b => b.onclick = () => C.goZone(b.dataset.crgo));
-  const bb = el.querySelector('#crBadge');
-  bb && (bb.onclick = () => { if (bb.disabled || gmStop()) return; const kk = K(); if (kk.badge) return; if (!onboardSteps().every(s => s.done)) { C.toast('四件事還沒做完'); return; }
-    bb.disabled = true; kk.badge = C.today(); pay(REWARD_C.badge, 5, bb, `恭喜「正式錄取」！薪水 +${REWARD_C.badge}`); C.celebrate && C.celebrate(); again(el, onboard, 500); });
-  const gb = el.querySelector('#crGift');
-  gb && (gb.onclick = () => { if (gb.disabled || gmStop()) return; const kk = K(); if (kk.gift) return; gb.disabled = true; kk.gift = C.today(); pay(REWARD_C.gift, 2, gb, `新手禮包：薪水 +${REWARD_C.gift}，金色工牌已解鎖`); again(el, onboard, 500); });
+  const k = K(), gm = C.isGM(), cur = currentPath(C.S, C.today());
+  const claims = C.S.claims || {};
+  const step = cur.step || 1;
+  const lis = QUEST_STEPS.map(q => {
+    const cls = q.n < step || (cur.done && q.n <= 10) && !(cur.waiting && q.n === 5 && step === 5) ? 'is-done'
+      : (q.n === step && !cur.waiting) ? 'is-now'
+      : (cur.waiting && q.n === 5 && q.n === step) ? 'is-done'
+      : 'is-later';
+    const done = cls === 'is-done' || (cur.waiting && q.n <= 5);
+    const now = !cur.waiting && !cur.done && q.n === step;
+    return `<li class="${now ? 'is-now' : done ? 'is-done' : 'is-later'}"><b>${q.title}</b></li>`;
+  }).join('');
+  const goBtn = cur.go && !cur.waiting && !cur.done ? `<button type="button" class="btn primary" id="crGo" style="width:100%;margin-top:10px">去做：${cur.title}</button>` : '';
+  const showPath = cur.waiting || !isDay1(C.S, C.today()) || cur.done || (cur.step || 0) >= 6;
+  const pathLis = PATH_MILESTONES.map(m => {
+    const got = m.id === 'master' ? !!claims.master : !!claims[m.id];
+    const now = cur.milestone === m.id;
+    return `<li class="${now ? 'is-now' : (got ? 'is-done' : '')}"><em>${m.when}</em><b>${m.name}</b><span>${m.hint}</span></li>`;
+  }).join('');
+  el.innerHTML = `<section class="uk-root uk-quest" data-uk="quest" data-step="${step}" aria-label="任務指引">
+      <header class="uk-plaque"><small>新手任務</small><b>現在要做這一件</b></header>
+      <div class="uk-quest__now"><em>第 ${step} 步</em><b>${cur.waiting ? '明天先來晨會' : cur.title}</b><span>${cur.next}</span></div>
+      ${goBtn}
+      ${cur.waiting ? '<div class="uk-onboard__done"><b>明天先來晨會</b><p>並看見「領取與拜師之路」進度。</p></div>' : ''}
+      ${cur.done ? '<div class="uk-onboard__done"><b>已申請拜師</b><p>請走官方 LINE 完成掌門面試</p></div>' : ''}
+      <ol class="uk-quest__list">${lis}</ol>
+      <p class="uk-note">服裝店隨時可換裝扮，不是必做任務。一次只做眼前這一件。內容僅供學習，非投資建議。</p>
+    </section>
+    ${showPath ? `<section class="uk-root uk-path" data-uk="master-path" aria-label="領取與拜師之路" style="margin-top:12px">
+      <header class="uk-plaque"><small>一樓大廳</small><b>領取與拜師之路</b></header>
+      <p class="uk-f1__lead">模型是工具，生存靠紀律，最後才拜師。</p>
+      <ol class="uk-path__list">${pathLis}</ol>
+    </section>` : ''}
+    <p class="note" style="margin:12px 0 0">${gm ? 'GM 預覽：可以走完全程，不會存檔、也不會發薪水。' : '薪水是站內虛擬點數，不能換現金。'}</p>
+    ${k.gift ? '' : `<button type="button" class="btn ghost sm" id="crGift" style="width:100%;margin-top:8px">打開新手禮包（可選）</button>`}
+    <button type="button" class="btn ghost sm" id="crLook" style="width:100%;margin-top:6px">捏自己的牛馬</button>`;
+  const gb = el.querySelector('#crGo');
+  gb && (gb.onclick = () => C.goZone ? C.goZone(cur.go) : C.open(cur.go));
+  const gift = el.querySelector('#crGift');
+  gift && (gift.onclick = () => { if (gift.disabled || gmStop()) return; const kk = K(); if (kk.gift) return; gift.disabled = true; kk.gift = C.today(); pay(REWARD_C.gift, 2, gift, `新手禮包：薪水 +${REWARD_C.gift}，金色工牌已解鎖`); again(el, onboard, 500); });
   el.querySelector('#crLook').onclick = () => C.open('mynm');
 }
-/* ---------- 捏自己的牛馬 ---------- */
+
 function mynm(el) {
   const k = K(), gm = C.isGM(), eq = (C.equipped && C.equipped()) || {};
   const cur = C.lookDraft || (C.lookDraft = { ...k.look });
   const sw = (key, label) => `<div class="field"><label>${label}</label><div class="moods cr-opts">${LOOK_OPT[key].map(([v, n, col, need]) => {
     const locked = need === 'gift' && !k.gift && !gm;
     return `<button type="button" data-lk="${key}" data-lv="${v}" class="${cur[key] === v ? 'sel' : ''}" ${locked ? 'disabled title="新手禮包解鎖"' : ''}>${col != null ? `<i class="cr-dot" style="background:#${col.toString(16).padStart(6, '0')}"></i>` : ''}${n}${locked ? '🔒' : ''}</button>`; }).join('')}</div></div>`;
-  el.innerHTML = `<p style="margin:0">捏一隻自己的牛馬。改完按「存下造型」，3D 場景裡的你會馬上換。</p>
+  const intro = (C.needsLookIntro && C.needsLookIntro()) || (C.needsLook && C.needsLook(C.S));
+  const nm = cur.name || k.look.name || '';
+  el.innerHTML = `<p style="margin:0">${intro ? '先選好自己的牛馬，存下造型再開始後面的任務。這是主線第 1 步，服裝店不是必做。' : '捏一隻自己的牛馬。改完按「存下造型」，3D 場景裡的你會馬上換。'}</p>
+    <div class="field"><label>牛馬名字（榜上只用這個，可之後再改）</label>
+      <input id="lkName" class="passin" lang="zh-Hant" autocomplete="off" autocapitalize="off" spellcheck="false" value="${C.esc(nm)}" placeholder="例如：小牛馬" style="width:100%"></div>
     ${sw('hair', '髮型')}${sw('tie', '領帶顏色')}${sw('badge', '工牌顏色')}
     ${eq.tie ? '<p class="note">你現在有穿服裝店的領帶，領帶顏色要脫下那條才看得到。</p>' : ''}
-    <button type="button" class="btn primary" id="lkSave" style="width:100%">${gm ? 'GM 預覽（不存檔）' : '存下造型'}</button>
+    <button type="button" class="btn primary" id="lkSave" style="width:100%">${intro ? (gm ? '存下並開始入職（GM 不存檔）' : '存下造型，開始入職') : (gm ? 'GM 預覽（不存檔）' : '存下造型')}</button>
     <button type="button" class="btn ghost sm" id="lkReset" style="width:100%;margin-top:6px">回到預設</button>
-    <p class="note">換造型不用花薪水。${gm ? 'GM 預覽：只改畫面，重新整理就回來。' : ''}</p>`;
-  el.querySelectorAll('[data-lk]').forEach(b => b.onclick = () => { if (b.disabled) return; cur[b.dataset.lk] = b.dataset.lv; C.setLook(cur); mynm(el); });
-  el.querySelector('#lkReset').onclick = () => { Object.assign(cur, DEFAULT_LOOK); C.setLook(cur); mynm(el); };
+    <p class="note">換造型不用花薪水。1 樓服裝店之後都在。${gm ? 'GM 預覽：只改畫面，重新整理就回來。' : ''}</p>`;
+  const readName = () => {
+    const nameEl = el.querySelector('#lkName');
+    if (nameEl) cur.name = String(nameEl.value || '').trim().slice(0, 10);
+  };
+  const nameInp = el.querySelector('#lkName');
+  if (nameInp) {
+    let composing = false;
+    nameInp.addEventListener('compositionstart', () => { composing = true; });
+    nameInp.addEventListener('compositionend', () => { composing = false; readName(); });
+    nameInp.addEventListener('input', ev => { if (ev.isComposing || composing) return; readName(); });
+  }
+  el.querySelectorAll('[data-lk]').forEach(b => b.onclick = () => { if (b.disabled) return; readName(); cur[b.dataset.lk] = b.dataset.lv; C.setLook(cur); mynm(el); });
+  el.querySelector('#lkReset').onclick = () => { readName(); Object.assign(cur, DEFAULT_LOOK); C.setLook(cur); mynm(el); };
+  const finishIntro = () => { if (intro && C.afterLookIntro) C.afterLookIntro(); };
   el.querySelector('#lkSave').onclick = () => {
-    if (gm) { C.setLook(cur); C.toast('GM 預覽：造型只在這次畫面生效，不存檔'); return; }
-    const kk = K(); kk.look = { ...cur }; kk.lookSet = true; C.lookDraft = null; C.save(); C.setLook(kk.look); C.blip(988); C.toast('造型已存下'); C.refreshHud(); };
+    readName();
+    if (gm) { C.setLook(cur); C.toast('GM 預覽：造型只在這次畫面生效，不存檔'); finishIntro(); return; }
+    const kk = K();
+    kk.look = { hair: cur.hair, tie: cur.tie, badge: cur.badge, name: cur.name || '' };
+    kk.lookSet = true;
+    C.lookDraft = { ...kk.look };
+    C.save();
+    C.setLook(kk.look);
+    C.blip(988);
+    C.toast('造型已存下');
+    C.refreshHud();
+    finishIntro();
+  };
 }
 
 /* ---------- 2) 下班複盤 1 題（題目由真實收盤資料產生） ---------- */
@@ -172,27 +341,62 @@ function flash(el) {
   b && (b.onclick = () => { if (b.disabled || gmStop()) return; const kk = K(); if (kk.flash.includes(top.key)) return; b.disabled = true; kk.flash.push(top.key); pay(REWARD_C.flash, 1, b, `突發行情看完了，薪水 +${REWARD_C.flash}`); again(el, flash, 500); C.refreshHud(); });
 }
 
-/* ---------- 每週前十（本機版） ---------- */
-const COLLEAGUES = ['晨會主持 Kevin', '同期學員 阿拓', '同期學員 小晴', '同期學員 柏毅', '行政小芳', '戰報編輯阿哲', '數據分析師小陳', '量化助理 Rex', '風控官阿凱', '茶水間阿姨', 'K線教練老周', '閃避教官小莉'];
+/* ---------- 本週猜盤總榜（2 樓與 4 樓同一張榜、同一總分；只用真實玩家成績，不編造名單） ---------- */
+export function fmtWeekMark(m) {
+  if (!m || (!m.n && !m.pending)) return '—';
+  if (!m.n && m.pending) return '已猜・待開獎';
+  const core = `對 ${m.win | 0}／錯 ${m.lose | 0}`;
+  return m.pending ? core + '・另有待開獎' : core;
+}
 export function weeklyBoard() {
-  const wk = C.weekKey(), day = Math.min(5, ((new Date().getDay() + 6) % 7) + 1); // 週一=1，週末算 5 天
-  const npc = COLLEAGUES.map(n => ({ name: n, pts: Math.round((hash(wk + n) % 31) * day / 5) * 10, npc: true }));
-  const rows = npc.concat([{ name: '你', pts: C.weekPts(), me: true }]).sort((a, b) => b.pts - a.pts || (a.me ? -1 : b.me ? 1 : 0));
-  const pos = rows.findIndex(r => r.me) + 1;
-  return { rows: rows.slice(0, 10), pos, me: rows[pos - 1], wk };
+  const pts = (C.weekPts && C.weekPts()) || 0, st = (C.guessStat && C.guessStat()) || {};
+  const name = horseName(C.S);
+  const marks = (C.weekMarks && C.weekMarks()) || { tw: { win: 0, lose: 0, n: 0, pending: 0 }, us: { win: 0, lose: 0, n: 0, pending: 0 } };
+  // 現有 Supabase board 沒有本週猜盤欄位。未接通前不編造其他玩家，也不把空榜自己寫成第一名。
+  const remote = (C.weekBoardRows && C.weekBoardRows()) || { hooked: false, rows: [], status: 'unhooked' };
+  const rows = Array.isArray(remote.rows) ? remote.rows.filter(r => r && r.name) : [];
+  const hooked = !!remote.hooked && remote.status !== 'offline' && remote.status !== 'unhooked';
+  let pos = null, ahead = null;
+  if (hooked && rows.length) {
+    const i = rows.findIndex(r => r.me);
+    pos = i >= 0 ? i + 1 : null;
+    if (i > 0) ahead = rows[i - 1];
+  }
+  return { hooked, status: remote.status || (hooked ? 'ok' : 'unhooked'), me: { name, pts, me: true, streak: st.streak || 0, best: st.best || 0, rank: pos, tw: marks.tw, us: marks.us }, wk: C.weekKey && C.weekKey(), rows, pos, ahead };
+}
+function weekRowCells(r) {
+  const tw = r.twLabel || fmtWeekMark(r.tw);
+  const us = r.usLabel || fmtWeekMark(r.us);
+  return `<span>台股 ${tw}</span><span>美股 ${us}</span><span>${r.pts | 0} 分</span>`;
+}
+export function weekBoardHTML(place) {
+  const b = weeklyBoard();
+  const where = place === 'f4' ? '四樓大廳螢幕' : '2 樓晨會室';
+  const list = (b.hooked && b.rows.length)
+    ? b.rows.slice(0, 10).map((r, i) => `<li data-rank="${i + 1}" class="${r.me ? 'is-me' : ''}"><i>${i + 1}</i><b>${C.esc(r.name)}</b>${weekRowCells(r)}</li>`).join('')
+    : '<li class="uk-board__empty">還沒有人上榜</li>';
+  const rankTxt = b.pos ? `第 ${b.pos} 名` : '名次 —';
+  const gapTxt = (b.ahead && Number.isFinite(b.ahead.pts))
+    ? `跟前一名差 ${Math.max(0, (b.ahead.pts | 0) - (b.me.pts | 0))} 分`
+    : '跟前一名差 — 分';
+  const note = b.status === 'offline'
+    ? '榜單暫時連不上，先顯示自己的真實積分，不編造其他名次。開獎只用當天真實收盤。非投資建議。'
+    : (b.hooked
+      ? '每一列可見台股對錯、美股對錯和總分。只猜一個市場也能上榜。榜上只用捏臉後的牛馬名字，開獎用當天真實收盤。非投資建議。'
+      : '這是唯一的猜盤總榜：同一週台股加權與那斯達克綜合指數（^IXIC）的對錯加進同一總分，只猜一個也能上榜。每一列可見台股對錯、美股對錯和總分。多人週榜還沒接上現有伺服器，先顯示你自己的真實成績，不拿假名字撐場面，空榜只寫還沒有人上榜，並附自己的分數與名次（或 —）。開獎用當天真實收盤。非投資建議。');
+  return `<section class="uk-root uk-board" data-uk="week-board" aria-label="本週猜盤總榜">
+    <header class="uk-board__bar"><small>${where}</small><b>本週猜盤總榜</b><span>2 樓與 4 樓同一張榜</span></header>
+    <p class="uk-board__lead">同一週猜台股加權、那斯達克綜合指數（^IXIC），對錯分數加進同一總分。只猜其中一個也能上榜。每一列可見台股對錯、美股對錯和總分。榜上只用捏臉後的牛馬名字。</p>
+    <ol class="uk-board__list" data-uk-board>${list}</ol>
+    <div class="uk-board__me"><span>我的本週成績</span><b class="uk-board__name">${C.esc(b.me.name)}</b><b data-uk-week-rank>${rankTxt}</b><span data-uk-tw>台股 ${fmtWeekMark(b.me.tw)}</span><span data-uk-us>美股 ${fmtWeekMark(b.me.us)}</span><b data-uk-week-pts>總分 ${b.me.pts | 0}</b><b data-uk-streak>連對 ${b.me.streak || 0} 天</b><em data-uk-gap>${gapTxt}</em></div>
+    <p class="uk-note">${note}</p>
+  </section>`;
 }
 function leaderLocal(el) {
-  const b = weeklyBoard(), inTop = b.pos <= 10;
-  el.innerHTML = `<div class="card row between"><span>你本週猜盤積分</span><b class="stat" style="font-size:1.5rem">${b.me.pts} 分</b></div>
-    <div class="card"><div class="row between"><b>本週前十（本機版）</b><span class="tag">${inTop ? `你第 ${b.pos} 名` : `你第 ${b.pos} 名・未進前十`}</span></div>
-      <p class="note" style="margin:6px 0 0">${md(b.wk)} 起這一週。猜盤桌猜中一市場 +10 分。</p></div>
-    <ol class="floors cr-week">${b.rows.map((r, i) => `<li class="${r.me ? 'here' : ''}"><b>#${i + 1}</b><span>${C.esc(r.name)}<br><small class="note">${r.me ? '真實成績' : 'NPC 同事'}</small></span><em class="st${r.me ? ' here' : ''}">${r.pts} 分</em></li>`).join('')}</ol>
-    ${inTop ? '' : `<ol class="floors"><li class="here"><b>#${b.pos}</b><span>你<br><small class="note">真實成績</small></span><em class="st here">${b.me.pts} 分</em></li></ol>`}
-    <div class="card"><div class="row between"><span>連對天數</span><b>${C.guessStat().streak || 0} 天</b></div><div class="row between" style="margin-top:8px"><span>最佳連對</span><b>${C.guessStat().best || 0} 天</b></div></div>
-    <p class="note">本機版：只有「你」是真實成績，其他名字是大樓裡的 NPC 同事（不是真人玩家）。多人真實排名請看 1 樓財富榜、2 樓預測擂台。非投資建議。</p>`;
+  el.innerHTML = weekBoardHTML('f2');
 }
 
-/* ---------- 3) 展覽 ---------- */
+
 function exWs(el) {
   el.innerHTML = `<p style="margin:0">三個真實發生過的日子，看懂「個股可能倒、指數會換股」。</p>
     ${WALL_ST.map((e, i) => `<div class="card cr-ex" data-ex="${i}"><div class="row between"><span class="tag cyan">${e.date}</span><span class="tag">${e.big}</span></div>
@@ -238,21 +442,103 @@ function exMore(el) {
 }
 
 /* ---------- 4) 置入：大廳戰報看板（只連台股、美股固定戰報網址） ---------- */
+function fmtClose(n) { return Number(n).toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function sessionLine(s) {
+  if (!s) return '尚無收盤資料';
+  const move = s.pct > 0 ? '上漲' : s.pct < 0 ? '下跌' : '平盤';
+  return `收 ${fmtClose(s.close)}，${move} ${Math.abs(s.pct).toFixed(2)}%。`;
+}
+export function reportTickerHTML(rows, { day1 = false } = {}) {
+  const item = (row) => {
+    if (!row || !row.s) return `<a class="uk-ticker__row" href="${row && row.href || '#'}" target="_blank" rel="noopener"><em>尚無資料</em><span class="uk-ticker__mkt">${row && row.name || ''}</span><span class="uk-ticker__line">尚無收盤資料，不編造數字。</span></a>`;
+    const s = row.s;
+    const tag = s.closed ? `${s.label}・上一個交易日 ${s.date.slice(5).replace('-', '/')}` : s.label;
+    const chg = `${s.pct > 0 ? '+' : ''}${s.pct.toFixed(2)}%`;
+    return `<a class="uk-ticker__row" href="${row.href}" target="_blank" rel="noopener" data-mkt="${row.id}" data-go="${day1 ? 'report-link' : 'floor-4'}">
+      <em>${tag}</em>
+      <span class="uk-ticker__mkt">${row.name}</span>
+      <span class="uk-ticker__val">${fmtClose(s.close)}</span>
+      <span class="uk-ticker__chg">${chg}</span>
+      <span class="uk-ticker__line">${sessionLine(s)}</span>
+    </a>`;
+  };
+  return `<section class="uk-root uk-ticker" data-uk="f1-report" aria-label="今日戰報">
+    <header class="uk-plaque"><small>一樓大廳</small><b>今日戰報</b></header>
+    <p class="uk-f1__lead">${day1 ? '每天有新分析。第一天可見，不是必做；第二天起再上 4 樓看完整內容。' : '每天有新分析。點這一行上 4 樓看完整戰報。'}</p>
+    ${rows.map(item).join('')}
+    <p class="uk-note">學交易是學生存。平時靠紀律，恐慌時再進場有價資產。這不是進場指令，不保證獲利。休市會標明並附上一個交易日的日期與數字，不拿舊數字假裝今天。公開樓層只放台股與美股。非投資建議。</p>
+  </section>`;
+}
+export function reportAnalysisHTML(rows) {
+  const card = (row) => {
+    const s = row.s;
+    if (!s) return `<article class="uk-analysis__card" data-mkt="${row.id}"><em>${row.name}</em><b>${row.name}</b><p class="uk-analysis__sum">尚無收盤資料，不編造數字。</p></article>`;
+    const dayTxt = s.date.slice(5).replace('-', '/');
+    const tag = s.closed ? `${s.label}・上一個交易日 ${dayTxt}` : s.label;
+    return `<article class="uk-analysis__card" data-mkt="${row.id}">
+      <em>${tag}</em>
+      <b>${row.name}</b>
+      <p class="uk-analysis__meta"><span>${dayTxt}</span>　<span>${fmtClose(s.close)}</span>　<span>${s.pct > 0 ? '+' : ''}${s.pct.toFixed(2)}%</span></p>
+      <p class="uk-analysis__sum">${sessionLine(s)}</p>
+      <a class="uk-cta uk-cta--gold" href="${row.href}" target="_blank" rel="noopener">看完整戰報</a>
+    </article>`;
+  };
+  return `<section class="uk-root uk-analysis" data-uk="f4-analysis" aria-label="今日分析已更新">
+    <header class="uk-plaque"><small>四樓戰報樓</small><b>今日分析已更新</b></header>
+    <p class="uk-f1__lead">台股、美股分開看。看完即可完成今日戰報任務。學交易是學生存：平時靠紀律，恐慌時再進場有價資產。這不是進場指令，不保證獲利。</p>
+    <div class="uk-analysis__grid">${rows.map(card).join('')}</div>
+    <p class="uk-note">休市顯示上一個交易日並標明日期。不做個股財報拆解。公開樓層只放台股與美股。非投資建議。</p>
+  </section>`;
+}
+export function reportRows() {
+  const R = C.PUBLIC_REPORTS || {};
+  const session = C.lastSession || (() => null);
+  const todayStr = C.today();
+  return [
+    { id: 'tw', name: MKT_TITLE.tw, href: R.tw, s: session('tw', todayStr) },
+    { id: 'us', name: MKT_TITLE.us, href: R.us, s: session('us', todayStr) },
+  ];
+}
 function warboard(el) {
-  const R = C.PUBLIC_REPORTS || {}, a = (u, t, s) => u ? `<a class="screen" href="${u}" target="_blank" rel="noopener"><div class="row between"><h3>${t}</h3><span class="tag cyan">打開</span></div><div class="note">${s}</div></a>` : `<div class="screen lockedrow"><div class="row between"><h3>${t}</h3><span class="tag">準備中</span></div></div>`;
-  el.innerHTML = `<p style="margin:0">每天收盤後更新的多空戰報，點下去直接看。</p>
-    <div class="screens" style="margin-top:12px">${a(R.tw, '台股每日多空戰報', '每天收盤後更新')}${a(R.us, '美股（納斯達克）每日多空戰報', '美股收盤後更新')}</div>
-    ${lineCtaHTML('想更深入？加入 LINE')}
-    <p class="note">非投資建議。</p>`;
+  const paint = () => {
+    if (!el.isConnected) return;
+    const day1 = isDay1(C.S, C.today());
+    el.innerHTML = reportTickerHTML(reportRows(), { day1 });
+    if (!day1) {
+      el.querySelectorAll('[data-go="floor-4"]').forEach(a => {
+        a.addEventListener('click', ev => { ev.preventDefault(); C.goZone && C.goZone('reports'); });
+      });
+    }
+  };
+  el.innerHTML = '<p class="note">載入今日戰報…</p>';
+  if (C.ensureResults) C.ensureResults().then(paint, paint); else paint();
+}
+function panicDay(el) {
+  el.innerHTML = `<section class="uk-root uk-panic" data-uk="panic-day" aria-label="今日恐慌課">
+    <header class="uk-plaque"><small>今日事件</small><b>今日恐慌課</b></header>
+    <p class="uk-panic__lead">市場明顯動盪。先把觀念看完，不要跟著慌。</p>
+    <p class="uk-panic__body">現在帶你去看生存課第三張「恐慌時再進場有價資產」，並看當天戰報。這不是進場訊號，也不保證這時買會賺。</p>
+    <div class="uk-panic__actions">
+      <button type="button" class="uk-cta uk-cta--gold" id="pkCard">去看第三張卡</button>
+      <button type="button" class="uk-cta" id="pkRep">看今日戰報</button>
+    </div>
+    <p class="uk-note">沒先把紀律和觀念學起來，恐慌來了也只是跟著摔。非投資建議。</p>
+  </section>`;
+  const card = el.querySelector('#pkCard');
+  card && (card.onclick = () => C.open && C.open('ac_intro', { card: 'sv3', panic: true }));
+  const rep = el.querySelector('#pkRep');
+  rep && (rep.onclick = () => C.goZone && C.goZone('reports'));
 }
 
 const IC = (p, c = '#3ef2ff') => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">${p.replace(/STROKE/g, c)}</svg>`;
 export const CAREER_PANELS = [
-  { id: 'onboard', floor: 'lobby', name: '入職第一天', kicker: '新手清單・新手禮包' },
+  { id: 'onboard', floor: 'lobby', name: '領取與拜師之路', kicker: '領模型・學知識・拜師' },
   { id: 'flash', floor: 'lobby', name: '突發行情', kicker: '真實收盤・單日漲跌 ≥ 3%' },
   { id: 'warboard', floor: 'lobby', name: '戰報看板', kicker: '台股・美股每日戰報' },
+  { id: 'panic', floor: '_ui', name: '今日恐慌課', kicker: '生存課第三張・當日戰報' },
+
   { id: 'mynm', floor: '_ui', name: '捏自己的牛馬', kicker: '髮型・領帶・工牌顏色' },
-  { id: 'offq', floor: 'f2', name: '下班複盤 1 題', kicker: '真實收盤出題' },
+  { id: 'offq', floor: 'f2', name: '下班複盤 1 題', kicker: '真實收盤出題', hidden: true }, // 這輪先不放公開選單，程式後備保留
   { id: 'ex_ws', floor: 'f8', name: '華爾街歷史展廳', kicker: '雷曼・GE・NVDA' },
   { id: 'ex_vs', floor: 'f8', name: '大盤比個股對比牆', kicker: '同一天差多少' },
   { id: 'ex_dca', floor: 'f8', name: '0050 定期定額示範', kicker: '示範・真實收盤價' },
@@ -269,13 +555,17 @@ export const CAREER_ICON = {
   ex_dca: IC('<circle cx="12" cy="12" r="8"/><path d="M8 14l3-3 2 2 3-4" stroke="STROKE"/>', '#2fd38a'),
   ex_more: IC('<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 12h8M12 8v8" stroke="STROKE"/>', '#9b7dff'),
 };
-export const RENDER_CAREER = { onboard, mynm, offq, flash, warboard, ex_ws: exWs, ex_vs: exVs, ex_dca: exDca, ex_more: exMore, leaderLocal };
+export const RENDER_CAREER = { onboard, mynm, offq, flash, warboard, panic: panicDay, ex_ws: exWs, ex_vs: exVs, ex_dca: exDca, ex_more: exMore, leaderLocal };
 export function careerTodos(floor) {
   if (!C || C.isGM()) return {};
   const k = K(), t = C.tpe(), ev = flashEvents();
+  const cur = currentPath(C.S, C.today());
+  const actionable = cur && cur.go && !cur.waiting && !cur.done && cur.id !== 'continue';
+  const needReport = !isDay1(C.S, C.today()) && cur && (cur.id === 'reports' || cur.id === 'panic');
   return {
-    onboard: floor === 'lobby' && (!k.gift || (!k.badge && onboardSteps().every(s => s.done))),
+    onboard: floor === 'lobby' && actionable,
+    warboard: floor === 'lobby' && needReport,
     flash: floor === 'lobby' && !!(ev[0] && !k.flash.includes(ev[0].key)),
-    offq: floor === 'f2' && !k.offq[t.date] && !!offQuestion(),
+    offq: false, // 這輪不在公開選單出現，也不掛紅點
   };
 }

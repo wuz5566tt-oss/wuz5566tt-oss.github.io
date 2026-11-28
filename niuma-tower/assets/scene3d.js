@@ -21,6 +21,7 @@ const SLOT = {
   G: { obj: [0, -15.9], spot: [0, -12.2], f: [0, -1] },
   H: { obj: [7.2, -15.9], spot: [7.2, -13.9], f: [0, -1] },
   J: { obj: [0, -7.2], spot: [0, -5.1], f: [0, -1] },
+  I: { obj: [-7.4, -14.6], spot: [-5.2, -13.4], f: [-1, 0] },
 };
 const LIFT_IN = new THREE.Vector3(7.2, 0, -17.2);
 
@@ -1107,7 +1108,7 @@ export async function create3D(canvas, hooks) {
       g.fillStyle = '#ffd68a'; g.font = `900 46px ${FONT}`; g.fillText(f.num + 'F', 64, y);
       g.fillStyle = '#e9f3ff'; g.font = `800 40px ${FONT}`; g.fillText(f.name, 200, y);
       g.textAlign = 'right'; g.font = `700 32px ${FONT}`;
-      g.fillStyle = f.here ? '#3ef2ff' : f.open ? '#2fd38a' : '#ffc85a'; g.fillText(f.here ? '你在這裡' : f.status, w - 64, y); g.textAlign = 'left';
+      g.fillStyle = f.here ? '#3ef2ff' : f.open ? '#2fd38a' : '#ffc85a'; g.fillText(f.here ? '你在這裡' : f.open ? '已開放' : f.status, w - 64, y); g.textAlign = 'left';
     });
     dirTex.needsUpdate = true;
   }
@@ -1140,6 +1141,17 @@ export async function create3D(canvas, hooks) {
     rbox(.4, .2, .4, .04, std(0x111, { metalness: .3 }), 0, 2.15, .7, g);
     wallSign('服裝店', '薪水換裝扮', 'D', L, true); }
 
+  { const g = zoneGroup('hr', 'E', L);
+    cyl(1.05, 1.15, 1.0, 24, darkPanel, 0, .5, 0, g); cyl(1.1, 1.1, .06, 32, goldGlow, 0, 1.02, 0, g);
+    rbox(.7, .08, 1.1, .04, goldM, 0, 1.08, .15, g);
+    wallSign('人資室', '錄取與升職', 'E', L, true); }
+  { const g = zoneGroup('honor', 'I', L);
+    ['實習', '正職', '組長', '經理', '總監', '董事'].forEach((n, i) => {
+      const hgt = .55 + i * .28, z = -1.2 + i * .48;
+      const p = rbox(.4, hgt, .4, .06, goldM, .15, hgt / 2, z, g); p.userData.rankIdx = i; (g.userData.pillars = g.userData.pillars || []).push(p);
+    });
+    wallSign('升職之路', '你現在在哪一階', 'I', L, false, 4.9); }
+
   // ---- 2 樓：晨會室（暖色晨光） ----
   // 晨會室
   { const g = zoneGroup('guess', 'D', F2);
@@ -1153,17 +1165,50 @@ export async function create3D(canvas, hooks) {
     plane(7, 2.4, sun, -W + .05, 3.4, -5.5, F2, Math.PI / 2); }
   const leadTex = canvasTex(1024, 640, () => {});
   { const g = zoneGroup('leader', 'G', F2); box(6.4, 4, .14, armor, 0, 3, .06, g); plane(6.2, 3.88, leadTex, 0, 3, .15, g); box(6.6, .1, .2, glow(0xff9a3c, 1.6), 0, 5.05, .08, g); }
+  function paintWeekBoard(g, w, h, info, theme) {
+    const warm = theme === 'warm';
+    g.clearRect(0, 0, w, h);
+    g.fillStyle = warm ? '#140a06' : '#06101f'; g.fillRect(0, 0, w, h);
+    if (!warm) { g.strokeStyle = '#3ef2ff'; g.lineWidth = 8; g.strokeRect(10, 10, w - 20, h - 20); }
+    g.textAlign = 'left'; g.textBaseline = 'middle';
+    g.fillStyle = warm ? '#ffcf8a' : '#9ff4ff'; g.font = `900 56px ${FONT}`; g.fillText('本週猜盤總榜', 48, 64);
+    const rows = (info && info.board) || [];
+    const me = info && info.meBoard;
+    const mark = (side, rec) => {
+      if (!rec) return '—';
+      if (!(rec.n | 0) && rec.pending) return '已猜';
+      if (!(rec.n | 0)) return '—';
+      return `對${rec.win | 0}錯${rec.lose | 0}`;
+    };
+    if (!rows.length) {
+      g.textAlign = 'center';
+      g.fillStyle = warm ? '#e9d9c8' : '#8fa3c4'; g.font = `800 42px ${FONT}`;
+      g.fillText('還沒有人上榜', w / 2, 260);
+      g.fillStyle = warm ? '#ffe3a0' : '#ffe3a0'; g.font = `600 28px ${FONT}`;
+      if (me) {
+        g.fillText(`我的本週成績　${me.name || '牛馬'}　名次 —`, w / 2, 340);
+        g.fillText(`台股 ${mark('tw', me.tw)}　美股 ${mark('us', me.us)}　總分 ${me.pts | 0}`, w / 2, 400);
+      } else {
+        g.fillText('先顯示自己的本週積分', w / 2, 360);
+      }
+      g.textAlign = 'left';
+    } else {
+      rows.slice(0, 6).forEach((r, i) => {
+        const y = 150 + i * 78;
+        g.fillStyle = r.me ? (warm ? 'rgba(255,154,60,.25)' : 'rgba(62,242,255,.18)') : 'rgba(255,255,255,.04)';
+        g.fillRect(40, y - 32, w - 80, 64);
+        g.fillStyle = warm ? '#ffd68a' : '#9ff4ff'; g.font = `900 36px ${FONT}`; g.fillText(String(r.rank || (i + 1)), 64, y);
+        g.fillStyle = r.me ? '#fff' : (warm ? '#e9d9c8' : '#d7e7ff'); g.font = `800 32px ${FONT}`; g.fillText(r.name || '', 150, y);
+        g.font = `700 24px ${FONT}`; g.fillStyle = warm ? '#e9d9c8' : '#d7e7ff';
+        g.fillText(`台 ${mark('tw', r.tw)}  美 ${mark('us', r.us)}`, 150, y + 22);
+        g.textAlign = 'right'; g.fillStyle = warm ? '#ff9a3c' : '#3ef2ff'; g.font = `800 34px ${FONT}`; g.fillText((r.pts | 0) + ' 分', w - 64, y); g.textAlign = 'left';
+      });
+    }
+  }
   function drawLeader(info) {
-    const g = leadTex._g, w = 1024, h = 640; g.clearRect(0, 0, w, h); g.fillStyle = '#140a06'; g.fillRect(0, 0, w, h);
-    g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillStyle = '#ffcf8a'; g.font = `900 60px ${FONT}`; g.fillText('本週猜盤排行榜', 48, 64);
-    g.textAlign = 'right'; g.font = `600 28px ${FONT}`; g.fillStyle = 'rgba(255,207,138,.7)'; g.fillText('即將公開', w - 48, 64); g.textAlign = 'left';
-    (info && info.board || []).slice(0, 6).forEach((r, i) => {
-      const y = 150 + i * 80; g.fillStyle = r.me ? 'rgba(255,154,60,.25)' : 'rgba(255,255,255,.04)'; g.fillRect(40, y - 34, w - 80, 68);
-      g.fillStyle = '#ffd68a'; g.font = `900 40px ${FONT}`; g.fillText(r.rank + '', 64, y);
-      g.fillStyle = r.me ? '#fff' : '#e9d9c8'; g.font = `800 36px ${FONT}`; g.fillText(r.name, 150, y);
-      g.textAlign = 'right'; g.fillStyle = '#ff9a3c'; g.fillText(r.pts + ' 分', w - 64, y); g.textAlign = 'left';
-    });
+    paintWeekBoard(leadTex._g, 1024, 640, info, 'warm');
     leadTex.needsUpdate = true;
+    if (f4BoardTex && f4BoardTex._g) { paintWeekBoard(f4BoardTex._g, 1024, 640, info, 'cool'); f4BoardTex.needsUpdate = true; }
   }
   { const g = new THREE.Group(); g.position.set(7.4, 0, -3.2); F2.add(g); rbox(1.2, 1.05, 3, .1, wood, 0, .52, 0, g); box(1.24, .05, 3.04, glow(0xff9a3c, 1.4), 0, 1.06, 0, g);
     rbox(.5, .7, .5, .08, armor2, 0, 1.4, -.8, g); [0, .3, .6].forEach(k => cyl(.1, .08, .2, 10, std(0xf2f5fb), 0, 1.16, .3 + k, g));
@@ -1199,40 +1244,19 @@ export async function create3D(canvas, hooks) {
   // ---- 4 樓：戰報與榮譽牆（紅金殿堂） ----
   // 戰報牆（一樓：台股、美股公開，A股在 68 樓）
   { const g = zoneGroup('reports', 'G', F4);
-    const lockTex = canvasTex(640, 400, (c, w, h) => {
-      c.fillStyle = '#06101f'; c.fillRect(0, 0, w, h);
-      c.strokeStyle = '#ffc85a'; c.lineWidth = 10; c.strokeRect(w / 2 - 44, 170, 88, 70); c.beginPath(); c.arc(w / 2, 170, 32, Math.PI, 0); c.stroke();
-      c.fillStyle = '#ffe3a0'; c.textAlign = 'center'; c.font = `900 54px ${FONT}`; c.fillText('A股戰報', w / 2, 100); c.font = `700 34px ${FONT}`; c.fillStyle = '#9ff4ff'; c.fillText('68 樓・自己人專區', w / 2, 310);
-    });
     ['台股', '美股'].forEach((n, i) => {
-      box(3.5, 2.2, .12, armor, (i - 1) * 3.9, 2.9, .06, g);
+      box(3.5, 2.2, .12, armor, (i - .5) * 3.9, 2.9, .06, g);
       const t = canvasTex(512, 320, () => {}); t.userData = { name: n, seed: i * 7 + 1, pts: Array.from({ length: 40 }, (_, k) => 160 + Math.sin(k * .4 + i) * 40) };
-      plane(3.3, 2.06, t, (i - 1) * 3.9, 2.9, .14, g); publicScreens.push(t);
+      plane(3.3, 2.06, t, (i - .5) * 3.9, 2.9, .14, g); publicScreens.push(t);
     });
-    box(3.5, 2.2, .12, armor, 3.9, 2.9, .06, g); plane(3.3, 2.06, lockTex, 3.9, 2.9, .14, g);
-    const banner = textTex(['戰報牆', '台股・美股每日多空戰報｜A股在 68 樓自己人專區'], { w: 1400, h: 300, size: 120, color: '#9ff4ff', border: '#3ef2ff', glowC: '#3ef2ff', sub: '#ffd68a' });
+    const banner = textTex(['戰報牆', '台股・美股每日多空戰報'], { w: 1400, h: 300, size: 120, color: '#9ff4ff', border: '#3ef2ff', glowC: '#3ef2ff', sub: '#ffd68a' });
     plane(6.5, 1.4, banner, 0, 5.0, .14, g); }
-  // STAR史塔財商榮譽牆
-  { const g = zoneGroup('heroes', 'F', F4);
-    const t = canvasTex(1024, 640, (c, w, h) => {
-      c.fillStyle = '#0d0a05'; c.fillRect(0, 0, w, h); c.strokeStyle = '#ffc85a'; c.lineWidth = 10; c.strokeRect(10, 10, w - 20, h - 20);
-      c.fillStyle = '#ffd68a'; c.font = `900 72px ${FONT}`; c.textAlign = 'center'; c.shadowColor = '#ffc85a'; c.shadowBlur = 20; c.font = `900 60px ${FONT}`; c.fillText('STAR史塔財商榮譽牆', w / 2, 90); c.shadowBlur = 0;
-      for (let i = 0; i < 6; i++) { const x = 90 + (i % 3) * 300, y = 180 + Math.floor(i / 3) * 210; c.strokeStyle = 'rgba(255,200,90,.6)'; c.lineWidth = 3; c.strokeRect(x, y, 240, 180); c.fillStyle = 'rgba(255,214,138,.75)'; c.font = `700 34px ${FONT}`; c.font = `700 28px ${FONT}`; c.fillText('週榜前十', x + 120, y + 85); c.font = `600 22px ${FONT}`; c.fillText('榜接通後上牆', x + 120, y + 118); }
-    });
-    plane(3.6, 2.25, t, -.04, 2.6, 0, g, -Math.PI / 2);
-    box(.4, .08, 3, goldGlow, -.25, 1.25, 0, g);
-    [-1, 0, 1].forEach(k => { const cup = cyl(.16, .08, .32, 10, std(0xd9a441, { metalness: 1, roughness: .25, envMapIntensity: 1.2 }), -.3, 1.48, k * .9, g); }); }
-  { const g = zoneGroup('honor', 'C', F4);
-    ['實習', '正職', '組長', '經理', '總監', '董事'].forEach((n, i) => {
-      const hgt = .8 + i * .45, z = -1.5 + i * .6;
-      const p = rbox(.5, hgt, .5, .08, goldM, .2, hgt / 2, z, g); p.userData.rankIdx = i; (g.userData.pillars = g.userData.pillars || []).push(p);
-      const t = textTex(n, { w: 256, h: 128, size: 80, bg: null, border: null }); plane(.6, .3, t, .5, hgt + .3, z, g, Math.PI / 2);
-    });
-    wallSign('職級榮譽牆', '實習牛馬到董事', 'C', F4, true, 4.9); }
-  { const g = zoneGroup('cta', 'B', F4);
-    cyl(1.1, 1.2, 1.05, 24, darkPanel, 0, .52, 0, g); cyl(1.15, 1.15, .06, 32, glow(0xff4d6d, 1.8), 0, 1.06, 0, g);
-    const holo = new THREE.Mesh(keep(new THREE.OctahedronGeometry(.42)), keep(new THREE.MeshBasicMaterial({ color: C.gold, wireframe: true }))); holo.position.y = 1.9; g.add(holo); g.userData.spin = holo;
-    wallSign('加入 LINE', '加入自己人', 'B', F4, true); }
+  // 大廳大螢幕：本週猜盤總榜（與 2 樓同一張榜、同一總分；未接通則只顯示自己的積分）
+  const f4BoardTex = canvasTex(1024, 640, () => {});
+  { const g = zoneGroup('weekboard', 'F', F4);
+    plane(5.2, 3.2, f4BoardTex, 0, 2.8, 0, g, -Math.PI / 2);
+    box(.2, .08, 5.4, goldGlow, 0, 1.1, 0, g);
+    wallSign('本週猜盤總榜', '大廳大螢幕', 'F', F4, true, 4.9); }
   [[-6.5, -4.5], [-6.5, -11.5]].forEach(([x, z]) => { cyl(.35, .45, 1, 8, armor2, x, .5, z, F4); cyl(.28, .14, .5, 10, goldM, x, 1.25, z, F4); });
 
   // ---- 5 樓：目標值研究室（藍紫實驗室・六角地板・懸浮靶環） ----
@@ -1295,19 +1319,19 @@ export async function create3D(canvas, hooks) {
     plane(5.6, 1.2, ban, 0, 5.6, .14, g); }
   { const g = zoneGroup('labdrill', 'D', F6);
     rbox(1.3, .82, 3.4, .1, darkPanel, .2, .41, 0, g); box(1.32, .05, 3.42, goldGlow, .2, .84, 0, g);
-    [-.9, .9].forEach((z, i) => { box(.08, 1.2, 1.6, armor, .55, 1.62, z, g); const t = canvasTex(512, 384, () => {}); t.userData = { name: i ? '演練回放' : '實戰演練', seed: 11 + i * 5, bars: labSeries(11 + i * 5, 26), lines: true }; plane(1.5, 1.12, t, .5, 1.62, z, g, -Math.PI / 2); labFX.screens.push(t); drawLabScreen(t, 0); });
+    [-.9, .9].forEach((z, i) => { box(.08, 1.2, 1.6, armor, .55, 1.62, z, g); const t = canvasTex(512, 384, () => {}); t.userData = { name: i ? '走勢回放' : '結構觀察', seed: 11 + i * 5, bars: labSeries(11 + i * 5, 26), lines: false }; plane(1.5, 1.12, t, .5, 1.62, z, g, -Math.PI / 2); labFX.screens.push(t); drawLabScreen(t, 0); });
     const holo = new THREE.Mesh(keep(new THREE.TorusGeometry(.32, .03, 8, 40)), goldGlow); holo.position.set(-.2, 1.5, 0); g.add(holo); labFX.holos.push(holo);
     const dot = new THREE.Mesh(keep(new THREE.SphereGeometry(.08, 12, 10)), tealGlow); dot.position.set(-.2, 1.5, 0); g.add(dot);
-    wallSign('實戰演練', '進場・停損・目標評分', 'D', F6, true, 4.9); }
+    wallSign('結構觀察', '看懂這段結構怎麼走', 'D', F6, true, 4.9); }
   { const g = zoneGroup('labwiki', 'C', F6);
-    [['市場結構', 0xff5468, new THREE.OctahedronGeometry(.26)], ['流動性', 0xff7ae0, new THREE.TorusGeometry(.22, .07, 10, 28)], ['二次突破', C.gold, new THREE.IcosahedronGeometry(.25)]].forEach(([n, col, geo], i) => {
+    [['市場結構', 0xff5468, new THREE.OctahedronGeometry(.26)], ['流動性', 0xff7ae0, new THREE.TorusGeometry(.22, .07, 10, 28)]].forEach(([n, col, geo], i) => {
       const z = (i - 1) * 1.15;
       cyl(.34, .4, .16, 24, darkPanel, .3, .08, z, g); cyl(.36, .36, .03, 24, glow(col, 1.8), .3, .17, z, g);
       const tube = new THREE.Mesh(keep(new THREE.CylinderGeometry(.3, .3, 1.8, 24, 1, true)), keep(new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: .12, depthWrite: false, side: THREE.DoubleSide }))); tube.position.set(.3, 1.08, z); g.add(tube);
       const ic = new THREE.Mesh(keep(geo), glow(col, 1.8)); ic.position.set(.3, 1.2, z); g.add(ic); labFX.holos.push(ic);
       const t = textTex(n, { w: 384, h: 128, size: 72, bg: null, border: null, color: '#e9fff8', glowC: '#' + col.toString(16).padStart(6, '0') }); plane(.9, .3, t, .32, 2.3, z, g, Math.PI / 2);
     });
-    wallSign('概念圖鑑', '結構・流動性・二次突破', 'C', F6, false, 4.9); }
+    wallSign('概念圖鑑', '結構・流動性', 'C', F6, false, 4.9); }
   // 天花板下的全息 K 線環
   { const ring = new THREE.Group(); ring.position.set(0, 4.4, -7.5); F6.add(ring); labFX.ring = ring;
     for (let i = 0; i < 28; i++) { const a = i / 28 * Math.PI * 2, hgt = .25 + Math.abs(Math.sin(i * 1.7)) * .6, up = Math.sin(i * 2.3) > 0; const m = box(.12, hgt, .12, glow(up ? 0xff5468 : 0x2fd38a, 1.6), Math.cos(a) * 2.4, Math.sin(i * .9) * .25, Math.sin(a) * 2.4, ring); m.rotation.y = -a; }
@@ -1970,14 +1994,15 @@ export async function create3D(canvas, hooks) {
     scene.background = P.bg === null ? null : new THREE.Color(P.bg);
     entL.visible = f === 'lobby';
     hitBoxes.forEach(h => { h.userData.active = h.userData.fg === floors[f]; });
-    const [ri, rn] = hooks.rank(); drawInd(rn); refresh(lastInfo);
+    const [ri, rn] = hooks.rank(); drawInd(rn); refresh(lastInfo || (hooks.boardInfo && hooks.boardInfo()));
     buildLabels();
   }
   let lastInfo = null;
   function refresh(info) {
+    if (!info) info = hooks.boardInfo && hooks.boardInfo();
     if (!info) return; lastInfo = info;
     drawDir(info); drawLeader(info);
-    (zoneObj.honor.userData.pillars || []).forEach(p => { p.material = p.userData.rankIdx === info.rank ? goldGlow : goldM; });
+    ((zoneObj.honor && zoneObj.honor.userData.pillars) || []).forEach(p => { p.material = p.userData.rankIdx === info.rank ? goldGlow : goldM; });
     if (info.office) layoutOffice(info.office);
   }
   setFloorVisual(floorNow);
@@ -2160,12 +2185,52 @@ export async function create3D(canvas, hooks) {
         setTimeout(() => { if (activeZone === id) hooks.open(id); }, 380);
       });
     },
+    setFloorNow(to) {
+      setFloorVisual(to);
+      const s = SLOT.H;
+      path = []; onArrive = null; mode = 'follow'; activeZone = null;
+      avatar.position.set(2.5, 0, -9.5);
+      avatar.rotation.y = 0; faceTarget = 0;
+      overview(); camPos.copy(camPosT); camLook.copy(camLookT);
+      labelsEl.style.display = '';
+    },
+    arrive(id) {
+      const z = (hooks.ZONES || []).find(z => z.id === id);
+      if (!z || z.floor !== floorNow || !SLOT[z.slot]) return false;
+      const sl = SLOT[z.slot];
+      path = []; onArrive = null;
+      avatar.position.set(sl.spot[0], 0, sl.spot[1]);
+      faceTarget = Math.atan2(sl.f[0], sl.f[1]);
+      avatar.rotation.y = faceTarget;
+      activeZone = id;
+      zoneCam(z.slot);
+      if (id === 'weekboard' || id === 'leader' || id === 'reports') {
+        camLookT.y = id === 'reports' ? 3.2 : 2.8;
+        camPosT.y = Math.max(camPosT.y, 3.6);
+      }
+      camPos.copy(camPosT); camLook.copy(camLookT);
+      labelsEl.style.display = '';
+      mode = 'zone';
+      return true;
+    },
     ride(to, cb) {
       return new Promise(async res => {
         if (playerSitting) standUp();
         const s = SLOT.H; mode = 'follow'; activeZone = null; labelsEl.style.display = 'none';
         const wait = ms => new Promise(r => setTimeout(r, ms));
-        const walkP = pts => new Promise(r => { speed = 2.6; walkTo(pts, r); });
+        const walkP = pts => new Promise(r => {
+          speed = 2.6;
+          let done = false;
+          const finish = () => { if (done) return; done = true; r(); };
+          walkTo(pts || [], finish);
+          setTimeout(() => {
+            if (done) return;
+            const last = pts && pts.length ? pts[pts.length - 1] : null;
+            if (last) avatar.position.copy(last);
+            path = []; onArrive = null;
+            finish();
+          }, 8000);
+        });
         if (avatar.position.distanceTo(new THREE.Vector3(s.spot[0], 0, s.spot[1])) > .3) await walkP(routeTo(new THREE.Vector3(s.spot[0], 0, s.spot[1])));
         zoneCam('H'); mode = 'ride'; liftWant = 1; await wait(500);
         await walkP([LIFT_IN]); faceTarget = 0; await wait(350);
@@ -2235,7 +2300,7 @@ export async function create3D(canvas, hooks) {
       if (!open) { activeZone = null; liftWant = 0; if (mode === 'zone') overview(); }
     },
     setRank(i, name) { drawInd(name); },
-    refresh(info) { refresh(info); },
+    refresh(info) { refresh(info); }, directoryLabels() { return (lastInfo && lastInfo.floors || []).map(f => ({ num: f.num, name: f.name, open: !!f.open, here: !!f.here, label: f.here ? '你在這裡' : f.open ? '已開放' : f.status })); },
     celebrate(kind) {
       if (kind === 'checkin') { jumpT = .6; burst(new THREE.Vector3(-7.2, 1.8, -3.2)); }
       if (kind === 'fortune') { shakeT = 1.0; }
@@ -2321,7 +2386,9 @@ export async function create3D(canvas, hooks) {
     e.preventDefault(); orbitDist = Math.max(ORBIT_DIST_MIN, Math.min(ORBIT_DIST_MAX, orbitDist + e.deltaY * 0.01)); pokeCam(); if (mode === 'zone') mode = 'follow'; if (mode === 'sit') standUp();
   };
   const onKey = e => {
-    if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+    if (e.isComposing || e.keyCode === 229) return;
+    const tgt = e.target;
+    if (tgt && (tgt.isContentEditable || /INPUT|TEXTAREA|SELECT/.test(tgt.tagName) || (tgt.closest && tgt.closest('input,textarea,select,[contenteditable="true"]')))) return;
     const k = KEYMAP[e.code]; if (!k) return;
     if (e.type === 'keydown') { held.add(k); pokeCam(); e.preventDefault(); } else held.delete(k);
   };
@@ -2449,7 +2516,7 @@ export async function create3D(canvas, hooks) {
       labFX.holos.forEach((h, i) => { h.rotation.y += dt * (.8 + i * .1); h.rotation.x += dt * .4; h.position.y += Math.sin(tAll * 2 + i) * .002; });
       if (labFX.ring) labFX.ring.rotation.y += dt * .25;
     }
-    [zoneObj.guide, zoneObj.cta, zoneObj.cta5].forEach(gz => { gz.userData.spin.rotation.y += dt * 1.2; gz.userData.spin.position.y = 1.9 + Math.sin(tAll * 2) * .08; });
+    ['guide', 'cta5'].forEach(id => { const gz = zoneObj[id]; if (gz && gz.userData.spin) { gz.userData.spin.rotation.y += dt * 1.2; gz.userData.spin.position.y = 1.9 + Math.sin(tAll * 2) * .08; } });
     zoneObj.guess.userData.arrows[0].position.y = 1.7 + Math.sin(tAll * 2) * .12; zoneObj.guess.userData.arrows[1].position.y = 1.5 - Math.sin(tAll * 2) * .12;
     zoneObj.guess.userData.arrows.forEach(a => a.rotation.y += dt);
     if (shakeT > 0) { shakeT -= dt; zoneObj.fortune.userData.shake.rotation.x = Math.sin(tAll * 50) * .05 * shakeT; }

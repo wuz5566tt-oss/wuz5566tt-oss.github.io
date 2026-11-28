@@ -13,13 +13,16 @@ export const NPCS = [
   // 1 樓・交易大廳
   { id: 'n_desk', floor: 'lobby', gender: 'f', outfit: 'reception', avatar: '👩‍💼', name: '櫃台小美', line: '每天準時打卡，是牛馬的基本功！', pose: 'desk', station: 'checkin',
     quest: { id: 'q_daily_checkin', kind: 'daily', title: '今天完成上班打卡', check: 'checkinToday', target: 1, action: 'checkin', reward: { coins: 30, xp: 2 } } },
-  { id: 'n_fortune', floor: 'lobby', gender: 'm', outfit: 'traditional', avatar: '👴', name: '籤詩阿伯', line: '心法抽一支，今天下單前先冷靜一下。', pose: 'stand', station: 'fortune',
-    quest: { id: 'q_daily_fortune', kind: 'daily', title: '抽一支今日心法', check: 'fortuneToday', target: 1, action: 'fortune', reward: { coins: 20, xp: 1 } } },
+  { id: 'n_fortune', floor: 'lobby', gender: 'm', outfit: 'traditional', avatar: '👴', name: '籤詩阿伯', line: '心法籤機準備中。', pose: 'stand', station: 'fortune' },
   { id: 'n_tailor', floor: 'lobby', gender: 'm', outfit: 'tailor', avatar: '🧵', name: '裁縫師阿德', line: '穿得體面，上班心情也會好一點。', pose: 'stand', station: 'shop',
     quest: { id: 'q_once_buy', kind: 'once', title: '在服裝店用薪水買一件裝扮', check: 'paidItems', target: 1, action: 'shop', reward: { coins: 120, xp: 5 } } },
   // 2 樓・晨會室
-  { id: 'n_host', floor: 'f2', gender: 'm', outfit: 'suit', avatar: '👨‍🏫', name: '晨會主持 Kevin', line: '台股、美股都猜一下，練的是盤感，不是點位。', pose: 'stand', station: 'guess',
-    quest: { id: 'q_daily_guess', kind: 'daily', title: '今天台股、美股都猜完漲跌', check: 'guessToday', target: 2, action: 'guess', reward: { coins: 40, xp: 2 } } },
+  { id: 'n_host', floor: 'f2', gender: 'm', outfit: 'suit', avatar: '👨‍🏫', name: '晨會主持 承安',
+    line: c => c && c.isDay1
+      ? '今天先猜台股。美股夜班從第二天開始。只猜方向，不給點位。'
+      : '今天把台股加權指數、那斯達克綜合指數（^IXIC）都猜完。美股是夜班，猜中算夜班加班費。只猜方向，不給點位。',
+    pose: 'stand', station: 'guess',
+    quest: { id: 'q_daily_guess', kind: 'daily', title: '今天先猜台股漲跌（美股夜班第二天開始）', check: 'guessToday', target: 2, action: 'guess', reward: { coins: 40, xp: 2 } } },
   { id: 'n_tea', floor: 'f2', gender: 'f', outfit: 'apron', avatar: '☕', name: '茶水間阿姨', line: '連續來上班，阿姨就知道你是認真的。', pose: 'stand', station: 'tea',
     quest: { id: 'q_once_streak3', kind: 'once', title: '連續打卡 3 天', check: 'streak', target: 3, action: 'checkin', reward: { coins: 150, xp: 5 } } },
   { id: 'n_admin', floor: 'f2', gender: 'f', outfit: 'office', avatar: '📒', name: '行政小芳', line: '累積打卡滿 7 天，三樓訓練場就開了喔。', pose: 'desk', slot: 'A',
@@ -32,24 +35,24 @@ export const NPCS = [
   { id: 'n_bear', floor: 'f3', gender: 'm', outfit: 'sport', avatar: '🏋️‍♂️', name: '體能教練大熊', line: '練功沒有捷徑，天天來就對了。', pose: 'stand', station: 'bag',
     quest: { id: 'q_once_streak7', kind: 'once', title: '連續打卡 7 天', check: 'streak', target: 7, action: 'checkin', reward: { coins: 300, xp: 10 } } },
   // 4 樓・戰報與榮譽牆
-  { id: 'n_editor', floor: 'f4', gender: 'm', outfit: 'vest', avatar: '📰', name: '戰報編輯阿哲', line: '看圖的眼力，是一根一根練出來的。', pose: 'desk', station: 'reports',
+  { id: 'n_editor', floor: 'f4', gender: 'm', outfit: 'vest', avatar: '📰', name: '戰報編輯阿哲', line: '看圖的眼力，是一根一根練出來的。', pose: 'desk', station: 'reports', stand: [-5.0, -14.6], face: 0,
     quest: { id: 'q_once_kline4', kind: 'once', title: '「看K線猜下一根」單局答對 4 題', check: 'klineBest', target: 4, action: 'kline', reward: { coins: 200, xp: 6 } } },
-  { id: 'n_honor', floor: 'f4', gender: 'f', outfit: 'curator', avatar: '🏅', name: '榮譽牆管理員', line: '累積 14 天，名字就該上牆了。', pose: 'stand', station: 'honor',
-    quest: { id: 'q_once_days14', kind: 'once', title: '累積打卡 14 天', check: 'days', target: 14, action: 'checkin', reward: { coins: 350, xp: 10 } } },
-  { id: 'n_hr', floor: 'f4', gender: 'f', outfit: 'skirtsuit', avatar: '👩‍💼', name: '人資主管 Amy', line: '升到組長，就不是菜鳥牛馬了。', pose: 'desk', station: 'cta',
+  { id: 'n_honor', floor: 'lobby', gender: 'f', outfit: 'curator', avatar: '🏅', name: '升職之路管理員', line: '看自己現在在哪一階。升職靠每天來上班，不是把名字掛上牆。', pose: 'stand', station: 'honor',
+    quest: { id: 'q_once_days14', kind: 'once', title: '累積打卡 14 天', check: 'days', target: 14, action: 'rank', reward: { coins: 350, xp: 10 } } },
+  { id: 'n_hr', floor: 'lobby', gender: 'f', outfit: 'skirtsuit', avatar: '👩‍💼', name: '人資主管', line: '錄取和升職在這裡辦。官方帳號在旁邊的接引櫃台。', pose: 'desk', station: 'hr',
     quest: { id: 'q_once_rank2', kind: 'once', title: '職級升到「組長」', check: 'rank', target: 2, action: 'rank', reward: { coins: 250, xp: 0 } } },
   // 5 樓・目標值研究室
   { id: 'n_lab', floor: 'f5', gender: 'm', outfit: 'labcoat', avatar: '🔭', name: '研究員林博士', line: '長期的紀律，比一次的好運重要。', pose: 'desk', station: 'target',
     quest: { id: 'q_once_streak14', kind: 'once', title: '連續打卡 14 天', check: 'streak', target: 14, action: 'checkin', reward: { coins: 500, xp: 15 } } },
   { id: 'n_data', floor: 'f5', gender: 'f', outfit: 'blouse', avatar: '📈', name: '數據分析師小陳', line: '樣本夠多，數據才有參考價值。', pose: 'desk', slot: 'A',
     quest: { id: 'q_once_days60', kind: 'once', title: '累積打卡 60 天', check: 'days', target: 60, action: 'checkin', reward: { coins: 600, xp: 20 } } },
-  { id: 'n_quant', floor: 'f5', gender: 'm', outfit: 'hoodie', avatar: '🎯', name: '量化助理 Rex', line: '反應快不夠，要等確認再動。', pose: 'stand', slot: 'D',
+  { id: 'n_quant', floor: 'f5', gender: 'm', outfit: 'hoodie', avatar: '🎯', name: '量化助理 阿瑞', line: '反應快不夠，要等確認再動。', pose: 'stand', slot: 'D',
     quest: { id: 'q_once_fake5', kind: 'once', title: '「躲假突破」單局躲過 5 次', check: 'fakeBest', target: 5, action: 'fakeout', reward: { coins: 300, xp: 10 } } },
   // 6 樓・交易實驗室
-  { id: 'n_labdir', floor: 'f6', gender: 'f', outfit: 'labcoatf', avatar: '🧪', name: '實驗室主任雅婷', line: '先想好停損，再談進場。', pose: 'desk', station: 'labdrill',
-    quest: { id: 'q_daily_lab', kind: 'daily', title: '今天完成一局「實戰演練」', check: 'labPlaysToday', target: 1, action: 'labdrill', reward: { coins: 40, xp: 2 } } },
-  { id: 'n_risk', floor: 'f6', gender: 'm', outfit: 'suit', avatar: '🛡️', name: '風控官阿凱', line: '風報比不到一比二，寧可不做。', pose: 'stand', station: 'labdrill',
-    quest: { id: 'q_once_lab80', kind: 'once', title: '「實戰演練」單局拿到 80 分', check: 'labBest', target: 80, action: 'labdrill', reward: { coins: 300, xp: 10 } } },
+  { id: 'n_labdir', floor: 'f6', gender: 'f', outfit: 'labcoatf', avatar: '🧪', name: '實驗室主任雅婷', line: '先看懂結構，再談接下來怎麼走。', pose: 'desk', station: 'labdrill',
+    quest: { id: 'q_daily_lab', kind: 'daily', title: '今天完成一局「結構觀察」', check: 'labPlaysToday', target: 1, action: 'labdrill', reward: { coins: 40, xp: 2 } } },
+  { id: 'n_risk', floor: 'f6', gender: 'm', outfit: 'suit', avatar: '🛡️', name: '風控官阿凱', line: '先看清楚結構，再判斷這段路怎麼走。', pose: 'stand', station: 'labdrill',
+    quest: { id: 'q_once_lab80', kind: 'once', title: '「結構觀察」單局拿到 80 分', check: 'labBest', target: 80, action: 'labdrill', reward: { coins: 300, xp: 10 } } },
   // 68 樓・自己人專區
   { id: 'n_steward', floor: 'insider', gender: 'm', outfit: 'robe', avatar: '📝', name: '執事堂執事', line: '下班前寫複盤，是自己人的日常。', pose: 'desk', station: 'review',
     quest: { id: 'q_daily_review', kind: 'daily', title: '今天寫下班複盤', check: 'reviewToday', target: 1, action: 'review', reward: { coins: 40, xp: 2 } } },
@@ -62,7 +65,7 @@ export const NPCS = [
   { id: 'n_lec_f3', floor: 'f3', gender: 'm', outfit: 'polo', avatar: '🐴', name: 'STAR史塔財商講師 子安', line: '別急，看清楚再出手。', pose: 'stand', slot: 'F', talk: 'academy' },
   { id: 'n_lec_f4', floor: 'f4', gender: 'm', outfit: 'vest', avatar: '🐴', name: 'STAR史塔財商講師 正遠', line: '交易的盡頭不是技術，是概率。', pose: 'stand', slot: 'D', talk: 'academy' },
   { id: 'n_lec_f5', floor: 'f5', gender: 'f', outfit: 'blouse', avatar: '🐴', name: 'STAR史塔財商講師 沐橙', line: '長期的紀律，比一次的好運重要。', pose: 'stand', slot: 'F', talk: 'academy' },
-  { id: 'n_lec_f6', floor: 'f6', gender: 'm', outfit: 'suit', avatar: '🐴', name: 'STAR史塔財商講師 景行', line: '先想好停損，再談進場。', pose: 'stand', slot: 'A', talk: 'academy' },
+  { id: 'n_lec_f6', floor: 'f6', gender: 'm', outfit: 'suit', avatar: '🐴', name: 'STAR史塔財商講師 景行', line: '先看懂結構，再談接下來怎麼走。', pose: 'stand', slot: 'A', talk: 'academy' },
   // 7 樓工位旁的講師馬：每日 3 題（talk: 'quiz'，題目與發薪在 academy.js；不進任務列）
   { id: 'n_lec_f7', floor: 'f7', gender: 'm', outfit: 'suit', avatar: '🐴', name: 'STAR史塔財商講師馬 明哲', line: '每天 3 題，答錯的我明天再考你。', pose: 'stand', stand: [1.75, -4.75], face: -Math.PI * 0.42, talk: 'quiz' },
   // 7 樓同期學員馬：只說話、工位等級固定，不進任務列
@@ -101,7 +104,16 @@ function addDaysStr(d, n) {
 const CHECKS = {
   checkinToday: c => (c.S.last === c.today ? 1 : 0),
   fortuneToday: c => (c.S.fortune && c.S.fortune.date === c.today ? 1 : 0),
-  guessToday: c => Object.keys((c.S.guesses || {})[c.today] || {}).filter(k => k === 'tw' || k === 'us').length,
+  guessToday: c => {
+    const bag = c.S.guesses || {};
+    const picked = k => {
+      const todayG = (bag[c.today] || {})[k];
+      if (todayG) return true;
+      return Object.values(bag).some(rec => rec && rec[k] && rec[k].placedOn === c.today);
+    };
+    if (c.isDay1) return picked('tw') ? 1 : 0;
+    return ['tw', 'us'].filter(picked).length;
+  },
   reviewToday: c => ((c.S.reviews || {})[c.today] ? 1 : 0),
   klinePlaysToday: c => (dayLog(c).klinePlays | 0),
   fakeBestToday: c => (dayLog(c).fakeBest | 0),
@@ -121,13 +133,21 @@ export function claimed(q, quest, today) {
   if (quest.kind === 'daily') return ((q.daily || {})[today] || []).includes(quest.id);
   return (q.done || []).includes(quest.id);
 }
+export function guessQuestNeed(ctx) {
+  return ctx && ctx.isDay1 ? 1 : 2;
+}
+export function guessQuestTitle(ctx) {
+  return (ctx && ctx.isDay1) ? '今天先猜台股漲跌（美股夜班第二天開始）' : '今天把台股、美股都猜完漲跌';
+}
 export function evalQuest(quest, ctx) {
   if (!quest) return { prog: 0, target: 0, done: false, got: true, ready: false };
   const fn = CHECKS[quest.check];
   const raw = fn ? fn(ctx) : 0;
-  const prog = Math.min(raw, quest.target);
+  const target = quest.id === 'q_daily_guess' ? guessQuestNeed(ctx) : quest.target;
+  const prog = Math.min(raw, target);
   const got = claimed(ctx.S.quests, quest, ctx.today);
-  return { prog, target: quest.target, done: prog >= quest.target, got, ready: prog >= quest.target && !got };
+  const title = quest.id === 'q_daily_guess' ? guessQuestTitle(ctx) : quest.title;
+  return { prog, target, title, done: prog >= target, got, ready: prog >= target && !got };
 }
 export function markClaimed(q, quest, today) {
   if (quest.kind === 'daily') { const a = q.daily[today] || (q.daily[today] = []); if (!a.includes(quest.id)) a.push(quest.id); }
