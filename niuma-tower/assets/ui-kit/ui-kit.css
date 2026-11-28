@@ -86,3 +86,171 @@
   .uk-carousel__track{animation:none}
   .uk-carousel__track .uk-slide:not(:first-child){display:none}
 }
+
+
+/* ===== 6. 一樓門牌（接引櫃台／人資室／升職之路） ===== */
+.uk-f1{display:grid;gap:14px}
+@media (min-width:900px){.uk-f1{grid-template-columns:repeat(3,1fr)}}
+.uk-f1__panel{padding:18px 16px 16px;border-radius:18px;
+  background:radial-gradient(80% 50% at 100% 0%,rgba(255,200,90,.12),transparent 55%),linear-gradient(165deg,#121826,#070b14);
+  box-shadow:inset 0 0 0 1px rgba(255,200,90,.32),0 14px 36px rgba(0,0,0,.4)}
+.uk-f1__lead{margin:0 0 12px;color:#f3ead2;font-weight:700}
+.uk-f1__panel .uk-facts{margin-bottom:12px}
+.uk-f1__panel .uk-cta{width:100%}
+
+/* ===== 7. 四樓大廳大螢幕（本週猜盤排行榜） ===== */
+.uk-board{padding:0 0 16px;border-radius:18px;overflow:hidden;
+  background:linear-gradient(180deg,#071018,#050a12);
+  box-shadow:inset 0 0 0 1px rgba(62,242,255,.35),0 0 40px rgba(62,242,255,.12),0 18px 40px rgba(0,0,0,.45)}
+.uk-board__bar{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;
+  padding:12px 16px;background:linear-gradient(90deg,rgba(62,242,255,.16),rgba(255,200,90,.08));
+  box-shadow:inset 0 -1px 0 rgba(62,242,255,.25)}
+.uk-board__bar small,.uk-board__bar span{color:#8fa3c4;font-size:.72rem;letter-spacing:.12em}
+.uk-board__bar b{color:#3ef2ff;font-size:1.15rem;letter-spacing:.14em}
+.uk-board__lead{margin:14px 16px 8px;color:#f3ead2;font-weight:700}
+.uk-board__list{margin:0 16px;padding:0;list-style:none;min-height:180px;border-radius:12px;
+  background:rgba(0,0,0,.28);box-shadow:inset 0 0 0 1px rgba(62,242,255,.16)}
+.uk-board__empty{display:grid;place-items:center;min-height:180px;color:#8fa3c4;letter-spacing:.16em;font-weight:800}
+.uk-board__me{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;
+  margin:12px 16px 0;padding:12px 14px;border-radius:12px;
+  background:rgba(255,200,90,.08);box-shadow:inset 0 0 0 1px rgba(255,200,90,.3)}
+.uk-board__me span{color:#8fa3c4}
+.uk-board__me b{color:#ffe3a0}
+.uk-board .uk-note{margin:8px 16px 0}
+.uk-f4__stat{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:10px 12px;border-radius:12px;
+  background:rgba(255,255,255,.03);box-shadow:inset 0 0 0 1px rgba(255,214,138,.22)}
+.uk-f4__stat span{color:var(--uk-mute);font-size:.82rem}
+.uk-f4__stat b{color:#ffe3a0}
+
+/* ===== 8. 入職第一天清單 ===== */
+.uk-onboard{padding:18px 16px 16px;border-radius:18px;
+  background:radial-gradient(80% 50% at 0% 0%,rgba(255,200,90,.14),transparent 55%),linear-gradient(165deg,#121826,#070b14);
+  box-shadow:inset 0 0 0 1px rgba(255,200,90,.35),0 14px 36px rgba(0,0,0,.4)}
+.uk-onboard__list{margin:0 0 14px;padding:0;list-style:none;display:grid;gap:8px}
+.uk-onboard__list li{display:grid;gap:2px;padding:10px 12px;border-radius:12px;counter-increment:ob;
+  background:rgba(255,255,255,.03);box-shadow:inset 0 0 0 1px rgba(255,214,138,.22)}
+.uk-onboard__list{counter-reset:ob}
+.uk-onboard__list li b::before{content:counter(ob) ". ";color:var(--uk-gold)}
+.uk-onboard__list li b{color:#ffe3a0}
+.uk-onboard__list li span{color:#cfe7ff;font-size:.88rem}
+.uk-onboard__done{padding:14px 14px 12px;border-radius:14px;text-align:center;
+  background:linear-gradient(180deg,rgba(255,200,90,.16),rgba(255,200,90,.05));
+  box-shadow:inset 0 0 0 1px rgba(255,200,90,.4)}
+.uk-onboard__done b{display:block;color:#ffe3a0;font-size:1.15rem;letter-spacing:.12em}
+.uk-onboard__done p{margin:6px 0 0;color:#f3ead2;font-weight:700}
+
+/* ===== 9. 樓層導覽 ===== */
+.uk-floors{padding:18px 16px 16px;border-radius:18px;
+  background:linear-gradient(165deg,#0d1524,#070b14);
+  box-shadow:inset 0 0 0 1px rgba(62,242,255,.22),0 14px 36px rgba(0,0,0,.4)}
+.uk-floors__list{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.uk-floors__list li{display:grid;gap:4px;padding:10px 12px;border-radius:12px;
+  background:rgba(255,255,255,.03);box-shadow:inset 0 0 0 1px rgba(62,242,255,.14)}
+.uk-floors__list b{color:#ffe3a0}
+.uk-floors__list span{color:#cfe7ff;font-size:.88rem}
+.uk-floors__list em{color:#3ef2ff;font-style:normal;font-size:.75rem;letter-spacing:.04em}
+
+/* ===== 10. 領取與拜師之路 ===== */
+.uk-path{padding:18px 16px 16px;border-radius:18px;
+  background:radial-gradient(70% 50% at 100% 0%,rgba(255,200,90,.16),transparent 55%),linear-gradient(165deg,#16120a,#07060c);
+  box-shadow:inset 0 0 0 1px rgba(255,200,90,.4),0 16px 40px rgba(0,0,0,.45)}
+.uk-path__list{margin:0 0 10px;padding:0;list-style:none;display:grid;gap:8px}
+.uk-path__list li{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;gap:2px 12px;padding:10px 12px;border-radius:12px;
+  background:rgba(255,255,255,.03);box-shadow:inset 0 0 0 1px rgba(255,214,138,.2)}
+.uk-path__list em{grid-row:1/3;align-self:center;min-width:5.5em;color:var(--uk-gold);font-style:normal;font-weight:800;font-size:.78rem;letter-spacing:.06em}
+.uk-path__list b{color:#ffe3a0}
+.uk-path__list span{grid-column:2;color:#cfe7ff;font-size:.86rem}
+.uk-path__list li.is-now{box-shadow:inset 0 0 0 1px #ffc85a,0 0 18px rgba(255,200,90,.25)}
+
+/* ===== 11. 任務指引（一次只亮下一步） ===== */
+.uk-quest{padding:18px 16px 16px;border-radius:18px;
+  background:radial-gradient(80% 40% at 0% 0%,rgba(255,200,90,.16),transparent 50%),linear-gradient(165deg,#141a28,#070b14);
+  box-shadow:inset 0 0 0 1px rgba(255,200,90,.35),0 16px 40px rgba(0,0,0,.45)}
+.uk-quest__now{margin:0 0 14px;padding:14px 14px 12px;border-radius:14px;text-align:left;
+  background:linear-gradient(180deg,rgba(255,200,90,.2),rgba(255,200,90,.06));
+  box-shadow:inset 0 0 0 1px #ffc85a,0 0 22px rgba(255,200,90,.2)}
+.uk-quest__now em{display:block;color:var(--uk-gold);font-style:normal;font-size:.75rem;letter-spacing:.12em}
+.uk-quest__now b{display:block;margin:4px 0 6px;color:#ffe3a0;font-size:1.12rem}
+.uk-quest__now span{color:#f3ead2;font-size:.92rem}
+.uk-quest__list{margin:0 0 10px;padding:0;list-style:none;display:grid;gap:6px;counter-reset:qs}
+.uk-quest__list li{counter-increment:qs;display:flex;gap:8px;align-items:baseline;padding:8px 10px;border-radius:10px;
+  color:#8aa0b8;background:rgba(255,255,255,.02);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.uk-quest__list li b{font-weight:600}
+.uk-quest__list li::before{content:counter(qs);min-width:1.4em;color:inherit;font-size:.78rem}
+.uk-quest__list li.is-done{color:#9ee7b0}
+.uk-quest__list li.is-done b{text-decoration:line-through;text-decoration-color:rgba(158,231,176,.5)}
+.uk-quest__list li.is-now{color:#ffe3a0;background:rgba(255,200,90,.1);box-shadow:inset 0 0 0 1px rgba(255,200,90,.45)}
+.uk-quest__list li.is-later{opacity:.55}
+
+/* ===== 12. 一樓今日戰報一行摘要 ===== */
+.uk-ticker{padding:18px 16px 16px;border-radius:18px;
+  background:linear-gradient(165deg,#101820,#070b14);
+  box-shadow:inset 0 0 0 1px rgba(62,242,255,.28),0 14px 36px rgba(0,0,0,.4)}
+.uk-ticker__row{display:grid;grid-template-columns:auto auto 1fr auto;grid-template-areas:"flag mkt val chg" "flag line line line";
+  gap:2px 10px;align-items:baseline;margin:0 0 8px;padding:10px 12px;border-radius:12px;text-decoration:none;
+  background:rgba(62,242,255,.05);box-shadow:inset 0 0 0 1px rgba(62,242,255,.18);color:inherit}
+.uk-ticker__row em{grid-area:flag;color:#3ef2ff;font-style:normal;font-size:.7rem;letter-spacing:.08em;white-space:nowrap}
+.uk-ticker__mkt{grid-area:mkt;color:#ffe3a0;font-weight:700}
+.uk-ticker__val{grid-area:val;color:#e8f4ff}
+.uk-ticker__chg{grid-area:chg;color:#9ee7b0;font-weight:700}
+.uk-ticker__line{grid-area:line;color:#cfe7ff;font-size:.86rem}
+
+/* ===== 13. 四樓今日分析已更新 ===== */
+.uk-analysis{padding:18px 16px 16px;border-radius:18px;
+  background:radial-gradient(70% 50% at 100% 0%,rgba(62,242,255,.12),transparent 55%),linear-gradient(165deg,#101820,#070b14);
+  box-shadow:inset 0 0 0 1px rgba(62,242,255,.28),0 16px 40px rgba(0,0,0,.45)}
+.uk-analysis__grid{display:grid;gap:10px}
+@media (min-width:720px){.uk-analysis__grid{grid-template-columns:1fr 1fr}}
+.uk-analysis__card{padding:14px 14px 16px;border-radius:14px;
+  background:rgba(255,255,255,.03);box-shadow:inset 0 0 0 1px rgba(255,214,138,.22)}
+.uk-analysis__card em{display:block;color:#3ef2ff;font-style:normal;font-size:.75rem;letter-spacing:.1em}
+.uk-analysis__card b{display:block;margin:4px 0 8px;color:#ffe3a0;font-size:1.1rem}
+.uk-analysis__meta{margin:0 0 8px;color:#9eb3c8;font-size:.82rem}
+.uk-analysis__sum{margin:0 0 14px;color:#e8f4ff;line-height:1.55}
+
+/* ===== 14. 生存課三張卡 ===== */
+.uk-survive{padding:18px 16px 16px;border-radius:18px;
+  background:radial-gradient(70% 45% at 0% 0%,rgba(255,200,90,.14),transparent 55%),linear-gradient(165deg,#16120a,#07060c);
+  box-shadow:inset 0 0 0 1px rgba(255,200,90,.4),0 16px 40px rgba(0,0,0,.45)}
+.uk-survive__cards{margin:0 0 10px;padding:0;list-style:none;display:grid;gap:10px}
+@media (min-width:900px){.uk-survive__cards{grid-template-columns:1fr 1fr 1fr}}
+.uk-survive__cards li{padding:14px;border-radius:14px;background:rgba(255,255,255,.03);
+  box-shadow:inset 0 0 0 1px rgba(255,214,138,.22)}
+.uk-survive__cards em{display:block;color:var(--uk-gold);font-style:normal;font-size:.75rem;letter-spacing:.1em}
+.uk-survive__cards b{display:block;margin:4px 0 8px;color:#ffe3a0;font-size:1.08rem}
+.uk-survive__cards span{color:#e8f4ff;font-size:.9rem;line-height:1.55}
+
+/* ===== 15. 市場恐慌日 ===== */
+.uk-panic{padding:18px 16px 16px;border-radius:18px;
+  background:radial-gradient(80% 50% at 50% 0%,rgba(255,90,90,.18),transparent 55%),linear-gradient(165deg,#1a1010,#07060c);
+  box-shadow:inset 0 0 0 1px rgba(255,120,90,.45),0 16px 40px rgba(0,0,0,.45)}
+.uk-panic__lead{margin:0 0 8px;color:#ffe3a0;font-size:1.05rem;font-weight:700}
+.uk-panic__body{margin:0 0 16px;color:#f3ead2;line-height:1.55}
+.uk-panic__actions{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px}
+.uk-cta{display:inline-block;padding:8px 14px;border-radius:999px;text-decoration:none;
+  color:#cfe7ff;box-shadow:inset 0 0 0 1px rgba(207,231,255,.3);font-weight:700}
+.uk-cta--gold{color:#1a1206;background:linear-gradient(180deg,#ffe3a0,#d7a84a);box-shadow:none}
+
+/* ===== 7b. 真實排行榜列與自己的名次 ===== */
+.uk-board__list li[data-rank]{display:grid;grid-template-columns:2em 1fr auto;gap:8px;align-items:center;
+  padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.03);box-shadow:inset 0 0 0 1px rgba(255,214,138,.18)}
+.uk-board__list li[data-rank] i{font-style:normal;color:var(--uk-gold);font-weight:800}
+.uk-board__list li[data-rank] b{color:#ffe3a0}
+.uk-board__list li[data-rank] span{color:#e8f4ff;font-variant-numeric:tabular-nums}
+.uk-board__list li.is-me{box-shadow:inset 0 0 0 1px #ffc85a,0 0 16px rgba(255,200,90,.22)}
+.uk-board__me em{display:block;margin-top:6px;color:#ffe3a0;font-style:normal;font-weight:700}
+
+/* ===== 7c. 台股、美股兩塊榜 ===== */
+.uk-board__grid{display:grid;gap:10px}
+@media (min-width:720px){.uk-board__grid{grid-template-columns:1fr 1fr}}
+.uk-board__col{padding:12px;border-radius:14px;background:rgba(255,255,255,.03);
+  box-shadow:inset 0 0 0 1px rgba(255,214,138,.22)}
+.uk-board__col h3{margin:0 0 8px;color:#ffe3a0;font-size:1rem;letter-spacing:.06em}
+
+/* ===== 7d. 本週猜盤總榜（單一塊） ===== */
+.uk-board__list--total li.uk-board__head,
+.uk-board__list--total li[data-rank]{grid-template-columns:2em 1fr auto auto auto}
+.uk-board__list--total li.uk-board__head{background:transparent;box-shadow:none;color:#9eb3c8;font-size:.75rem;letter-spacing:.06em}
+.uk-board__list--total li.uk-board__head b{color:#9eb3c8;font-weight:600}
+.uk-board__me span[data-uk-tw],
+.uk-board__me span[data-uk-us]{display:inline-block;margin-right:10px;color:#cfe7ff}

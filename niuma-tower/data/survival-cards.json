@@ -1,0 +1,13 @@
+{
+  "note": "Swap this file and assets/survival-data.js together when official copy arrives. 3 cards total.",
+  "ids": [
+    "sv1",
+    "sv2",
+    "sv3"
+  ],
+  "titles": [
+    "學交易是學生存",
+    "平時靠紀律",
+    "恐慌時再進場有價資產"
+  ]
+}
